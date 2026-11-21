@@ -24,8 +24,19 @@ def test_version_lt_basic():
 
 def test_search_finds_android14_crash():
     r = tools.search_known_issues(["크래시", "시작"], feature_area="tracking", android_version="14")
-    assert r["status"] == "ok" and any("14" in " ".join(i["affected_android"]) for i in r["issues"])
+    assert r["status"] == "ok"
+    assert r["issues"][0]["id"] == "ISSUE-02"
     assert len(r["issues"]) <= 5
+
+
+def test_search_filters_without_keyword_hit_not_found():
+    r = tools.search_known_issues(["존재하지않는단어xyz"], feature_area="tracking", android_version="14")
+    assert r["status"] == "not_found"
+
+
+def test_search_empty_keywords_uses_filters():
+    r = tools.search_known_issues([], feature_area="voice")
+    assert r["status"] == "ok" and r["issues"][0]["id"] == "ISSUE-10"
 
 
 def test_search_not_found():
