@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>RunBuddy 로그인</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div class="login">
+  <h2>RunBuddy 버그 제보 트리아지 로그인</h2>
+  <p>개발자 ID를 입력하세요 (예: dev1)</p>
+  <input type="text" id="dev-id" placeholder="개발자 ID" autofocus>
+  <p><button id="login-btn">로그인</button></p>
+  <div class="error" id="err"></div>
+</div>
+<script>
+async function login() {
+  const err = document.getElementById("err");
+  err.textContent = "";
+  const r = await fetch("/api/login", {method: "POST", headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({dev_id: document.getElementById("dev-id").value})});
+  if (r.ok) { location.href = "/app"; return; }
+  const body = await r.json().catch(() => ({}));
+  err.textContent = typeof body.detail === "string" ? body.detail : "로그인에 실패했습니다";
+}
+document.getElementById("login-btn").onclick = login;
+document.getElementById("dev-id").addEventListener("keydown", e => { if (e.key === "Enter") login(); });
+</script>
+</body>
+</html>

@@ -99,3 +99,12 @@ def test_concurrent_creates_unique_ids_and_all_persisted(tmp_path):
     assert sorted(stored) == sorted(ids)
     log_lines = (tmp_path / "logs.jsonl").read_text(encoding="utf-8").splitlines()
     assert len(log_lines) == 20
+
+
+def test_logs_summary_stored_and_replaced_on_update(tmp_path):
+    s = Store(tmp_path)
+    rid = s.create_report("dev1", "t", make_result(), [make_log("extract"), make_log("score")])
+    summ = s.get_report("dev1", rid)["logs_summary"]
+    assert summ == {"latency_s": 1.0, "cost_usd": 0.002, "cache_read": 6}
+    s.update_report("dev1", rid, make_result(), [make_log("score")], "info")
+    assert s.get_report("dev1", rid)["logs_summary"]["cache_read"] == 3

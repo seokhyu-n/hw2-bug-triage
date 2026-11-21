@@ -19,12 +19,18 @@ Branch: feat/triage-service
   - history = last 6 messages verbatim + code-built `[상태 요약]` prepended to first user msg; stored chat is plain text only
   - report tools bound to dev_id (others get not_found); tool loop max 5 rounds; append_chat now under _LOCK
   - live (Haiku): 3-turn scenario ok (list_my_reports, search_known_issues, reanalyze_report P1 -> P2); cache_read 2478/4956/4956
+- Task 7: FastAPI app (`app/main.py`) + plain HTML/JS UI (`static/`), 114 tests pass
+  - routes: login/logout/me, reports (post/list/get/reanalyze), chat, chat/history; static at `/`, `/app`
+  - store records now carry `logs_summary` (latency/cost/cache_read of latest analysis); old records default to zeros
+  - UI reanalyze passes dev-typed added_info straight to `analyze` (no injection guard; guard is chat-only)
+  - manual: uvicorn + Invoke-RestMethod login -> report (P1, ISSUE-02) -> get -> chat (list_my_reports) ok; browser check pending (user)
 
 ## Prefix cache (live, Haiku 5.5)
 - cache_read > 0 from the 2nd report on (extract 3364, classify 2152, link 2542, score 3820 tokens).
 
 ## Next
-- Task 7 per plan `docs/superpowers/plans/2026-11-21-runbuddy-bug-triage.md`
+- Task 8 per plan `docs/superpowers/plans/2026-11-21-runbuddy-bug-triage.md`
+- User: open http://127.0.0.1:8000 in a browser to check the UI (`venv\Scripts\python.exe -m uvicorn app.main:app --port 8000`)
 
 ## Notes
 - `.env` holds the real key; never read it.

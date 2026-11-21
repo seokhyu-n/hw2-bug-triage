@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>RunBuddy 버그 제보 트리아지</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header>
+  <strong>RunBuddy 버그 제보 트리아지</strong>
+  <span><span id="who"></span><button id="logout-btn">로그아웃</button></span>
+</header>
+<main>
+  <section class="panel" id="triage">
+    <h2>제보 입력</h2>
+    <textarea id="report-text" maxlength="5000" placeholder="제보 내용을 붙여넣으세요 (5,000자 이하)"></textarea>
+    <p><button id="submit-btn">분석하기</button></p>
+    <div class="error" id="submit-err"></div>
+    <h2>내 제보</h2>
+    <ul class="report-list" id="report-list"></ul>
+    <div id="detail"></div>
+  </section>
+  <section class="panel" id="chat">
+    <h2>개발자 챗봇</h2>
+    <div class="chat-log" id="chat-log"></div>
+    <textarea id="chat-input" style="min-height:48px" placeholder="예: P1만 보여줘"></textarea>
+    <button id="chat-btn">보내기</button>
+    <div class="error" id="chat-err"></div>
+  </section>
+</main>
+<script src="/static/app.js"></script>
+</body>
+</html>

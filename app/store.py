@@ -30,6 +30,12 @@ def _dump(obj: dict) -> str:
     return json.dumps(obj, ensure_ascii=False) + "\n"
 
 
+def _summary(logs: list[StepLog]) -> dict:
+    return {"latency_s": round(sum(l.latency_s for l in logs), 3),
+            "cost_usd": round(sum(l.cost_usd for l in logs), 6),
+            "cache_read": sum(l.usage.cache_read for l in logs)}
+
+
 class Store:
     def __init__(self, base_dir: Path = RUNTIME_DIR):
         self.base = Path(base_dir)
@@ -85,6 +91,7 @@ class Store:
             reports.append({
                 "request_id": request_id, "dev_id": dev_id, "text": text,
                 "result": result.model_dump(mode="json"), "added_info": [],
+                "logs_summary": _summary(logs),
                 "created_at": now, "updated_at": now,
             })
             self._save(dev_id, reports)
@@ -117,6 +124,7 @@ class Store:
                 if r["request_id"] == request_id:
                     r["result"] = result.model_dump(mode="json")
                     r["added_info"].append(added_info)
+                    r["logs_summary"] = _summary(logs)
                     r["updated_at"] = _now()
                     break
             else:
