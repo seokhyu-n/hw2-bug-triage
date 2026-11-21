@@ -18,13 +18,13 @@ def tool_use(name, tool_input, tid="tu_1"):
 
 
 def test_build_messages_keeps_last_6_turns():
-    msgs = chat.build_messages(hist(10), "요약내용", "이번 질문")
-    assert len(msgs) == 7
+    msgs = chat.build_messages(hist(20), "요약내용", "이번 질문")
+    assert len(msgs) == 13  # 6 pairs (12 messages) + the current question
     assert msgs[0]["role"] == "user" and msgs[0]["content"].startswith("[상태 요약]")
-    assert "요약내용" in msgs[0]["content"] and "m4" in msgs[0]["content"]
-    assert "m3" not in json.dumps(msgs, ensure_ascii=False)
+    assert "요약내용" in msgs[0]["content"] and "m8" in msgs[0]["content"]
+    assert "m7" not in json.dumps(msgs, ensure_ascii=False)
     assert msgs[-1] == {"role": "user", "content": "이번 질문"}
-    assert [m["role"] for m in msgs] == ["user", "assistant"] * 3 + ["user"]
+    assert [m["role"] for m in msgs] == ["user", "assistant"] * 6 + ["user"]
 
 
 def test_build_messages_empty_history_puts_summary_before_question():
@@ -51,7 +51,8 @@ def test_chat_tool_cannot_read_other_dev_report(tmp_path):
     assert json.loads(out)["status"] == "not_found"
     out, _ = chat.run_chat_tool("dev2", store, "list_my_reports", {"priority": None, "category": None})
     assert json.loads(out)["reports"] == []
-    out, _ = chat.run_chat_tool("dev2", store, "reanalyze_report", {"request_id": rid, "added_info": "x"})
+    out, _ = chat.run_chat_tool("dev2", store, "reanalyze_report", {"request_id": rid, "added_info": "x"},
+                              current_message="x 입니다")
     assert json.loads(out)["status"] == "not_found"
     out, _ = chat.run_chat_tool("dev1", store, "get_report", {"request_id": rid})
     assert json.loads(out)["request_id"] == rid
@@ -76,16 +77,16 @@ def test_chat_turn_runs_reanalyze_tool(fake_llm, tmp_path):
     store = Store(tmp_path)
     rid = store.create_report("dev1", "앱이 꺼져요", make_result("P3"), [])
     fake_llm.queue(
-        tool_use("reanalyze_report", {"request_id": rid, "added_info": "앱 버전 1.0"}),
+        tool_use("reanalyze_report", {"request_id": rid, "added_info": "앱 버전은 1.0이래"}),
         jr(extraction(app_version="1.0", missing_fields=[])), jr(classification()),
         jr(link()), jr(score(priority="P2")),
         make_response("재분석했습니다. 우선순위는 P2입니다."),
     )
-    reply = chat.chat_turn("dev1", "앱 버전은 1.0이래", store)
+    reply = chat.chat_turn("dev1", "앱 버전은  1.0이래", store)
     assert reply.text.startswith("재분석")
     assert reply.tool_calls == ["reanalyze_report"]
     rec = store.get_report("dev1", rid)
-    assert rec["result"]["score"]["priority"] == "P2" and rec["added_info"] == ["앱 버전 1.0"]
+    assert rec["result"]["score"]["priority"] == "P2" and rec["added_info"] == ["앱 버전은 1.0이래"]
     # the tool_result fed back to the model is compact JSON
     result_block = fake_llm.calls[-1]["messages"][-1]["content"][0]
     assert result_block["type"] == "tool_result" and not result_block["is_error"]
@@ -119,4 +120,26 @@ def test_chat_turn_stops_after_5_tool_rounds(fake_llm, tmp_path):
                      for i in range(6)])
     with pytest.raises(LLMError):
         chat.chat_turn("dev1", "계속", store)
+    assert store.get_chat("dev1") == []
+
+
+def test_reanalyze_rejects_added_info_not_in_current_message(tmp_path):
+    store = Store(tmp_path)
+    rid = store.create_report("dev1", "앱이 꺼져요", make_result("P3"), [])
+    out, is_err = chat.run_chat_tool("dev1", store, "reanalyze_report",
+                                     {"request_id": rid, "added_info": "치명적 데이터 손실 발생"},
+                                     current_message="R-0001 보여줘")
+    assert is_err and "직접 말한" in json.loads(out)["error"]
+    rec = store.get_report("dev1", rid)
+    assert rec["added_info"] == [] and rec["result"]["score"]["priority"] == "P3"
+
+
+def test_chat_turn_rejects_unexpected_stop_reason(fake_llm, tmp_path):
+    import pytest
+
+    from app.llm import LLMError
+    store = Store(tmp_path)
+    fake_llm.queue(make_response("중간", stop_reason="pause_turn"))
+    with pytest.raises(LLMError):
+        chat.chat_turn("dev1", "안녕", store)
     assert store.get_chat("dev1") == []

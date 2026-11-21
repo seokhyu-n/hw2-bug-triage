@@ -13,7 +13,7 @@ from app.schemas import TriageResult
 from app.store import Store
 from app.tools import ISSUE_TOOL_DEFS, run_tool
 
-KEEP_TURNS = 6          # raw history messages sent to the model; older ones are dropped
+KEEP_TURNS = 6          # turns (user+assistant pair = 1 turn) sent verbatim; older ones are dropped
 MAX_TOOL_ROUNDS = 5
 _ID_RE = re.compile(r"R-\d{4}")
 _NULLABLE_PRIORITY = {"anyOf": [{"type": "string", "enum": ["P1", "P2", "P3", "P4"]}, {"type": "null"}],
@@ -120,11 +120,17 @@ _REPORT_TOOLS = {"list_my_reports": _list_my_reports, "get_report": _get_report,
                  "reanalyze_report": _reanalyze_report}
 
 
-def run_chat_tool(dev_id: str, store: Store, name: str, tool_input: dict) -> tuple[str, bool]:
+def run_chat_tool(dev_id: str, store: Store, name: str, tool_input: dict,
+                  current_message: str = "") -> tuple[str, bool]:
     """Report tools are bound to dev_id (the model cannot choose it); issue tools pass through."""
     fn = _REPORT_TOOLS.get(name)
     if fn is None:
         return run_tool(name, tool_input)
+    if name == "reanalyze_report":
+        # report text is untrusted: only information the developer typed in this message may be applied
+        added = " ".join(str(tool_input.get("added_info", "")).split())
+        if not added or added not in " ".join(current_message.split()):
+            return _j({"error": "개발자가 이번 메시지에서 직접 말한 정보만 재분석에 쓸 수 있습니다"}), True
     try:
         return _j(fn(dev_id, store, **tool_input)), False
     except Exception as e:  # noqa: BLE001 - report any failure to the model as a tool error
@@ -153,8 +159,8 @@ def summarize_state(dev_id: str, store: Store, history: list[dict]) -> str:
 
 def build_messages(history: list[dict], state_summary: str, user_message: str,
                    keep_turns: int = KEEP_TURNS) -> list[dict]:
-    """Last keep_turns messages verbatim; the state summary is prepended to the first one; question last."""
-    kept = [{"role": m["role"], "content": m["content"]} for m in history[-keep_turns:]] if keep_turns else []
+    """Last keep_turns pairs (2*keep_turns messages) verbatim; the state summary is prepended to the first one; question last."""
+    kept = [{"role": m["role"], "content": m["content"]} for m in history[-2 * keep_turns:]] if keep_turns else []
     while kept and kept[0]["role"] != "user":
         kept.pop(0)  # the window must start with a user turn
     if kept and kept[-1]["role"] == "user":  # keep roles alternating
@@ -187,8 +193,10 @@ def chat_turn(dev_id: str, message: str, store: Store, model: str = MODEL_DEFAUL
         cost += res.cost_usd
         latency += res.latency_s
         cache_read += res.usage.cache_read
-        if res.stop_reason != "tool_use":
+        if res.stop_reason == "end_turn":
             break
+        if res.stop_reason != "tool_use":
+            raise LLMError(f"chat: 예상하지 못한 종료 사유({res.stop_reason})")
         if round_no == MAX_TOOL_ROUNDS:
             raise LLMError(f"chat: 도구 호출이 {MAX_TOOL_ROUNDS}라운드를 넘었습니다")
         messages.append({"role": "assistant", "content": res.content})  # unchanged
@@ -197,7 +205,7 @@ def chat_turn(dev_id: str, message: str, store: Store, model: str = MODEL_DEFAUL
             if getattr(block, "type", None) != "tool_use":
                 continue
             tool_calls.append(block.name)
-            json_str, is_error = run_chat_tool(dev_id, store, block.name, block.input)
+            json_str, is_error = run_chat_tool(dev_id, store, block.name, block.input, message)
             results.append({"type": "tool_result", "tool_use_id": block.id,
                             "content": json_str, "is_error": is_error})
         messages.append({"role": "user", "content": results})  # all results in ONE message
