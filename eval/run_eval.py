@@ -56,10 +56,10 @@ def describe(cfg: PipelineConfig) -> str:
 def _run_case(case: dict, cfg: PipelineConfig) -> dict:
     try:
         result, logs = analyze(case["text"], cfg)
-    except LLMError as e:
+    except Exception as e:  # LLMError or an unexpected bug: never lose the whole (paid) run
         return {"case": case, "result": None, "error": str(e) or type(e).__name__,
-                "latency_s": 0.0, "cost_usd": 0.0, "cache_read": 0}
-    return {"case": case, "result": result, "error": "",
+                "error_type": type(e).__name__, "latency_s": 0.0, "cost_usd": 0.0, "cache_read": 0}
+    return {"case": case, "result": result, "error": "", "error_type": "",
             "latency_s": sum(s.latency_s for s in logs), "cost_usd": sum(s.cost_usd for s in logs),
             "cache_read": sum(s.usage.cache_read or 0 for s in logs)}
 
@@ -87,6 +87,7 @@ def _case_row(r: dict) -> tuple[dict, dict]:
     ext_ok = all(v["accuracy"] == 1.0 for v in ext_m["fields"].values())
     row = {
         "id": case["id"], "hard": case.get("hard", False), "text": case["text"], "error": r["error"],
+        "error_type": r["error_type"],
         "exp_category": exp["category"], "pred_category": p_cat or "",
         "category_ok": _mark(p_cat == exp["category"], failed),
         "exp_labels": "|".join(sorted(exp["labels"])), "pred_labels": "|".join(p_labels or []),
@@ -122,6 +123,22 @@ def _read_csv(path: Path) -> list[dict]:
         return list(csv.DictReader(f))
 
 
+TEXT_COLUMNS = {"날짜", "Run ID", "모델", "설정", "변경사항"}
+
+
+def _xl_value(col: str, v: str):
+    """Numeric columns go into Excel as numbers (sortable/chartable); empty stays empty."""
+    if col in TEXT_COLUMNS or v == "":
+        return v
+    try:
+        return int(v)
+    except ValueError:
+        try:
+            return float(v)
+        except ValueError:
+            return v
+
+
 def build_xlsx() -> None:
     """Regenerate runs.xlsx from runs.csv + each run's confusion CSV."""
     wb = openpyxl.Workbook()
@@ -130,7 +147,7 @@ def build_xlsx() -> None:
     ws.append(RUNS_COLUMNS)
     runs = _read_csv(RUNS_CSV)
     for r in runs:
-        ws.append([r.get(c, "") for c in RUNS_COLUMNS])
+        ws.append([_xl_value(c, r.get(c, "")) for c in RUNS_COLUMNS])
     ws.freeze_panes = "C2"
     used = {"runs"}
     for r in runs:
@@ -168,7 +185,7 @@ def run(args: argparse.Namespace) -> dict:
     ext = grade.extraction_metrics([e["extraction"] for e in exp], [p["extraction"] for p in preds])
     pri = grade.priority_metrics([e["priority"] for e in exp], [p["priority"] for p in preds])
     labels_acc = grade.link_accuracy([sorted(e["labels"]) for e in exp], [p["labels"] for p in preds])
-    n = len(cases) or 1
+    ok_n = sum(not o["error"] for o in outs) or 1  # mean latency over successful cases only
     pres = ext["presence"]
     summary = {
         "날짜": datetime.now().strftime("%Y-%m-%d %H:%M"), "Run ID": args.run_id, "모델": model,
@@ -181,7 +198,7 @@ def run(args: argparse.Namespace) -> dict:
         "완성도 MAE": _fmt(grade.completeness_mae([e["completeness"] for e in exp], [p["completeness"] for p in preds])),
         "우선순위 exact": _fmt(pri["exact"]), "우선순위 ±1": _fmt(pri["within_1"]),
         "링크 정확도": _fmt(grade.link_accuracy([e["linked_issue_id"] for e in exp], [p["link"] for p in preds])),
-        "평균 응답시간(s)": _fmt(round(sum(o["latency_s"] for o in outs) / n, 3)),
+        "평균 응답시간(s)": _fmt(round(sum(o["latency_s"] for o in outs) / ok_n, 3)),
         "총비용(USD)": f"{sum(o['cost_usd'] for o in outs):.6f}",
         "캐시 적중 토큰": sum(o["cache_read"] for o in outs), "변경사항": args.change,
     }
@@ -193,7 +210,7 @@ def run(args: argparse.Namespace) -> dict:
     _write_csv(RESULTS_DIR / f"{args.run_id}_confusion.csv", ["expected\\predicted", *grade.LABELS], conf_rows)
     with open(RESULTS_DIR / f"{args.run_id}.jsonl", "w", encoding="utf-8", newline="\n") as f:
         for o in outs:
-            rec = {"id": o["case"]["id"], "error": o["error"], "latency_s": o["latency_s"],
+            rec = {"id": o["case"]["id"], "error": o["error"], "error_type": o["error_type"], "latency_s": o["latency_s"],
                    "cost_usd": o["cost_usd"], "prediction": o["result"].model_dump() if o["result"] else None}
             f.write(json.dumps(rec, ensure_ascii=False) + "\n")
 

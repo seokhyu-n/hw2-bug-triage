@@ -106,3 +106,29 @@ def test_limit_and_only_hard(env, monkeypatch):
     seen.clear()
     run_eval.main(["--run-id", "Run-L", "--limit", "1"])
     assert seen == ["질문"]
+
+
+def test_unexpected_exception_recorded_and_latency_uses_successes(env, monkeypatch):
+    def fake(text, cfg):
+        if "버그" in text:
+            raise KeyError("oops")
+        return _result("question", CASES[0]["expected"]["extraction"], None, "P4", None), _logs()
+    monkeypatch.setattr(run_eval, "analyze", fake)
+    run_eval.main(["--run-id", "Run-K"])
+    per = _rows(env / "results" / "Run-K.csv")
+    assert per[1]["category_ok"] == "오류" and per[1]["error_type"] == "KeyError"
+    r = _rows(env / "runs.csv")[0]
+    assert float(r["평균 응답시간(s)"]) == pytest.approx(3.0)  # 1 success, not 2 cases
+    assert int(r["오류 건수"]) == 1
+
+
+def test_xlsx_numeric_columns_are_numbers(env, monkeypatch):
+    monkeypatch.setattr(run_eval, "analyze", lambda t, c: (_result(
+        "question", CASES[0]["expected"]["extraction"], None, "P4", None), _logs()))
+    run_eval.main(["--run-id", "Run-N"])
+    ws = openpyxl.load_workbook(env / "runs.xlsx")["runs"]
+    hdr = [c.value for c in ws[1]]
+    row = [c.value for c in ws[2]]
+    d = dict(zip(hdr, row))
+    assert isinstance(d["분류 정확도"], float) and isinstance(d["캐시 적중 토큰"], int)
+    assert isinstance(d["Run ID"], str)
