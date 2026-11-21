@@ -50,7 +50,10 @@ def search_known_issues(keywords: list[str], feature_area: str | None = None,
     scored = []
     for issue in _load("known_issues.json"):
         haystack = (issue["title"] + " " + " ".join(issue["symptoms"])).lower()
-        score = sum(1 for k in kws if k in haystack)
+        hits = sum(1 for k in kws if k in haystack)
+        if kws and hits == 0:
+            continue  # metadata filters only reorder keyword hits
+        score = hits
         if feature_area and issue["feature_area"] == feature_area:
             score += 1
         if want_major is not None and any(_android_major(v) == want_major for v in issue["affected_android"]):
