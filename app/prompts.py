@@ -36,3 +36,8 @@ def build_system(step: str, cfg: PipelineConfig) -> list[dict]:
     blocks = [{"type": "text", "text": t} for t in texts]
     blocks[-1]["cache_control"] = dict(_CACHE)
     return blocks
+
+
+def build_chat_system() -> list[dict]:
+    """Chatbot system: one fixed block with cache_control (tools + system form the cached prefix)."""
+    return [{"type": "text", "text": load("chat"), "cache_control": dict(_CACHE)}]

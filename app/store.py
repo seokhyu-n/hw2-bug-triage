@@ -126,7 +126,7 @@ class Store:
 
     # ---- chat ----
     def append_chat(self, dev_id: str, role: str, content: str) -> None:
-        with (self._dev_dir(dev_id) / "chat.jsonl").open("a", encoding="utf-8", newline="\n") as f:
+        with _LOCK, (self._dev_dir(dev_id) / "chat.jsonl").open("a", encoding="utf-8", newline="\n") as f:
             f.write(_dump({"role": role, "content": content, "at": _now()}))
 
     def get_chat(self, dev_id: str) -> list[dict]:

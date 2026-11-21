@@ -15,16 +15,17 @@ Branch: feat/triage-service
   - fixed Task 2 tool schema: feature_area enum now anyOf (live API 400'd on enum + type list)
 - Task 5: per-developer JSONL store (`app/store.py`), ID login + auto-assignment (`app/auth.py`)
   - Store(base_dir); reports.jsonl rewritten atomically; logs.jsonl one line per step with request_id
-  - sessions in-memory dict; `current_dev` cookie `session` -> 401; `logout` added
+- Task 6: multi-turn chatbot (`app/chat.py`, `prompts/chat.md`, `build_chat_system` in prompts.py)
+  - history = last 6 messages verbatim + code-built `[상태 요약]` prepended to first user msg; stored chat is plain text only
+  - report tools bound to dev_id (others get not_found); tool loop max 5 rounds; append_chat now under _LOCK
+  - live (Haiku): 3-turn scenario ok (list_my_reports, search_known_issues, reanalyze_report P1 -> P2); cache_read 2478/4956/4956
 
 ## Prefix cache (live, Haiku 5.5)
-- cache_read > 0 from the 2nd report on: extract 3364, classify 2152, link 2542 (tools+system),
-  score 3820 tokens. Minimum cacheable prefix on Haiku 5.5 is 512, so no padding needed.
-- Live check of 3 reports: about $0.003 per batch of 3 (crash $0.0014, question $0.0004, vague $0.001).
+- cache_read > 0 from the 2nd report on (extract 3364, classify 2152, link 2542, score 3820 tokens).
 
 ## Next
-- Task 6 per plan `docs/superpowers/plans/2026-11-21-runbuddy-bug-triage.md`
+- Task 7 per plan `docs/superpowers/plans/2026-11-21-runbuddy-bug-triage.md`
 
 ## Notes
 - `.env` holds the real key; never read it.
-- Re-analysis path is unit-tested only (not yet live-checked).
+- Re-analysis path now live-checked via chatbot reanalyze_report.
