@@ -59,7 +59,11 @@ _client: anthropic.Anthropic | None = None
 def get_client() -> anthropic.Anthropic:
     global _client
     if _client is None:
-        _client = anthropic.Anthropic(api_key=get_api_key())
+        try:
+            key = get_api_key()
+        except RuntimeError as e:
+            raise LLMError("API 키가 설정되지 않았습니다 (.env의 CLAUDE_API_KEY)") from e
+        _client = anthropic.Anthropic(api_key=key)
     return _client
 
 
@@ -88,6 +92,8 @@ def call_llm(*, step: str, system: list[dict], messages: list[dict], schema: dic
         if e.status_code >= 500:
             raise LLMUnavailable(f"HTTP {e.status_code}") from e
         raise LLMError(f"API 오류 {e.status_code}: {e.message}") from e
+    except anthropic.APIError as e:
+        raise LLMError(f"API 오류: {type(e).__name__}") from e
     latency = time.perf_counter() - start
 
     if resp.stop_reason == "refusal":

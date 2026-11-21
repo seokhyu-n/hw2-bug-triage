@@ -57,8 +57,11 @@ def _run_case(case: dict, cfg: PipelineConfig) -> dict:
     try:
         result, logs = analyze(case["text"], cfg)
     except Exception as e:  # LLMError or an unexpected bug: never lose the whole (paid) run
+        paid = getattr(e, "partial_logs", [])  # steps that already cost money before the failure
         return {"case": case, "result": None, "error": str(e) or type(e).__name__,
-                "error_type": type(e).__name__, "latency_s": 0.0, "cost_usd": 0.0, "cache_read": 0}
+                "error_type": type(e).__name__, "latency_s": sum(s.latency_s for s in paid),
+                "cost_usd": sum(s.cost_usd for s in paid),
+                "cache_read": sum(s.usage.cache_read or 0 for s in paid)}
     return {"case": case, "result": result, "error": "", "error_type": "",
             "latency_s": sum(s.latency_s for s in logs), "cost_usd": sum(s.cost_usd for s in logs),
             "cache_read": sum(s.usage.cache_read or 0 for s in logs)}
@@ -198,7 +201,7 @@ def run(args: argparse.Namespace) -> dict:
         "완성도 MAE": _fmt(grade.completeness_mae([e["completeness"] for e in exp], [p["completeness"] for p in preds])),
         "우선순위 exact": _fmt(pri["exact"]), "우선순위 ±1": _fmt(pri["within_1"]),
         "링크 정확도": _fmt(grade.link_accuracy([e["linked_issue_id"] for e in exp], [p["link"] for p in preds])),
-        "평균 응답시간(s)": _fmt(round(sum(o["latency_s"] for o in outs) / ok_n, 3)),
+        "평균 응답시간(s)": _fmt(round(sum(o["latency_s"] for o in outs if not o["error"]) / ok_n, 3)),
         "총비용(USD)": f"{sum(o['cost_usd'] for o in outs):.6f}",
         "캐시 적중 토큰": sum(o["cache_read"] for o in outs), "변경사항": args.change,
     }

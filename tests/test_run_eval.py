@@ -132,3 +132,30 @@ def test_xlsx_numeric_columns_are_numbers(env, monkeypatch):
     d = dict(zip(hdr, row))
     assert isinstance(d["분류 정확도"], float) and isinstance(d["캐시 적중 토큰"], int)
     assert isinstance(d["Run ID"], str)
+
+
+def test_failed_case_keeps_cost_of_paid_steps(env, monkeypatch):
+    def fake(text, cfg):
+        if "버그" in text:
+            err = LLMError("late failure")
+            err.partial_logs = _logs()[:1]  # one paid step before the failure
+            raise err
+        return _result("question", CASES[0]["expected"]["extraction"], None, "P4", None), _logs()
+    monkeypatch.setattr(run_eval, "analyze", fake)
+    run_eval.main(["--run-id", "Run-P"])
+    per = _rows(env / "results" / "Run-P.csv")
+    assert float(per[1]["cost_usd"]) == pytest.approx(0.01) and per[1]["category_ok"] == "오류"
+    r = _rows(env / "runs.csv")[0]
+    assert float(r["총비용(USD)"]) == pytest.approx(0.04)  # 0.03 success + 0.01 failed
+    assert float(r["평균 응답시간(s)"]) == pytest.approx(3.0)  # error latency excluded
+
+
+def test_analyze_attaches_partial_logs_on_failure(fake_llm):
+    import pytest
+
+    from app.pipeline import analyze
+    from tests.test_pipeline import extraction, jr
+    fake_llm.queue(jr(extraction()), LLMError("classify down"))
+    with pytest.raises(LLMError) as ei:
+        analyze("제보")
+    assert [s.step for s in ei.value.partial_logs] == ["extract"]

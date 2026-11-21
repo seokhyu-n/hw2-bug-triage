@@ -45,7 +45,7 @@ python -m pip install -r requirements.txt     # 재현용 고정 버전은 requi
    (담당 영역: dev1 = tracking·voice·login, dev2 = map·record·card_image, dev3 = ai_chat·other, 배정 불가 시 기본)
 3. 화면 사용법
    - 제보 입력란에 제보 원문을 붙여 넣고 분석하면 분류, 추출 필드, 이슈 연결, 우선순위(P1~P4), 완성도(0~2), 제보자에게 물어볼 질문이 나옵니다. 제보는 `feature_area`에 맞는 개발자의 목록에 들어갑니다.
-   - 목록은 우선순위·분류로 거를 수 있고, 제보자에게 받은 새 정보를 입력해 재분석할 수 있습니다.
+   - 화면 목록은 우선순위순으로 보이며, 제보자에게 받은 새 정보를 입력해 재분석할 수 있습니다. 우선순위·분류 필터는 `GET /api/reports?priority=&category=`와 챗봇(`list_my_reports`)에서 쓸 수 있습니다.
    - 챗봇에는 "내 P1 제보 보여줘", "R-0003 재분석해줘, 앱 버전은 1.0이래"처럼 말하면 됩니다.
 4. 테스트 (LLM은 가짜 클라이언트로 대체, 실제 호출 없음)
    ```powershell

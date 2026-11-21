@@ -147,6 +147,15 @@ def _is_missing(extraction: Extraction, field: str) -> bool:
 def analyze(report_text: str, cfg: PipelineConfig = PipelineConfig(), prior: TriageResult | None = None,
             added_info: str | None = None) -> tuple[TriageResult, list[StepLog]]:
     logs: list[StepLog] = []
+    try:
+        return _analyze(report_text, cfg, prior, added_info, logs)
+    except Exception as e:
+        e.partial_logs = logs  # paid steps done before the failure (the eval runner still counts their cost)
+        raise
+
+
+def _analyze(report_text: str, cfg: PipelineConfig, prior: TriageResult | None, added_info: str | None,
+             logs: list[StepLog]) -> tuple[TriageResult, list[StepLog]]:
     source = _source_block(report_text, prior, added_info)
     full = not cfg.context_select  # Baseline: every step gets the source + every previous result
 

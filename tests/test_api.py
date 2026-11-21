@@ -117,3 +117,17 @@ def test_static_pages(client):
     assert "로그인" in client.get("/").text
     assert client.get("/app").status_code == 200
     assert client.get("/static/app.js").status_code == 200
+
+
+def test_missing_api_key_returns_502_with_korean_detail(client, monkeypatch):
+    from app import llm
+    from app.pipeline import analyze
+
+    def no_key():
+        raise RuntimeError("CLAUDE_API_KEY가 .env에 없습니다")
+    monkeypatch.setattr(main, "analyze", analyze)  # undo the fixture stub: go through the real call_llm
+    monkeypatch.setattr(llm, "_client", None)
+    monkeypatch.setattr(llm, "get_api_key", no_key)
+    r = client.post("/api/reports", json={"text": "제보"})
+    assert r.status_code == 502
+    assert any("가" <= ch <= "힣" for ch in r.json()["detail"])

@@ -116,3 +116,26 @@ def test_connection_error_unavailable(fake_llm):
     fake_llm.queue(anthropic.APIConnectionError(request=req))
     with pytest.raises(LLMUnavailable):
         call_llm(step="t", system=SYS, messages=MSG)
+
+
+def test_missing_api_key_becomes_llm_error(monkeypatch):
+    import pytest
+
+    from app import llm
+
+    def no_key():
+        raise RuntimeError("missing")
+    monkeypatch.setattr(llm, "_client", None)
+    monkeypatch.setattr(llm, "get_api_key", no_key)
+    with pytest.raises(llm.LLMError, match="API 키가 설정되지 않았습니다"):
+        llm.call_llm(step="x", system=[], messages=[])
+
+
+def test_other_sdk_errors_become_llm_error(fake_llm):
+    import httpx
+    import pytest
+
+    from app import llm
+    fake_llm.queue(anthropic.APIError("weird", httpx.Request("POST", "http://x"), body=None))
+    with pytest.raises(llm.LLMError, match="API 오류"):
+        llm.call_llm(step="x", system=[], messages=[])

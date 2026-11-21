@@ -15,6 +15,7 @@ from app.tools import ISSUE_TOOL_DEFS, run_tool
 
 KEEP_TURNS = 6          # turns (user+assistant pair = 1 turn) sent verbatim; older ones are dropped
 MAX_TOOL_ROUNDS = 5
+MIN_ADDED_INFO_LEN = 4  # reanalyze needs real new information, not a stray character
 _ID_RE = re.compile(r"R-\d{4}")
 _NULLABLE_PRIORITY = {"anyOf": [{"type": "string", "enum": ["P1", "P2", "P3", "P4"]}, {"type": "null"}],
                       "description": "우선순위 필터. 조건 없으면 null"}
@@ -121,7 +122,7 @@ _REPORT_TOOLS = {"list_my_reports": _list_my_reports, "get_report": _get_report,
 
 
 def run_chat_tool(dev_id: str, store: Store, name: str, tool_input: dict,
-                  current_message: str = "") -> tuple[str, bool]:
+                  current_message: str = "", history: list[dict] | None = None) -> tuple[str, bool]:
     """Report tools are bound to dev_id (the model cannot choose it); issue tools pass through."""
     fn = _REPORT_TOOLS.get(name)
     if fn is None:
@@ -131,6 +132,11 @@ def run_chat_tool(dev_id: str, store: Store, name: str, tool_input: dict,
         added = " ".join(str(tool_input.get("added_info", "")).split())
         if not added or added not in " ".join(current_message.split()):
             return _j({"error": "개발자가 이번 메시지에서 직접 말한 정보만 재분석에 쓸 수 있습니다"}), True
+        if len(added) < MIN_ADDED_INFO_LEN:
+            return _j({"error": f"추가 정보가 너무 짧습니다({MIN_ADDED_INFO_LEN}자 이상 필요)"}), True
+        rid = str(tool_input.get("request_id", ""))
+        if rid not in current_message and rid not in _recent_ids(dev_id, store, history or []):
+            return _j({"error": "개발자가 언급한 제보 ID만 재분석할 수 있습니다"}), True
     try:
         return _j(fn(dev_id, store, **tool_input)), False
     except Exception as e:  # noqa: BLE001 - report any failure to the model as a tool error
@@ -139,19 +145,25 @@ def run_chat_tool(dev_id: str, store: Store, name: str, tool_input: dict,
 
 # ---------- short-term memory ----------
 
-def summarize_state(dev_id: str, store: Store, history: list[dict]) -> str:
-    """Code-built summary (no LLM): developer, recently mentioned own report IDs, P1/P2 counts, open questions."""
+def _recent_ids(dev_id: str, store: Store, history: list[dict], limit: int = 3) -> list[str]:
+    """Own report IDs mentioned most recently in the history (newest first)."""
     recent: list[str] = []
     for msg in reversed(history):
         for rid in reversed(_ID_RE.findall(msg["content"])):
             if rid not in recent and store.get_report(dev_id, rid) is not None:
                 recent.append(rid)
+    return recent[:limit]
+
+
+def summarize_state(dev_id: str, store: Store, history: list[dict]) -> str:
+    """Code-built summary (no LLM): developer, recently mentioned own report IDs, P1/P2 counts, open questions."""
+    recent = _recent_ids(dev_id, store, history)
     rows = store.list_reports(dev_id)
     counts = {p: sum(r["result"]["score"]["priority"] == p for r in rows) for p in ("P1", "P2")}
     need_info = [r["request_id"] for r in rows if r["result"]["answer_status"] == "need_info"]
     return "\n".join([
         f"- 개발자 ID: {dev_id}",
-        f"- 최근 언급한 제보: {', '.join(recent[:3]) or '없음'}",
+        f"- 최근 언급한 제보: {', '.join(recent) or '없음'}",
         f"- 내 제보: P1 {counts['P1']}건, P2 {counts['P2']}건 (전체 {len(rows)}건)",
         f"- 제보자 답변 대기(need_info): {', '.join(need_info) or '없음'}",
     ])
@@ -188,8 +200,20 @@ def chat_turn(dev_id: str, message: str, store: Store, model: str = MODEL_DEFAUL
     tool_calls: list[str] = []
     cost = latency = 0.0
     cache_read = 0
+    changed: list[str] = []  # state-changing tools that succeeded this turn
     for round_no in range(MAX_TOOL_ROUNDS + 1):
-        res = call_llm(step="chat", system=system, messages=messages, tools=CHAT_TOOL_DEFS, model=model)
+        try:
+            res = call_llm(step="chat", system=system, messages=messages, tools=CHAT_TOOL_DEFS, model=model)
+        except LLMError:
+            if not changed:
+                raise
+            # a report was already changed: do not hide that behind an error
+            text = (f"재분석은 반영됐지만 답변 생성에 실패했습니다. 제보 상세를 새로 고쳐 확인해 주세요. "
+                    f"(사용한 도구: {', '.join(tool_calls)})")
+            store.append_chat(dev_id, "user", message)
+            store.append_chat(dev_id, "assistant", text)
+            return ChatReply(text=text, tool_calls=tool_calls, cost_usd=cost, latency_s=latency,
+                             cache_read=cache_read)
         cost += res.cost_usd
         latency += res.latency_s
         cache_read += res.usage.cache_read
@@ -205,7 +229,9 @@ def chat_turn(dev_id: str, message: str, store: Store, model: str = MODEL_DEFAUL
             if getattr(block, "type", None) != "tool_use":
                 continue
             tool_calls.append(block.name)
-            json_str, is_error = run_chat_tool(dev_id, store, block.name, block.input, message)
+            json_str, is_error = run_chat_tool(dev_id, store, block.name, block.input, message, history)
+            if block.name == "reanalyze_report" and not is_error:
+                changed.append(block.name)
             results.append({"type": "tool_result", "tool_use_id": block.id,
                             "content": json_str, "is_error": is_error})
         messages.append({"role": "user", "content": results})  # all results in ONE message

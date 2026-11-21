@@ -51,8 +51,8 @@ def test_chat_tool_cannot_read_other_dev_report(tmp_path):
     assert json.loads(out)["status"] == "not_found"
     out, _ = chat.run_chat_tool("dev2", store, "list_my_reports", {"priority": None, "category": None})
     assert json.loads(out)["reports"] == []
-    out, _ = chat.run_chat_tool("dev2", store, "reanalyze_report", {"request_id": rid, "added_info": "x"},
-                              current_message="x 입니다")
+    out, _ = chat.run_chat_tool("dev2", store, "reanalyze_report", {"request_id": rid, "added_info": "앱 버전 1.0"},
+                              current_message=f"{rid} 앱 버전 1.0 입니다")
     assert json.loads(out)["status"] == "not_found"
     out, _ = chat.run_chat_tool("dev1", store, "get_report", {"request_id": rid})
     assert json.loads(out)["request_id"] == rid
@@ -82,7 +82,7 @@ def test_chat_turn_runs_reanalyze_tool(fake_llm, tmp_path):
         jr(link()), jr(score(priority="P2")),
         make_response("재분석했습니다. 우선순위는 P2입니다."),
     )
-    reply = chat.chat_turn("dev1", "앱 버전은  1.0이래", store)
+    reply = chat.chat_turn("dev1", f"{rid} 앱 버전은  1.0이래", store)
     assert reply.text.startswith("재분석")
     assert reply.tool_calls == ["reanalyze_report"]
     rec = store.get_report("dev1", rid)
@@ -142,4 +142,61 @@ def test_chat_turn_rejects_unexpected_stop_reason(fake_llm, tmp_path):
     fake_llm.queue(make_response("중간", stop_reason="pause_turn"))
     with pytest.raises(LLMError):
         chat.chat_turn("dev1", "안녕", store)
+    assert store.get_chat("dev1") == []
+
+
+def test_reanalyze_rejects_too_short_added_info(tmp_path):
+    store = Store(tmp_path)
+    rid = store.create_report("dev1", "앱이 꺼져요", make_result("P3"), [])
+    out, is_err = chat.run_chat_tool("dev1", store, "reanalyze_report",
+                                     {"request_id": rid, "added_info": "네 "}, current_message=f"{rid} 네 ")
+    assert is_err and "짧" in json.loads(out)["error"]
+    rec = store.get_report("dev1", rid)
+    assert rec["added_info"] == [] and rec["result"]["score"]["priority"] == "P3"
+
+
+def test_reanalyze_rejects_id_not_mentioned(tmp_path):
+    store = Store(tmp_path)
+    rid = store.create_report("dev1", "앱이 꺼져요", make_result("P3"), [])
+    out, is_err = chat.run_chat_tool("dev1", store, "reanalyze_report",
+                                     {"request_id": rid, "added_info": "앱 버전은 1.0"},
+                                     current_message="앱 버전은 1.0 이래")
+    assert is_err and "ID" in json.loads(out)["error"]
+    assert store.get_report("dev1", rid)["added_info"] == []
+    # an ID mentioned earlier in the conversation (state summary) is accepted
+    history = [{"role": "user", "content": f"{rid} 보여줘"}, {"role": "assistant", "content": "네"}]
+    assert chat._recent_ids("dev1", store, history) == [rid]
+
+
+def _reanalyze_then_llm_fails(fake_llm, store, rid, message):
+    from app.llm import LLMUnavailable
+    fake_llm.queue(
+        tool_use("reanalyze_report", {"request_id": rid, "added_info": "앱 버전은 1.0이래"}),
+        jr(extraction(app_version="1.0", missing_fields=[])), jr(classification()),
+        jr(link()), jr(score(priority="P2")),
+        LLMUnavailable("down"),
+    )
+    return chat.chat_turn("dev1", message, store)
+
+
+def test_chat_turn_fallback_when_llm_fails_after_reanalyze(fake_llm, tmp_path):
+    store = Store(tmp_path)
+    rid = store.create_report("dev1", "앱이 꺼져요", make_result("P3"), [])
+    reply = _reanalyze_then_llm_fails(fake_llm, store, rid, f"{rid} 앱 버전은 1.0이래")
+    assert reply.text.startswith("재분석은 반영됐지만 답변 생성에 실패했습니다")
+    assert "reanalyze_report" in reply.text and reply.tool_calls == ["reanalyze_report"]
+    assert store.get_report("dev1", rid)["result"]["score"]["priority"] == "P2"
+    assert [m["role"] for m in store.get_chat("dev1")] == ["user", "assistant"]
+    assert store.get_chat("dev1")[1]["content"] == reply.text
+
+
+def test_chat_turn_still_raises_when_no_state_changed(fake_llm, tmp_path):
+    import pytest
+
+    from app.llm import LLMUnavailable
+    store = Store(tmp_path)
+    rid = store.create_report("dev1", "a", make_result(), [])
+    fake_llm.queue(tool_use("get_report", {"request_id": rid}), LLMUnavailable("down"))
+    with pytest.raises(LLMUnavailable):
+        chat.chat_turn("dev1", f"{rid} 보여줘", store)
     assert store.get_chat("dev1") == []

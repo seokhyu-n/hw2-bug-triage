@@ -1,6 +1,12 @@
 # HISTORY
 
 Newest entry on top.
+## 2026-11-22 Final whole-branch review fixes
+- `app/llm.py`: missing key -> `LLMError` (Korean message), trailing `anthropic.APIError` clause (502 instead of bare 500).
+- `app/chat.py`: fallback ChatReply when `call_llm` fails after a successful reanalyze; reanalyze guard also needs added_info >= 4 chars and a request_id from the current message or recent IDs (`_recent_ids`, shared with `summarize_state`).
+- `app/pipeline.py` `analyze` attaches `partial_logs` to raised exceptions; `eval/run_eval.py` counts their cost/cache for failed cases (latency still excluded from the mean).
+- `static/app.js`: chat reanalyze refreshes the selected report detail. README filter wording and evaluation.html 누락률 (0.005) corrected. 146 tests pass.
+
 ## 2026-11-22 Task 11: README and analysis artifacts
 - `README.md` (Korean): service intro, architecture, Windows run steps, p.68 technique -> file:function table, Run-01..07 table + Haiku-vs-Sonnet reasoning, prefix cache numbers, security, known limits; artifact links left as placeholders.
 - `docs/artifacts/` chaining / function_calling / service_workflow / evaluation HTML (self-contained, light/dark, phone-safe; metrics generated from `eval/runs.csv`, 25 hard cases from `eval/hard_cases.md`).

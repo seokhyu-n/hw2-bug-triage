@@ -143,6 +143,9 @@ async function sendChat() {
     const r = await api("/api/chat", "POST", {message: msg});
     addMsg("assistant", r.text, r.tool_calls);
     loadList();
+    if (selectedId && r.tool_calls.includes("reanalyze_report")) {
+      try { showDetail(await api("/api/reports/" + selectedId)); } catch (e2) { /* list reload still shows the change */ }
+    }
   } catch (e) { err.textContent = e.message; }
   $("chat-btn").disabled = false;
 }

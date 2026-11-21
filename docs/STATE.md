@@ -20,6 +20,8 @@ Branch: feat/triage-service
 
 - Task 11: `README.md` (technique map, Run table, cache, security, limits), `docs/artifacts/*.html` x4 (chaining, function_calling, service_workflow, evaluation), `requirements.lock.txt`; 137 tests pass, server boot checked
 
+- Final-review fixes: missing key/SDK errors -> LLMError (502), chat fallback after reanalyze + stricter reanalyze guard, partial eval cost on failed cases, UI refresh after chat reanalyze, README/evaluation.html corrections; 146 tests pass
+
 ## Next
 - Controller: publish the 4 artifacts, fill the placeholder links in README "분석 아티팩트"
 - Next improvement candidates: rubric core-feature scope (P3->P2 over-rating), link rule app_version >= fixed_in -> no link
