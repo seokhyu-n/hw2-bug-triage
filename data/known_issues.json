@@ -1,0 +1,134 @@
+[
+  {
+    "id": "ISSUE-01",
+    "title": "Android 7.x에서 러닝 시작 시 알림 채널 생성으로 앱 크래시",
+    "feature_area": "tracking",
+    "symptoms": ["Android 7.0/7.1 기기에서 러닝 시작 버튼을 누르면 앱이 강제 종료됨", "러닝 서비스 시작 직후 크래시 발생", "알림 채널(NotificationChannel) 관련 오류 로그"],
+    "affected_android": ["7.0", "7.1"],
+    "affected_app_versions": ["1.0", "1.0.1"],
+    "status": "fixed",
+    "fixed_in": "1.1.0",
+    "workaround": "Android 8.0 이상 기기로 업데이트하거나 1.1.0 이상으로 앱을 업데이트하세요."
+  },
+  {
+    "id": "ISSUE-02",
+    "title": "Android 14에서 러닝 시작 시 포그라운드 서비스 위치 타입 누락 크래시",
+    "feature_area": "tracking",
+    "symptoms": ["Android 14 기기에서 러닝 시작 시 앱이 바로 종료됨", "러닝 시작 시 크래시, 포그라운드 서비스 타입 관련 예외 발생", "위치 권한은 허용했는데도 서비스가 시작되지 않음"],
+    "affected_android": ["14"],
+    "affected_app_versions": ["1.0", "1.0.1", "1.1.0", "1.1.1"],
+    "status": "fixed",
+    "fixed_in": "1.2.0",
+    "workaround": "1.2.0 이상으로 업데이트하세요. 업데이트 전에는 Android 13 이하 기기를 사용해야 합니다."
+  },
+  {
+    "id": "ISSUE-03",
+    "title": "100ms 간격 위치 요청으로 러닝 중 배터리 과다 소모",
+    "feature_area": "tracking",
+    "symptoms": ["러닝 30분 동안 배터리가 20% 이상 감소함", "러닝 중 기기가 뜨거워짐", "백그라운드 위치 추적 중 배터리 소모가 큼"],
+    "affected_android": ["7.0", "7.1", "8", "9", "10", "11", "12", "13", "14"],
+    "affected_app_versions": ["1.0", "1.0.1", "1.1.0", "1.1.1", "1.2.0"],
+    "status": "open",
+    "fixed_in": null,
+    "workaround": "러닝 중 화면 밝기를 낮추고 절전 모드를 사용하세요. 짧은 러닝 위주로 사용을 권장합니다."
+  },
+  {
+    "id": "ISSUE-04",
+    "title": "30m 초과 이동 무시 로직으로 총 거리가 실제보다 짧게 측정",
+    "feature_area": "tracking",
+    "symptoms": ["총 거리가 실제보다 짧게 표시됨", "터널이나 GPS 끊김 이후 거리가 누락됨", "빠르게 달리면 거리가 적게 나옴"],
+    "affected_android": ["7.0", "7.1", "8", "9", "10", "11", "12", "13", "14"],
+    "affected_app_versions": ["1.0", "1.0.1", "1.1.0", "1.1.1", "1.2.0"],
+    "status": "open",
+    "fixed_in": null,
+    "workaround": "GPS 신호가 좋은 열린 공간에서 러닝하고, 러닝 중 앱을 백그라운드로 보내지 마세요."
+  },
+  {
+    "id": "ISSUE-05",
+    "title": "체중 70kg 고정값으로 칼로리 계산이 부정확",
+    "feature_area": "tracking",
+    "symptoms": ["칼로리가 실제 체중과 무관하게 계산됨", "체중이 다른 사용자도 같은 칼로리가 표시됨", "체중 설정 화면이 없음"],
+    "affected_android": ["7.0", "7.1", "8", "9", "10", "11", "12", "13", "14"],
+    "affected_app_versions": ["1.0", "1.0.1", "1.1.0", "1.1.1", "1.2.0"],
+    "status": "open",
+    "fixed_in": null,
+    "workaround": "표시된 칼로리를 (본인 체중 / 70) 비율로 직접 보정해서 참고하세요."
+  },
+  {
+    "id": "ISSUE-06",
+    "title": "지도 경로 안내가 도보가 아닌 대중교통 모드로 요청되어 경로가 이상하게 표시",
+    "feature_area": "map",
+    "symptoms": ["추천 코스 경로가 대중교통 경로처럼 표시됨", "지도에 경로가 직선으로만 그려짐", "경로 요청 실패 시 직선 폴리라인으로 대체됨"],
+    "affected_android": ["7.0", "7.1", "8", "9", "10", "11", "12", "13", "14"],
+    "affected_app_versions": ["1.0", "1.0.1", "1.1.0"],
+    "status": "fixed",
+    "fixed_in": "1.1.1",
+    "workaround": "1.1.1 이상으로 업데이트하세요. 그 전에는 지도의 코스 표시를 참고용으로만 사용하세요."
+  },
+  {
+    "id": "ISSUE-07",
+    "title": "러닝 기록이 많아지면 기록 목록 로딩이 느려짐",
+    "feature_area": "record",
+    "symptoms": ["기록 화면 진입 시 몇 초간 멈춤", "기록이 많을수록 목록 스크롤이 버벅거림", "경로 썸네일 생성 때문에 목록 표시가 지연됨"],
+    "affected_android": ["7.0", "7.1", "8", "9", "10"],
+    "affected_app_versions": ["1.0", "1.0.1"],
+    "status": "fixed",
+    "fixed_in": "1.1.0",
+    "workaround": "1.1.0 이상으로 업데이트하거나, 주/월 필터로 조회 범위를 줄여 보세요."
+  },
+  {
+    "id": "ISSUE-08",
+    "title": "고해상도 사진으로 러닝 카드 생성 시 메모리 부족으로 앱 종료",
+    "feature_area": "card_image",
+    "symptoms": ["갤러리에서 큰 사진을 선택하면 앱이 종료됨", "러닝 카드 이미지 생성 중 크래시 발생", "OutOfMemoryError 로그"],
+    "affected_android": ["7.0", "7.1", "8", "9"],
+    "affected_app_versions": ["1.0"],
+    "status": "fixed",
+    "fixed_in": "1.0.1",
+    "workaround": "1.0.1 이상으로 업데이트하거나, 해상도가 낮은 사진을 선택하세요."
+  },
+  {
+    "id": "ISSUE-09",
+    "title": "Android 9 이하에서 러닝 카드 이미지를 갤러리에 저장하지 못함",
+    "feature_area": "card_image",
+    "symptoms": ["저장 버튼을 눌러도 갤러리에 이미지가 보이지 않음", "러닝 카드 저장이 실패함", "Android 9 이하 기기에서만 발생"],
+    "affected_android": ["7.0", "7.1", "8", "9"],
+    "affected_app_versions": ["1.0", "1.0.1", "1.1.0", "1.1.1", "1.2.0"],
+    "status": "open",
+    "fixed_in": null,
+    "workaround": "카드 미리보기 화면을 스크린샷으로 저장하세요."
+  },
+  {
+    "id": "ISSUE-10",
+    "title": "기기에 한국어 TTS 음성이 없으면 러닝 시작/종료 음성 안내가 나오지 않음",
+    "feature_area": "voice",
+    "symptoms": ["러닝 시작 음성 안내가 들리지 않음", "음성 안내가 무음이거나 소리가 나지 않음", "TTS 한국어 데이터가 없는 기기에서 발생"],
+    "affected_android": ["7.0", "7.1", "8", "9", "10", "11", "12", "13", "14"],
+    "affected_app_versions": ["1.0", "1.0.1", "1.1.0"],
+    "status": "fixed",
+    "fixed_in": "1.1.1",
+    "workaround": "기기 설정에서 TTS 엔진과 한국어 음성 데이터를 설치하고 미디어 볼륨을 확인하세요."
+  },
+  {
+    "id": "ISSUE-11",
+    "title": "공백이 포함된 비밀번호로 가입 후 로그인이 되지 않음",
+    "feature_area": "login",
+    "symptoms": ["가입은 되었는데 같은 비밀번호로 로그인이 안 됨", "로그인 실패, 비밀번호가 틀렸다고 표시됨", "비밀번호 앞뒤에 공백이 있는 경우에만 발생"],
+    "affected_android": ["7.0", "7.1", "8", "9", "10", "11", "12", "13", "14"],
+    "affected_app_versions": ["1.0"],
+    "status": "fixed",
+    "fixed_in": "1.0.1",
+    "workaround": "1.0.1 이상으로 업데이트하거나, 비밀번호에서 앞뒤 공백을 제거하고 재설정하세요."
+  },
+  {
+    "id": "ISSUE-12",
+    "title": "AI 코치 채팅 서버 콜드 스타트로 첫 응답이 지연되거나 실패",
+    "feature_area": "ai_chat",
+    "symptoms": ["AI 채팅 첫 메시지에 응답이 오지 않음", "서버 오류 메시지가 표시됨", "한참 기다린 뒤 타임아웃으로 실패함"],
+    "affected_android": ["7.0", "7.1", "8", "9", "10", "11", "12", "13", "14"],
+    "affected_app_versions": ["1.0", "1.0.1", "1.1.0", "1.1.1"],
+    "status": "fixed",
+    "fixed_in": "1.2.0",
+    "workaround": "1분 정도 기다린 뒤 같은 메시지를 다시 보내 보세요."
+  }
+]

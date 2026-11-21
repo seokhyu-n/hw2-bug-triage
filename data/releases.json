@@ -1,0 +1,7 @@
+[
+  {"version": "1.0", "date": "2025-03-10", "fixed_issues": []},
+  {"version": "1.0.1", "date": "2025-04-02", "fixed_issues": ["ISSUE-08", "ISSUE-11"]},
+  {"version": "1.1.0", "date": "2025-05-20", "fixed_issues": ["ISSUE-01", "ISSUE-07"]},
+  {"version": "1.1.1", "date": "2025-06-18", "fixed_issues": ["ISSUE-06", "ISSUE-10"]},
+  {"version": "1.2.0", "date": "2025-08-05", "fixed_issues": ["ISSUE-02", "ISSUE-12"]}
+]
