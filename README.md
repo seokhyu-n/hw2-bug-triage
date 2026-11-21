@@ -135,7 +135,7 @@ python -m pip install -r requirements.txt     # 재현용 고정 버전은 requi
 
 원본 HTML은 `docs/artifacts/`에 있다.
 
-- Chaining 구조와 단계별 프롬프트: (링크는 게시 후 추가)
-- Function calling 흐름: (링크는 게시 후 추가)
-- 서비스 워크플로우·컨텍스트 엔지니어링: (링크는 게시 후 추가)
-- 평가 결과·어려운 사례·틀린 사례 분석: (링크는 게시 후 추가)
+- Chaining 구조와 단계별 프롬프트: https://claude.ai/artifact/FD7MMatKFfYrfAEmpN4eza (원본 `docs/artifacts/chaining.html`)
+- Function calling 흐름: https://claude.ai/artifact/48mm2Bs8T1FqPeccnyEz7j (원본 `docs/artifacts/function_calling.html`)
+- 서비스 워크플로우·컨텍스트 엔지니어링: https://claude.ai/artifact/NhZ2Ag4B3WoGGaHh6ZTLdr (원본 `docs/artifacts/service_workflow.html`)
+- 평가 결과·어려운 사례·틀린 사례 분석: https://claude.ai/artifact/GCwmRSoUvuuqGDdAhnyeP2 (원본 `docs/artifacts/evaluation.html`)
