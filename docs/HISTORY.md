@@ -1,6 +1,11 @@
 # HISTORY
 
 Newest entry on top.
+## 2026-11-22 Task 11: README and analysis artifacts
+- `README.md` (Korean): service intro, architecture, Windows run steps, p.68 technique -> file:function table, Run-01..07 table + Haiku-vs-Sonnet reasoning, prefix cache numbers, security, known limits; artifact links left as placeholders.
+- `docs/artifacts/` chaining / function_calling / service_workflow / evaluation HTML (self-contained, light/dark, phone-safe; metrics generated from `eval/runs.csv`, 25 hard cases from `eval/hard_cases.md`).
+- `requirements.lock.txt` from pip freeze. 137 tests pass; server booted and stopped.
+
 ## 2026-11-22 Task 10: baseline and one-variable experiments
 - Runs (Haiku unless noted, 100 cases, 0 errors): Run-01 baseline / Run-02 +few-shot / Run-03 +rubric / Run-04 +context select (default) / Run-05 Sonnet / Run-06 extract feature_area for non-bugs / Run-07 rubric P1 rule. Total spend ~$2.11 (Sonnet $1.57).
 - Ablation: rubric had the biggest effect on scoring (completeness MAE 0.34 -> 0.18), context select cut MAE to 0.11 at lower cost; few-shot helped priority but caused 2 bug over-classifications (E-021, E-052).

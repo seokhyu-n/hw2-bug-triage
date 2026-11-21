@@ -18,8 +18,10 @@ Branch: feat/triage-service
 ## Prefix cache (live, Haiku 5.5)
 - cache_read > 0 from the 2nd report on (extract 3364, classify 2152, link 2542, score 3820 tokens).
 
+- Task 11: `README.md` (technique map, Run table, cache, security, limits), `docs/artifacts/*.html` x4 (chaining, function_calling, service_workflow, evaluation), `requirements.lock.txt`; 137 tests pass, server boot checked
+
 ## Next
-- Task 11: HTML artifacts from `docs/analysis/*.md` (plan `docs/superpowers/plans/2026-11-21-runbuddy-bug-triage.md`)
+- Controller: publish the 4 artifacts, fill the placeholder links in README "분석 아티팩트"
 - Next improvement candidates: rubric core-feature scope (P3->P2 over-rating), link rule app_version >= fixed_in -> no link
 - User: open http://127.0.0.1:8000 to check the UI (`venv\Scripts\python.exe -m uvicorn app.main:app --port 8000`)
 
