@@ -3,12 +3,16 @@ import dataclasses
 import json
 import os
 import re
+import threading
 from datetime import datetime
 from pathlib import Path
 
 from app.config import RUNTIME_DIR
 from app.pipeline import StepLog
 from app.schemas import TriageResult
+
+# One process-wide re-entrant lock: FastAPI runs sync endpoints in a thread pool.
+_LOCK = threading.RLock()
 
 
 def _now() -> str:
@@ -74,16 +78,17 @@ class Store:
     # ---- reports ----
     def create_report(self, dev_id: str, text: str, result: TriageResult,
                       logs: list[StepLog]) -> str:
-        request_id = self._next_id()
-        now = _now()
-        reports = self._load(dev_id)
-        reports.append({
-            "request_id": request_id, "dev_id": dev_id, "text": text,
-            "result": result.model_dump(mode="json"), "added_info": [],
-            "created_at": now, "updated_at": now,
-        })
-        self._save(dev_id, reports)
-        self._log(request_id, dev_id, logs)
+        with _LOCK:
+            request_id = self._next_id()
+            now = _now()
+            reports = self._load(dev_id)
+            reports.append({
+                "request_id": request_id, "dev_id": dev_id, "text": text,
+                "result": result.model_dump(mode="json"), "added_info": [],
+                "created_at": now, "updated_at": now,
+            })
+            self._save(dev_id, reports)
+            self._log(request_id, dev_id, logs)
         return request_id
 
     def get_report(self, dev_id: str, request_id: str) -> dict | None:
@@ -106,17 +111,18 @@ class Store:
 
     def update_report(self, dev_id: str, request_id: str, result: TriageResult,
                       logs: list[StepLog], added_info: str) -> None:
-        reports = self._load(dev_id)
-        for r in reports:
-            if r["request_id"] == request_id:
-                r["result"] = result.model_dump(mode="json")
-                r["added_info"].append(added_info)
-                r["updated_at"] = _now()
-                break
-        else:
-            raise KeyError(request_id)
-        self._save(dev_id, reports)
-        self._log(request_id, dev_id, logs)
+        with _LOCK:
+            reports = self._load(dev_id)
+            for r in reports:
+                if r["request_id"] == request_id:
+                    r["result"] = result.model_dump(mode="json")
+                    r["added_info"].append(added_info)
+                    r["updated_at"] = _now()
+                    break
+            else:
+                raise KeyError(request_id)
+            self._save(dev_id, reports)
+            self._log(request_id, dev_id, logs)
 
     # ---- chat ----
     def append_chat(self, dev_id: str, role: str, content: str) -> None:

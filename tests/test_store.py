@@ -83,3 +83,19 @@ def test_chat_roundtrip_per_dev(tmp_path):
     store.append_chat("dev2", "user", "other")
     chat = store.get_chat("dev1")
     assert [(m["role"], m["content"]) for m in chat] == [("user", "안녕"), ("assistant", "네")]
+
+
+def test_concurrent_creates_unique_ids_and_all_persisted(tmp_path):
+    from concurrent.futures import ThreadPoolExecutor
+    store = Store(tmp_path)
+
+    def work(i):
+        return store.create_report(f"dev{i % 2 + 1}", f"t{i}", make_result(), [make_log()])
+
+    with ThreadPoolExecutor(max_workers=8) as ex:
+        ids = list(ex.map(work, range(20)))
+    assert len(set(ids)) == 20
+    stored = [r["request_id"] for d in ("dev1", "dev2") for r in store.list_reports(d)]
+    assert sorted(stored) == sorted(ids)
+    log_lines = (tmp_path / "logs.jsonl").read_text(encoding="utf-8").splitlines()
+    assert len(log_lines) == 20
