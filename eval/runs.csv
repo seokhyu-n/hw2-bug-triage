@@ -1,0 +1,2 @@
+﻿날짜,Run ID,모델,설정,데이터 건수,오류 건수,분류 정확도,분류 macro-F1,labels 정확도,추출 평균 정확도,추출 환각률,추출 누락률,symptom 유무 일치,expected 유무 일치,actual 유무 일치,repro_steps 유무 일치,완성도 MAE,우선순위 exact,우선순위 ±1,링크 정확도,평균 응답시간(s),총비용(USD),캐시 적중 토큰,변경사항
+2026-11-21 23:54,Run-00-smoke,claude-haiku-5-5,few_shot=on rubric=on context_select=on effort=low,3,0,1.0000,0.6667,1.0000,0.8667,0.0000,0.2857,1.0000,0.6667,1.0000,1.0000,0.0000,1.0000,1.0000,1.0000,9.5650,0.005271,8904,"smoke test (limit 3, Haiku)"
