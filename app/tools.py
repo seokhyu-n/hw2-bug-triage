@@ -91,9 +91,12 @@ ISSUE_TOOL_DEFS: list[dict] = [
             "properties": {
                 "keywords": {"type": "array", "items": {"type": "string"},
                              "description": "제목/증상에서 찾을 한국어 키워드 목록"},
-                "feature_area": {
-                    "type": ["string", "null"],
-                    "enum": ["tracking", "map", "record", "card_image", "voice", "login", "ai_chat", "other", None],
+                "feature_area": {  # anyOf: the API rejects enum combined with a type list
+                    "anyOf": [
+                        {"type": "string",
+                         "enum": ["tracking", "map", "record", "card_image", "voice", "login", "ai_chat", "other"]},
+                        {"type": "null"},
+                    ],
                     "description": "기능 영역. 모르면 null",
                 },
                 "android_version": _nullable_str("안드로이드 버전(예: '14'). 모르면 null"),

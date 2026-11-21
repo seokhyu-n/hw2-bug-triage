@@ -79,3 +79,13 @@ def test_data_consistency():
     for r in rels.values():
         for f in r["fixed_issues"]:
             assert f in ids
+
+
+def test_feature_area_enum_schema_is_api_compatible():
+    """Live API 400s on enum + type list; nullable enum must be anyOf[string enum, null]."""
+    prop = tools.ISSUE_TOOL_DEFS[0]["input_schema"]["properties"]["feature_area"]
+    assert "enum" not in prop and "type" not in prop
+    string_branch, null_branch = prop["anyOf"]
+    assert string_branch["type"] == "string" and "tracking" in string_branch["enum"]
+    assert None not in string_branch["enum"]
+    assert null_branch == {"type": "null"}
