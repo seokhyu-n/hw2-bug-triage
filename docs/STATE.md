@@ -13,6 +13,9 @@ Branch: feat/triage-service
     completeness=None for non-bugs, answer_status need_info only for bugs with 2+ of
     app_version/android_version/repro_steps missing
   - fixed Task 2 tool schema: feature_area enum now anyOf (live API 400'd on enum + type list)
+- Task 5: per-developer JSONL store (`app/store.py`), ID login + auto-assignment (`app/auth.py`)
+  - Store(base_dir); reports.jsonl rewritten atomically; logs.jsonl one line per step with request_id
+  - sessions in-memory dict; `current_dev` cookie `session` -> 401; `logout` added
 
 ## Prefix cache (live, Haiku 5.5)
 - cache_read > 0 from the 2nd report on: extract 3364, classify 2152, link 2542 (tools+system),
@@ -20,7 +23,7 @@ Branch: feat/triage-service
 - Live check of 3 reports: about $0.003 per batch of 3 (crash $0.0014, question $0.0004, vague $0.001).
 
 ## Next
-- Task 5 per plan `docs/superpowers/plans/2026-11-21-runbuddy-bug-triage.md`
+- Task 6 per plan `docs/superpowers/plans/2026-11-21-runbuddy-bug-triage.md`
 
 ## Notes
 - `.env` holds the real key; never read it.
