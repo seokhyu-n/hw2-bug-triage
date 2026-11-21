@@ -1,0 +1,6 @@
+fastapi[standard]
+anthropic
+python-dotenv
+pydantic
+pytest
+openpyxl
