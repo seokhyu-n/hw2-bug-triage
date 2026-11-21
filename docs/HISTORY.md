@@ -1,6 +1,14 @@
 # HISTORY
 
 Newest entry on top.
+## 2026-11-22 Task 10: baseline and one-variable experiments
+- Runs (Haiku unless noted, 100 cases, 0 errors): Run-01 baseline / Run-02 +few-shot / Run-03 +rubric / Run-04 +context select (default) / Run-05 Sonnet / Run-06 extract feature_area for non-bugs / Run-07 rubric P1 rule. Total spend ~$2.11 (Sonnet $1.57).
+- Ablation: rubric had the biggest effect on scoring (completeness MAE 0.34 -> 0.18), context select cut MAE to 0.11 at lower cost; few-shot helped priority but caused 2 bug over-classifications (E-021, E-052).
+- Improvement 1 (Run-06, kept): all 13 Run-04 feature_area misses were non-bug reports (prompt tied it to the symptom); extraction 0.950 -> 0.972, miss rate 0.068 -> 0.005, hallucination 0.018 -> 0.025 (2 null cases filled as `other`).
+- Improvement 2 (Run-07, kept): rubric no longer lets "unknown scope" demote a confirmed crash/login failure/record loss; priority exact 0.84 -> 0.88, P1 recall 10/16 -> 15/16, one new over-rating (E-065). No change reverted.
+- Final setting: Haiku 5.5 + few_shot + rubric + context_select + both fixes (Run-07). Quality first: classification/extraction/link equal to or better than Sonnet (Run-05); Sonnet is better only on priority (0.93 vs 0.88) and completeness MAE (0.04 vs 0.11) at ~18x cost ($1.57 vs $0.087 / 100) and +35% latency (10.9s vs 8.1s), so Haiku. Sonnet with the improved prompts was not run.
+- Analysis: `docs/analysis/run_comparison.md`, `docs/analysis/error_analysis.md`.
+
 ## 2026-11-21 Task 9: grading and eval runner
 - `eval/grade.py` (pure metrics), `eval/run_eval.py` (CLI: per-case CSV, confusion CSV, predictions JSONL, cumulative `eval/runs.csv` + `runs.xlsx`; --workers, errors recorded as 오류). `Run-00-smoke` (3 cases, Haiku) kept. 135 tests pass.
 
