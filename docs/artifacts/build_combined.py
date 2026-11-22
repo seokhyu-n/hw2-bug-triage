@@ -18,7 +18,6 @@ TABS = [
 
 SUMMARY = """
 <section class="summary" aria-label="과제 요약">
-  <p class="eyebrow">부트캠프 1주차 과제 2 · 개발팀 업무</p>
   <h1>RunBuddy 버그 제보 트리아지</h1>
   <p class="lead">러닝 앱 RunBuddy의 사용자가 문제 신고 페이지에 남긴 제보를 Claude가 <b>추출 → 분류 → 알려진 이슈 연결 → 우선순위·완성도 채점</b> 순서로 처리해 담당 개발자에게 배정한다. 개발자는 ID로 로그인해 자기 담당 제보를 보고, 멀티턴 챗봇으로 조회·재분석을 요청한다.</p>
   <div class="kpis">
@@ -31,9 +30,9 @@ SUMMARY = """
   </div>
   <p class="legend">최종 설정 Run-07 (Claude Haiku 5.5, Few-shot + Rubric + Context 선별 + 프롬프트 개선 2건), 평가셋 100건 기준. Run-01~07 전체 실험 비용 약 $2.11. 원본 수치는 <code>eval/runs.csv</code>.</p>
   <details class="reqs">
-    <summary>강의 68쪽 필수 조건 대응 (요약)</summary>
+    <summary>사용한 기법과 위치</summary>
     <div class="scroll"><table class="wide">
-      <tr><th>조건</th><th>어디에서 보나</th></tr>
+      <tr><th>기법</th><th>어디에서 보나</th></tr>
       <tr><td>LLM API 호출, System·User 분리, 주요 파라미터(스트리밍 포함)</td><td>분석 체인 3번, Function calling 4번</td></tr>
       <tr><td>Markdown 템플릿, Few-shot, CoT, Rubric, 정보 부족 시 답변 불가</td><td>분석 체인 3·4번</td></tr>
       <tr><td>Decomposition, Prompt Chaining</td><td>분석 체인 1번</td></tr>
@@ -48,7 +47,6 @@ SUMMARY = """
 
 EXTRA_CSS = """
 .summary{padding-bottom:8px}
-.eyebrow{margin:0;color:var(--muted);font-size:.8rem;letter-spacing:.04em}
 .kpis{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(min(100%,140px),1fr));margin:14px 0 8px}
 .kpi{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:2px}
 .kpi .k{font-size:.8rem;color:var(--muted)}
