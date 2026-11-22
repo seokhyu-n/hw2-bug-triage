@@ -73,14 +73,15 @@ li{margin:3px 0}
 <body>
 <main>
 <h1>서비스 워크플로우</h1>
-<p class="lead">로그인부터 저장, 챗봇 기억, 프롬프트 배치와 로그 추적까지 서비스 전체 흐름.</p>
+<p class="lead">제보 접수와 개발자 로그인부터 저장, 챗봇 기억, 프롬프트 배치와 로그 추적까지 서비스 전체 흐름.</p>
 
 <h2>1. 전체 흐름</h2>
 <div class="flow">
-<div class="node a"><b>브라우저 (static/)</b><small>ID 로그인 후 세션 쿠키(<code>httponly</code>, <code>samesite=lax</code>). 화면은 <code>textContent</code>로만 그린다.</small></div><div class="arrow">&#8595; /api/login, /api/reports, /api/reports/{id}/reanalyze, /api/chat</div><div class="node a"><b>FastAPI (app/main.py)</b><small><code>current_dev</code> 의존성이 세션에서 dev_id를 꺼낸다. 없으면 401. LLM 오류는 422/502 + 한국어 메시지.</small></div><div class="arrow">&#8595; </div><div class="row"><div class="node w"><b>제보 분석</b><small><code>analyze</code> 4단계. 결과의 <code>feature_area</code>로 담당 개발자 자동 배정(<code>assign_developer</code>, 못 정하면 dev3).</small></div><div class="node w"><b>챗봇</b><small><code>chat_turn</code>. 최근 6턴 + 상태 요약 + 도구 5종.</small></div></div><div class="arrow">&#8595; </div><div class="node g"><b>저장 (app/store.py)</b><small><code>data/runtime/&lt;dev&gt;/reports.jsonl</code>, 대화 JSONL, 공용 <code>logs.jsonl</code>. 제보 ID는 전역 <code>R-0001</code> 형식.</small></div>
+<div class="row"><div class="node a"><b>제보자: 문제 신고 페이지 /report</b><small>로그인 없음. 앱 사용자·QA·고객지원이 제보를 남기면 <code>POST /api/intake</code>로 접수되고, 화면에는 <b>접수 번호만</b> 나온다(분석 결과·담당자는 보이지 않음). 실제 앱의 "문제 신고" 버튼도 같은 API를 부르면 된다.</small></div><div class="node a"><b>개발자: / 로그인 &rarr; /app</b><small>개발자 ID로 로그인하면 세션 쿠키(<code>httponly</code>, <code>samesite=lax</code>). 화면에 제보 입력란은 없고, 자동 배정된 담당 제보 목록·상세·재분석·챗봇만 있다. 화면은 <code>textContent</code>로만 그린다.</small></div></div><div class="arrow">&#8595; /api/intake (공개) &middot; /api/login, /api/reports, /api/reports/{id}/reanalyze, /api/chat (로그인 필요)</div><div class="node a"><b>FastAPI (app/main.py)</b><small>접수 API는 인증 없이 받고, 개발자 API는 <code>current_dev</code> 의존성이 세션에서 dev_id를 꺼낸다(없으면 401). LLM 오류는 422/502 + 한국어 메시지.</small></div><div class="arrow">&#8595; </div><div class="row"><div class="node w"><b>접수 시 제보 분석</b><small><code>analyze</code> 4단계. 결과의 <code>feature_area</code>로 담당 개발자 자동 배정(<code>assign_developer</code>, 못 정하면 dev3).</small></div><div class="node w"><b>챗봇</b><small><code>chat_turn</code>. 최근 6턴 + 상태 요약 + 도구 5종.</small></div></div><div class="arrow">&#8595; </div><div class="node g"><b>저장 (app/store.py)</b><small><code>data/runtime/&lt;dev&gt;/reports.jsonl</code>, 대화 JSONL, 공용 <code>logs.jsonl</code>. 제보 ID는 전역 <code>R-0001</code> 형식.</small></div>
 </div>
 
-<h2>2. 로그인과 개발자별 저장소</h2>
+<h2>2. 제보자와 개발자 분리, 개발자별 저장소</h2>
+<p>실무처럼 <b>제보하는 사람과 처리하는 사람의 화면을 나눴다</b>. 제보자는 로그인 없이 접수만 하고 접수 번호(<code>R-0004</code> 등)를 받는다. 개발자는 직접 제보를 입력하지 않고, 기능 영역에 따라 자기에게 배정된 제보만 본다.</p>
 <div class="scroll"><table class="wide">
 <tr><th>개발자</th><th>담당 feature_area</th></tr>
 <tr><td>dev1</td><td>tracking, voice, login</td></tr>
@@ -91,6 +92,7 @@ li{margin:3px 0}
 <li>세션은 서버 메모리의 토큰, dev_id 표(<code>app/auth.py</code>). 서버를 재시작하면 다시 로그인한다.</li>
 <li>제보·대화는 개발자 폴더별 JSONL. 조회·재분석은 로그인한 개발자 폴더만 읽는다.</li>
 <li>쓰기는 프로세스 전체 <code>RLock</code> 하나로 보호하고, 제보 파일은 임시 파일에 쓴 뒤 <code>os.replace</code>로 원자적으로 바꾼다(단일 프로세스 전제).</li>
+<li>공개 접수 API에는 아직 요청 횟수 제한이 없다. 외부에 공개하려면 IP별 횟수 제한이나 캡차가 필요하다(접수마다 Claude 호출 비용 발생).</li>
 </ul>
 
 <h2>3. 챗봇의 짧은 기억</h2>
