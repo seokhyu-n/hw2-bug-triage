@@ -1,6 +1,9 @@
 # HISTORY
 
 Newest entry on top.
+## 2026-11-22 Analysis pages merged, repo on GitHub
+- Four analysis pages combined into one tabbed page (`docs/artifacts/assignment2.html`, builder `build_combined.py`); lecture references removed at the user's request.
+- Project pushed to private GitHub repo `seokhyu-n/hw2-bug-triage` so it can run on the academy PC; STATE rewritten with setup steps for another computer.
 ## 2026-11-22 Streaming chatbot and per-task eval sheets (PDF gap check)
 - Gap check against lecture p65/p68: all required items present; `stream` (p14 key parameter) was unused and eval results were not split by task.
 - `app/llm.py`: `call_llm(on_text=...)` streams via `client.messages.stream()` (`text_stream`, `get_final_message()`), same LLMResult. `app/chat.py`: `chat_turn(on_text, on_tool)`. New `POST /api/chat/stream` (NDJSON text/tool/done/error); UI renders replies as they arrive. Verified live: one reply = 13 text chunks.

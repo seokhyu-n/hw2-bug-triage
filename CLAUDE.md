@@ -10,7 +10,8 @@ RunBuddy app (bootcamp week-1 assignment 2). Design: `docs/superpowers/specs/202
 - Work folder: `C:\dev\fde\hw2-bug-triage`. Python 3.12, virtualenv named `venv`.
 - Always call pip through the venv interpreter: `venv\Scripts\python.exe -m pip install -r requirements.txt`. Never use `pip.exe`.
 - Run tests: `venv\Scripts\python.exe -m pytest -v`
-- Run the server: `venv\Scripts\python.exe -m fastapi dev app/main.py`
+- Run the server: `venv\Scripts\python.exe -m uvicorn app.main:app --port 8000` (reporter page `/report`, developer login `/`)
+- Remote: GitHub private repo `seokhyu-n/hw2-bug-triage` (main). Pull before work, push after.
 - Use Windows (PowerShell) commands and backslash paths in instructions for the user.
 
 ## API key and `.env`
