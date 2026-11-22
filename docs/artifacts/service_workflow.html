@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>서비스 워크플로우</title>
+<style>
+:root{--bg:#f7f6f2;--surface:#fff;--ink:#1d1d1b;--muted:#5d5c57;--line:#dcdad2;--accent:#1f5fbf;--accent-soft:#e3edfb;
+--good:#1a7a4c;--good-soft:#e1f3ea;--warn:#a65a00;--warn-soft:#fbeedb;--bad:#b3261e;--bad-soft:#fbe4e2;--code:#efede6;--bar:#1f5fbf;--bar2:#a65a00}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#15161a;--surface:#1e2025;--ink:#ecebe6;--muted:#a3a29b;--line:#34363d;--accent:#7fb0f5;--accent-soft:#1f2c42;
+--good:#6fd3a0;--good-soft:#173024;--warn:#f0b35e;--warn-soft:#3a2c14;--bad:#f2928b;--bad-soft:#3d1f1d;--code:#262830;--bar:#7fb0f5;--bar2:#f0b35e}}
+:root[data-theme="dark"]{--bg:#15161a;--surface:#1e2025;--ink:#ecebe6;--muted:#a3a29b;--line:#34363d;--accent:#7fb0f5;--accent-soft:#1f2c42;
+--good:#6fd3a0;--good-soft:#173024;--warn:#f0b35e;--warn-soft:#3a2c14;--bad:#f2928b;--bad-soft:#3d1f1d;--code:#262830;--bar:#7fb0f5;--bar2:#f0b35e}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 "Noto Sans KR",system-ui,-apple-system,"Segoe UI","Malgun Gothic",sans-serif}
+main{max-width:920px;margin:0 auto;padding:28px 16px 64px}
+h1{font-size:1.65rem;line-height:1.3;margin:0 0 6px}
+h2{font-size:1.2rem;margin:36px 0 10px;padding-top:10px;border-top:1px solid var(--line)}
+h3{font-size:1rem;margin:18px 0 6px}
+p{margin:8px 0}
+.lead{color:var(--muted);margin-bottom:18px}
+code{background:var(--code);padding:1px 5px;border-radius:4px;font:0.88em/1.4 ui-monospace,Consolas,"D2Coding",monospace;overflow-wrap:anywhere}
+pre{background:var(--code);padding:12px 14px;border-radius:8px;overflow-x:auto;font:0.85rem/1.55 ui-monospace,Consolas,monospace;margin:10px 0}
+pre code{background:none;padding:0}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:12px 0}
+.card h3{margin-top:0}
+.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr))}
+.flow{display:flex;flex-direction:column;align-items:stretch;margin:14px 0;gap:0}
+.node{background:var(--surface);border:1.5px solid var(--line);border-radius:10px;padding:10px 14px;margin:0}
+.flow>.node+.node{margin-top:8px}
+.node.a{border-color:var(--accent);background:var(--accent-soft)}
+.node.g{border-color:var(--good);background:var(--good-soft)}
+.node.w{border-color:var(--warn);background:var(--warn-soft)}
+.node.r{border-color:var(--bad);background:var(--bad-soft)}
+.node b{display:block}
+.node small{color:var(--muted);display:block}
+.arrow{text-align:center;color:var(--muted);line-height:1.2;padding:4px 0;font-size:.85rem}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.row>.node{flex:1 1 220px}
+.tag{display:inline-block;font-size:.75rem;padding:1px 8px;border-radius:99px;border:1px solid var(--line);color:var(--muted);margin-right:4px;vertical-align:middle}
+.tag.a{color:var(--accent);border-color:var(--accent)}
+.tag.g{color:var(--good);border-color:var(--good)}
+.tag.w{color:var(--warn);border-color:var(--warn)}
+.tag.r{color:var(--bad);border-color:var(--bad)}
+.scroll{overflow-x:auto;margin:10px 0;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{background:var(--code);white-space:nowrap}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+tr.final td{background:var(--accent-soft);font-weight:600}
+tr:last-child td{border-bottom:0}
+.wide td{min-width:110px}
+ul,ol{padding-left:1.2em;margin:6px 0}
+li{margin:3px 0}
+.note{border-left:3px solid var(--warn);background:var(--warn-soft);padding:8px 12px;border-radius:0 8px 8px 0;margin:12px 0}
+.ok{border-left-color:var(--good);background:var(--good-soft)}
+.legend{font-size:.85rem;color:var(--muted)}
+.chart{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin:0}
+.chart h3{margin:0 0 8px;font-size:.95rem}
+.br{display:grid;grid-template-columns:62px 1fr 76px;align-items:center;gap:8px;margin:3px 0;font-size:.85rem}
+.br .t{background:var(--code);border-radius:4px;height:16px;overflow:hidden}
+.br .t i{display:block;height:100%;background:var(--bar)}
+.br.s .t i{background:var(--bar2)}
+.br span:last-child{text-align:right;font-variant-numeric:tabular-nums}
+.cm{border-collapse:separate;border-spacing:4px;width:auto}
+.cm td,.cm th{border:0;text-align:center;padding:10px 14px;border-radius:6px}
+.cm td.h{background:var(--good-soft);font-weight:700}
+.cm td.e{background:var(--bad-soft);font-weight:700}
+.cm td.z{background:var(--code);color:var(--muted)}
+</style>
+</head>
+<body>
+<main>
+<h1>서비스 워크플로우</h1>
+<p class="lead">제보 접수와 개발자 로그인부터 저장, 챗봇 기억, 프롬프트 배치와 로그 추적까지 서비스 전체 흐름.</p>
+
+<h2>1. 전체 흐름</h2>
+<div class="flow">
+<div class="row"><div class="node a"><b>제보자: 문제 신고 페이지 /report</b><small>로그인 없음. 앱 사용자·QA·고객지원이 제보를 남기면 <code>POST /api/intake</code>로 접수되고, 화면에는 <b>접수 번호만</b> 나온다(분석 결과·담당자는 보이지 않음). 실제 앱의 "문제 신고" 버튼도 같은 API를 부르면 된다.</small></div><div class="node a"><b>개발자: / 로그인 &rarr; /app</b><small>개발자 ID로 로그인하면 세션 쿠키(<code>httponly</code>, <code>samesite=lax</code>). 화면에 제보 입력란은 없고, 자동 배정된 담당 제보 목록·상세·재분석·챗봇만 있다. 화면은 <code>textContent</code>로만 그린다.</small></div></div><div class="arrow">&#8595; /api/intake (공개) &middot; /api/login, /api/reports, /api/reports/{id}/reanalyze, /api/chat (로그인 필요)</div><div class="node a"><b>FastAPI (app/main.py)</b><small>접수 API는 인증 없이 받고, 개발자 API는 <code>current_dev</code> 의존성이 세션에서 dev_id를 꺼낸다(없으면 401). LLM 오류는 422/502 + 한국어 메시지.</small></div><div class="arrow">&#8595; </div><div class="row"><div class="node w"><b>접수 시 제보 분석</b><small><code>analyze</code> 4단계. 결과의 <code>feature_area</code>로 담당 개발자 자동 배정(<code>assign_developer</code>, 못 정하면 dev3).</small></div><div class="node w"><b>챗봇</b><small><code>chat_turn</code>. 최근 6턴 + 상태 요약 + 도구 5종.</small></div></div><div class="arrow">&#8595; </div><div class="node g"><b>저장 (app/store.py)</b><small><code>data/runtime/&lt;dev&gt;/reports.jsonl</code>, 대화 JSONL, 공용 <code>logs.jsonl</code>. 제보 ID는 전역 <code>R-0001</code> 형식.</small></div>
+</div>
+
+<h2>2. 제보자와 개발자 분리, 개발자별 저장소</h2>
+<p>실무처럼 <b>제보하는 사람과 처리하는 사람의 화면을 나눴다</b>. 제보자는 로그인 없이 접수만 하고 접수 번호(<code>R-0004</code> 등)를 받는다. 개발자는 직접 제보를 입력하지 않고, 기능 영역에 따라 자기에게 배정된 제보만 본다.</p>
+<div class="scroll"><table class="wide">
+<tr><th>개발자</th><th>담당 feature_area</th></tr>
+<tr><td>dev1</td><td>tracking, voice, login</td></tr>
+<tr><td>dev2</td><td>map, record, card_image</td></tr>
+<tr><td>dev3</td><td>ai_chat, other (그리고 배정 불가 시 기본)</td></tr>
+</table></div>
+<ul>
+<li>세션은 서버 메모리의 토큰, dev_id 표(<code>app/auth.py</code>). 서버를 재시작하면 다시 로그인한다.</li>
+<li>제보·대화는 개발자 폴더별 JSONL. 조회·재분석은 로그인한 개발자 폴더만 읽는다.</li>
+<li>쓰기는 프로세스 전체 <code>RLock</code> 하나로 보호하고, 제보 파일은 임시 파일에 쓴 뒤 <code>os.replace</code>로 원자적으로 바꾼다(단일 프로세스 전제).</li>
+<li>공개 접수 API에는 아직 요청 횟수 제한이 없다. 외부에 공개하려면 IP별 횟수 제한이나 캡차가 필요하다(접수마다 Claude 호출 비용 발생).</li>
+</ul>
+
+<h2>3. 챗봇의 짧은 기억</h2>
+<div class="flow">
+<div class="node g"><b>[상태 요약] (코드로 생성, LLM 호출 없음)</b><small>개발자 ID, 최근 언급한 내 제보 ID(최대 3), 내 P1·P2 건수, 제보자 답변 대기(need_info) 목록. 첫 번째 user 메시지 앞에 붙인다.</small></div><div class="arrow">&#8595; +</div><div class="node a"><b>최근 6턴 (user·assistant 12개 메시지)</b><small>그보다 오래된 대화는 보내지 않는다. 창은 항상 user로 시작하고 역할이 번갈아 나오게 맞춘다(<code>build_messages</code>).</small></div><div class="arrow">&#8595; +</div><div class="node w"><b>이번 사용자 질문</b><small>맨 마지막</small></div>
+</div>
+<p>전체 대화 이력은 서버에 그대로 남아 있고, 모델에게는 위 세 덩어리만 간다. 상태 요약이 있어서 6턴 밖의 정보(예: P1이 몇 건 있는지)도 모델이 알 수 있다.</p>
+
+<h2>4. 프롬프트 배치 순서 (prefix cache)</h2>
+<p>캐시는 요청의 <b>앞부분이 바이트 단위로 같을 때</b>만 적중한다. 그래서 바뀌지 않는 것을 앞, 바뀌는 것을 뒤에 둔다.</p>
+<div class="flow">
+<div class="node g"><b>1. tools 정의</b><small><code>ISSUE_TOOL_DEFS</code> / <code>CHAT_TOOL_DEFS</code> (고정)</small></div><div class="node g"><b>2. system: 규칙, Few-shot, Rubric 순</b><small>마지막 블록에 <code>cache_control: ephemeral</code>. 프롬프트 파일은 <code>lru_cache</code>로 한 번만 읽어 바이트가 흔들리지 않게 한다.</small></div><div class="node w"><b>3. messages: 제보 원문, 이전 단계 결과, 도구 결과, 지시문</b><small>호출마다 달라지는 부분. 캐시 경계 뒤에 둔다.</small></div>
+</div>
+<div class="note ok"><b>결과.</b> 실서비스(Haiku 5.5)에서 2번째 제보부터 <code>cache_read</code>가 잡혔다: extract 3,364 / classify 2,152 / link 2,542 / score 3,820 토큰. 평가 100건 합계 캐시 적중 토큰은 Run-01 885,810 &rarr; Run-07 1,351,670(<code>eval/runs.csv</code>).</div>
+
+<h2>5. request_id와 로그</h2>
+<ul>
+<li>제보를 저장할 때 전역 순번 ID(<code>R-0001</code> ...)가 생기고, 같은 ID로 <code>logs.jsonl</code>에 단계별 기록이 남는다(<code>Store._log</code>).</li>
+<li>제보 레코드에는 합계 요약(<code>latency_s</code>, <code>cost_usd</code>, <code>cache_read</code>)이 붙는다.</li>
+<li>재분석하면 같은 request_id로 로그가 추가되고, 저장되는 <code>added_info</code>로 어떤 정보가 반영됐는지 추적할 수 있다.</li>
+<li>모든 LLM 호출은 <code>app/llm.py:call_llm</code>이 단계, 모델, 입력·출력·cache_read·cache_write 토큰, 응답시간, 비용을 한 줄 로그로 남긴다.</li>
+</ul>
+
+<h2>6. 컨텍스트 엔지니어링 요약</h2>
+<div class="scroll"><table class="wide">
+<tr><th>기법</th><th>어디서</th></tr>
+<tr><td>단계별 선별</td><td><code>PipelineConfig.context_select</code>: link는 추출 결과만, score는 원문 없이 앞 단계 결과만</td></tr>
+<tr><td>확정 상태 + 새 정보</td><td>재분석 때 원문 대신 확정 필드와 <code>&lt;added_info&gt;</code>만 전달</td></tr>
+<tr><td>짧은 기억</td><td>최근 6턴 + 코드가 만든 상태 요약</td></tr>
+<tr><td>서버 보관</td><td>원본 제보, 전체 대화, 단계 로그는 JSONL에 보관하고 모델에는 필요한 것만 전달</td></tr>
+<tr><td>고정 앞, 변동 뒤</td><td>tools, system(규칙, Few-shot, Rubric), messages 순서</td></tr>
+</table></div>
+
+</main>
+</body>
+</html>

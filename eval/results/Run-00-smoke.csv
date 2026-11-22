@@ -1,0 +1,5 @@
+﻿id,hard,text,error,exp_category,pred_category,category_ok,exp_labels,pred_labels,labels_ok,exp_device_model,pred_device_model,exp_android_version,pred_android_version,exp_app_version,pred_app_version,exp_feature_area,pred_feature_area,exp_frequency,pred_frequency,extraction_ok,exp_completeness,pred_completeness,exp_priority,pred_priority,priority_ok,exp_link,pred_link,link_ok,latency_s,cost_usd,cache_read
+E-001,False,칼로리는 어떤 기준으로 계산되는 거예요?,,question,question,O,question,question,O,,,,,,,tracking,,,,X,,,P4,P4,O,,,O,6.2870,0.001445,0
+E-002,False,데이터 많이 먹나요? 무제한 요금제가 아니라서요,,question,question,O,question,question,O,,,,,,,other,,,,X,,,P4,P4,O,,,O,7.0670,0.001481,0
+E-003,True,"Galaxy S21 FE / Android 14 / 1.2.0
+위치 권한 다 줬는데 러닝 시작 누르면 'GPS 신호 찾는 중'에서 안 넘어가요. 앱이 꺼지진 않음. 계속 이럼",,bug,bug,O,bug,bug,O,Galaxy S21 FE,Galaxy S21 FE,14,14,1.2.0,1.2.0,tracking,tracking,계속,계속,O,2,2,P2,P2,O,,,O,15.3390,0.002345,8904

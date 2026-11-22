@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>RunBuddy 버그 제보 트리아지</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header>
+  <strong>RunBuddy 버그 제보 트리아지</strong>
+  <span><span id="who"></span><button id="logout-btn">로그아웃</button></span>
+</header>
+<main>
+  <section class="panel" id="triage">
+    <h2>내 담당 제보 <button id="refresh-btn" class="small">새로 고침</button></h2>
+    <p class="meta">제보는 <a href="/report" target="_blank" rel="noopener">문제 신고 페이지</a>로 들어오고, 기능 영역에 따라 담당자에게 자동 배정됩니다.</p>
+    <div class="error" id="list-err"></div>
+    <ul class="report-list" id="report-list"></ul>
+    <div id="detail"></div>
+  </section>
+  <section class="panel" id="chat">
+    <h2>개발자 챗봇</h2>
+    <div class="chat-log" id="chat-log"></div>
+    <textarea id="chat-input" style="min-height:48px" placeholder="예: P1만 보여줘"></textarea>
+    <button id="chat-btn">보내기</button>
+    <div class="error" id="chat-err"></div>
+  </section>
+</main>
+<script src="/static/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,5 @@
+{
+  "dev1": {"name": "dev1", "areas": ["tracking", "voice", "login"]},
+  "dev2": {"name": "dev2", "areas": ["map", "record", "card_image"]},
+  "dev3": {"name": "dev3", "areas": ["ai_chat", "other"]}
+}
