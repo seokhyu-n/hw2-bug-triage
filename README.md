@@ -1,7 +1,7 @@
 # RunBuddy 버그 제보 트리아지
 
-러닝 앱 **RunBuddy**의 버그 제보(자유 서술 한국어)를 받아 **추출 → 분류 → 알려진 이슈 연결 → 우선순위·완성도 채점**까지 자동으로 처리하고,
-개발자는 **개발자 ID로 로그인**해 자기 담당 제보를 보면서 **멀티턴 챗봇**으로 조회·재분석을 요청하는 서비스입니다. (부트캠프 1주차 과제 2)
+러닝 앱 **RunBuddy**의 사용자·QA가 **문제 신고 페이지**(로그인 없음)에 남긴 제보(자유 서술 한국어)를 받아 **추출 → 분류 → 알려진 이슈 연결 → 우선순위·완성도 채점**까지 자동으로 처리하고 담당 개발자에게 배정합니다.
+개발자는 **개발자 ID로 로그인**해 자기 담당 제보를 보면서 **멀티턴 챗봇**으로 조회·재분석을 요청합니다. 제보자 화면과 개발자 화면은 분리되어 있습니다. (부트캠프 1주차 과제 2)
 
 - 프레임워크(LangChain 등) 없이 **Anthropic SDK + FastAPI**만 사용. 기본 모델은 Claude Haiku 5.5.
 - 설계: `docs/superpowers/specs/2026-11-21-runbuddy-bug-triage-design.md`, 진행 기록: `docs/HISTORY.md`
@@ -9,10 +9,14 @@
 ## 구조
 
 ```
-브라우저(static/) ──로그인 쿠키──> FastAPI (app/main.py)
-                                   │
-        ┌──────────────────────────┼───────────────────────────┐
-   POST /api/reports        POST /api/reports/{id}/reanalyze   POST /api/chat
+제보자: /report (로그인 없음)          개발자: / 로그인 → /app (세션 쿠키)
+        │                                   │
+        ▼                                   ▼
+                    FastAPI (app/main.py)
+        ┌──────────────────────────┬───────────────────────────┐
+   POST /api/intake          POST /api/reports/{id}/reanalyze   POST /api/chat
+   (접수 번호만 응답,          GET /api/reports[/{id}]
+    feature_area로 담당 배정)  (담당자만 조회)
         │                          │                            │
         ▼                          ▼                            ▼
   app/pipeline.py analyze()  (확정 필드 + 새 정보만 전달)   app/chat.py chat_turn()
@@ -41,11 +45,12 @@ python -m pip install -r requirements.txt     # 재현용 고정 버전은 requi
    ```powershell
    python -m uvicorn app.main:app --port 8000
    ```
-   브라우저에서 http://127.0.0.1:8000 을 열고 로그인 ID `dev1`, `dev2`, `dev3` 중 하나로 들어갑니다.
+   - **제보자**: http://127.0.0.1:8000/report 에서 로그인 없이 제보를 남깁니다. 화면에는 접수 번호(예: `R-0012`)만 나오고 분석 결과·담당자는 보이지 않습니다. 실제 앱의 "문제 신고" 버튼은 같은 API(`POST /api/intake`)를 부르면 됩니다.
+   - **개발자**: http://127.0.0.1:8000 에서 로그인 ID `dev1`, `dev2`, `dev3` 중 하나로 들어갑니다.
    (담당 영역: dev1 = tracking·voice·login, dev2 = map·record·card_image, dev3 = ai_chat·other, 배정 불가 시 기본)
 3. 화면 사용법
-   - 제보 입력란에 제보 원문을 붙여 넣고 분석하면 분류, 추출 필드, 이슈 연결, 우선순위(P1~P4), 완성도(0~2), 제보자에게 물어볼 질문이 나옵니다. 제보는 `feature_area`에 맞는 개발자의 목록에 들어갑니다.
-   - 화면 목록은 우선순위순으로 보이며, 제보자에게 받은 새 정보를 입력해 재분석할 수 있습니다. 우선순위·분류 필터는 `GET /api/reports?priority=&category=`와 챗봇(`list_my_reports`)에서 쓸 수 있습니다.
+   - 접수된 제보는 분석 후 `feature_area`에 맞는 개발자의 목록에 자동으로 들어갑니다. 개발자 화면에는 제보 입력란이 없고, "새로 고침"으로 새 제보를 불러옵니다.
+   - 제보를 누르면 분류, 추출 필드, 이슈 연결, 우선순위(P1~P4), 완성도(0~2), 제보자에게 물어볼 질문이 나오고, 제보자에게 받은 새 정보를 입력해 재분석할 수 있습니다. 우선순위·분류 필터는 `GET /api/reports?priority=&category=`와 챗봇(`list_my_reports`)에서 쓸 수 있습니다.
    - 챗봇에는 "내 P1 제보 보여줘", "R-0003 재분석해줘, 앱 버전은 1.0이래"처럼 말하면 됩니다.
 4. 테스트 (LLM은 가짜 클라이언트로 대체, 실제 호출 없음)
    ```powershell
@@ -129,6 +134,7 @@ python -m pip install -r requirements.txt     # 재현용 고정 버전은 requi
 - 저장소는 JSONL 파일과 프로세스 안 잠금(RLock)이라 **단일 프로세스**용이다. 세션은 메모리에 있어 서버를 재시작하면 다시 로그인해야 한다.
 - Sonnet은 최초 프롬프트(Run-04 설정)로만 돌렸고, 수정 2건을 반영한 프롬프트로는 다시 돌리지 않았다(비용·한 변수 원칙). 두 모델의 최종 비교는 완전하지 않다.
 - 미적용 개선 후보: Rubric에 핵심 기능 범위 명시(과대평가 7건), 링크 프롬프트의 "앱 버전 ≥ fixed_in이면 연결 안 함"(재발 크래시 near miss 3건), frequency 표현 정리(6건).
+- 공개 접수 API(`POST /api/intake`)에는 요청 횟수 제한이 없다. 접수마다 Claude 호출 비용이 들기 때문에 외부에 공개하려면 IP별 횟수 제한이나 캡차가 필요하다. 제보자가 처리 상태를 확인하는 화면도 없다(실무에서는 순번 대신 추측할 수 없는 토큰 링크를 준다).
 - Run-06의 부작용으로 정답이 null인 문의(E-006, E-096)의 feature_area가 `other`로 채워진다(환각률 0.018 → 0.025).
 
 ## 분석 아티팩트

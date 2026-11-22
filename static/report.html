@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RunBuddy 문제 신고</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div class="intake">
+  <h2>RunBuddy 문제 신고</h2>
+  <p>앱을 쓰다가 생긴 문제나 궁금한 점, 바라는 기능을 적어 주세요. 아래 내용을 함께 적어 주시면 더 빨리 확인할 수 있어요.</p>
+  <ul class="hint">
+    <li>휴대폰 기종과 안드로이드 버전 (예: 갤럭시 S23, 안드로이드 14)</li>
+    <li>RunBuddy 앱 버전 (설정 &gt; 앱 정보)</li>
+    <li>어떤 순서로 했을 때 문제가 생겼는지</li>
+  </ul>
+  <textarea id="report-text" maxlength="5000" placeholder="예: 갤럭시 S23 / 안드로이드 14 / 앱 1.1.1. 러닝 시작 버튼을 누르면 바로 앱이 꺼져요."></textarea>
+  <p><button id="submit-btn">신고하기</button></p>
+  <div class="error" id="err"></div>
+  <div class="receipt" id="receipt" hidden></div>
+  <p class="meta"><a href="/">개발자 로그인</a></p>
+</div>
+<script>
+// Reporter page: shows only the receipt number, never the triage result.
+const $ = id => document.getElementById(id);
+$("submit-btn").onclick = async () => {
+  const btn = $("submit-btn"), err = $("err"), receipt = $("receipt");
+  err.textContent = ""; receipt.hidden = true;
+  btn.disabled = true; btn.textContent = "접수 중...";
+  try {
+    const r = await fetch("/api/intake", {method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({text: $("report-text").value})});
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      let d = data.detail;
+      if (Array.isArray(d)) d = d.map(x => (x.msg || "").replace(/^Value error, /, "")).join("; ");
+      throw new Error(d || "접수에 실패했습니다. 잠시 후 다시 시도해 주세요.");
+    }
+    receipt.textContent = data.message;
+    receipt.hidden = false;
+    $("report-text").value = "";
+  } catch (e) { err.textContent = e.message; }
+  btn.disabled = false; btn.textContent = "신고하기";
+};
+</script>
+</body>
+</html>

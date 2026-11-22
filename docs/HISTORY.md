@@ -1,6 +1,11 @@
 # HISTORY
 
 Newest entry on top.
+## 2026-11-22 Split reporter intake from developer screen
+- New public page `/report` + `POST /api/intake` (no login): reporter gets only the receipt number; triage result and assignee stay on the developer side. Assignment by `feature_area` unchanged.
+- Removed the authenticated `POST /api/reports` and the report input box from `/app`; added a refresh button. Login page links to `/report`.
+- Why: in practice reporters (users/QA/support) and developers use separate channels; developers should not type reports. Report IDs (R-0001) kept as is (user's choice).
+- tests/test_api.py rewritten for the intake flow (147 tests pass). README updated; known limit: intake has no rate limit.
 ## 2026-11-22 Final whole-branch review fixes
 - `app/llm.py`: missing key -> `LLMError` (Korean message), trailing `anthropic.APIError` clause (502 instead of bare 500).
 - `app/chat.py`: fallback ChatReply when `call_llm` fails after a successful reanalyze; reanalyze guard also needs added_info >= 4 chars and a request_id from the current message or recent IDs (`_recent_ids`, shared with `summarize_state`).

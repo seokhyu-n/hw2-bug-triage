@@ -112,18 +112,9 @@ function showDetail(r) {
     " · 캐시 적중 " + ls.cache_read.toLocaleString() + " 토큰", "meta"));
 }
 
-$("submit-btn").onclick = async () => {
-  const btn = $("submit-btn"), err = $("submit-err");
-  err.textContent = ""; btn.disabled = true; btn.textContent = "분석 중...";
-  try {
-    const r = await api("/api/reports", "POST", {text: $("report-text").value});
-    $("report-text").value = "";
-    if (r.assigned_to !== $("who").dataset.dev) {
-      err.textContent = r.request_id + " 제보는 " + r.assigned_to + " 담당자에게 배정되었습니다.";
-    } else { selectedId = r.request_id; showDetail(r); }
-    await loadList();
-  } catch (e) { err.textContent = e.message; }
-  btn.disabled = false; btn.textContent = "분석하기";
+$("refresh-btn").onclick = async () => {
+  $("list-err").textContent = "";
+  try { await loadList(); } catch (e) { $("list-err").textContent = e.message; }
 };
 
 function addMsg(role, text, tools) {

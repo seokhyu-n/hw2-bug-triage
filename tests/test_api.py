@@ -9,11 +9,28 @@ from tests.test_store import make_log, make_result
 
 
 @pytest.fixture
-def client(tmp_path, monkeypatch):
+def store(tmp_path, monkeypatch):
     main.app.state.store = Store(tmp_path)
     monkeypatch.setattr(main, "analyze", lambda text, **kw: (make_result(), [make_log()]))
+    return main.app.state.store
+
+
+@pytest.fixture
+def reporter(store):
+    """Anonymous client: the public intake needs no login."""
+    return TestClient(main.app)
+
+
+@pytest.fixture
+def client(store):
     c = TestClient(main.app)
     assert c.post("/api/login", json={"dev_id": "dev1"}).status_code == 200
+    return c
+
+
+def login_as(dev_id):
+    c = TestClient(main.app)
+    assert c.post("/api/login", json={"dev_id": dev_id}).status_code == 200
     return c
 
 
@@ -25,11 +42,17 @@ def test_login_sets_cookie_and_unknown_401():
     assert TestClient(main.app).post("/api/login", json={"dev_id": "nobody"}).status_code == 401
 
 
-def test_reports_require_login():
+def test_developer_endpoints_require_login():
     c = TestClient(main.app)
     assert c.get("/api/reports").status_code == 401
-    assert c.post("/api/reports", json={"text": "x"}).status_code == 401
+    assert c.get("/api/reports/R-0001").status_code == 401
+    assert c.post("/api/reports/R-0001/reanalyze", json={"added_info": "x"}).status_code == 401
     assert c.post("/api/chat", json={"message": "x"}).status_code == 401
+
+
+def test_developers_cannot_submit_through_old_endpoint(client):
+    # Submission moved to the public intake; the developer API is read/triage only.
+    assert client.post("/api/reports", json={"text": "제보"}).status_code == 405
 
 
 def test_logout_invalidates_session(client):
@@ -37,52 +60,50 @@ def test_logout_invalidates_session(client):
     assert client.get("/api/reports").status_code == 401
 
 
-def test_post_report_rejects_empty_and_too_long(client):
-    assert client.post("/api/reports", json={"text": "   "}).status_code == 422
-    assert client.post("/api/reports", json={"text": "가" * 5001}).status_code == 422
-    assert client.post("/api/reports", json={"text": "가" * 5000}).status_code == 200
-
-
-def test_post_report_assigns_developer(client):
-    r = client.post("/api/reports", json={"text": "지도가 안 열려요"})
+def test_intake_works_without_login_and_returns_receipt_only(reporter, monkeypatch):
+    monkeypatch.setattr(main, "assign_developer", lambda area: "dev2")
+    r = reporter.post("/api/intake", json={"text": "지도가 안 열려요"})
     assert r.status_code == 200
     body = r.json()
+    assert set(body) == {"request_id", "message"}  # no triage result, no assignee
     assert body["request_id"] == "R-0001"
-    assert body["assigned_to"] == body["dev_id"]
+    assert "R-0001" in body["message"]
+
+
+def test_intake_rejects_empty_and_too_long(reporter):
+    assert reporter.post("/api/intake", json={"text": "   "}).status_code == 422
+    assert reporter.post("/api/intake", json={"text": "가" * 5001}).status_code == 422
+    assert reporter.post("/api/intake", json={"text": "가" * 5000}).status_code == 200
+
+
+def test_intake_assigns_developer_and_only_assignee_sees_it(reporter, monkeypatch):
+    monkeypatch.setattr(main, "assign_developer", lambda area: "dev2")
+    rid = reporter.post("/api/intake", json={"text": "지도가 안 열려요"}).json()["request_id"]
+    dev2 = login_as("dev2")
+    body = dev2.get(f"/api/reports/{rid}").json()
+    assert body["assigned_to"] == "dev2"
     assert set(body["logs_summary"]) == {"latency_s", "cost_usd", "cache_read"}
     assert body["result"]["score"]["priority"] == "P3"
-    # stored under the assigned developer, visible only if that dev is logged in
-    owner = body["assigned_to"]
-    c2 = TestClient(main.app)
-    c2.post("/api/login", json={"dev_id": owner})
-    assert c2.get("/api/reports/R-0001").status_code == 200
+    assert [x["request_id"] for x in dev2.get("/api/reports").json()] == [rid]
+    dev1 = login_as("dev1")
+    assert dev1.get(f"/api/reports/{rid}").status_code == 404
+    assert dev1.get("/api/reports").json() == []
+    assert dev1.post(f"/api/reports/{rid}/reanalyze", json={"added_info": "x"}).status_code == 404
 
 
 @pytest.mark.parametrize("exc,status", [(LLMRefusal("x"), 422), (LLMUnavailable("x"), 502)])
-def test_post_report_llm_error_returns_message(client, monkeypatch, exc, status):
+def test_intake_llm_error_returns_message(reporter, monkeypatch, exc, status):
     def boom(text, **kw):
         raise exc
     monkeypatch.setattr(main, "analyze", boom)
-    r = client.post("/api/reports", json={"text": "제보"})
+    r = reporter.post("/api/intake", json={"text": "제보"})
     assert r.status_code == status
-    assert r.json()["detail"]
     assert any("가" <= ch <= "힣" for ch in r.json()["detail"])
 
 
-def test_get_report_of_other_dev_is_404(client):
-    owner = client.post("/api/reports", json={"text": "제보"}).json()["assigned_to"]
-    other = next(d for d in ("dev1", "dev2", "dev3") if d != owner)
-    c2 = TestClient(main.app)
-    c2.post("/api/login", json={"dev_id": other})
-    assert c2.get("/api/reports/R-0001").status_code == 404
-    assert c2.get("/api/reports").json() == []
-    assert c2.post("/api/reports/R-0001/reanalyze", json={"added_info": "x"}).status_code == 404
-
-
-def test_list_and_reanalyze(client, monkeypatch):
-    # make the current user the owner: force assignment
+def test_list_and_reanalyze(client, reporter, monkeypatch):
     monkeypatch.setattr(main, "assign_developer", lambda area: "dev1")
-    rid = client.post("/api/reports", json={"text": "제보"}).json()["request_id"]
+    rid = reporter.post("/api/intake", json={"text": "제보"}).json()["request_id"]
     seen = {}
 
     def fake(text, prior=None, added_info=None, **kw):
@@ -115,11 +136,15 @@ def test_chat_endpoint_returns_reply(client, monkeypatch):
 
 def test_static_pages(client):
     assert "로그인" in client.get("/").text
-    assert client.get("/app").status_code == 200
+    assert "/report" in client.get("/").text
+    report_page = client.get("/report")
+    assert report_page.status_code == 200 and "/api/intake" in report_page.text
+    app_page = client.get("/app").text
+    assert 'id="report-text"' not in app_page  # developers no longer type reports
     assert client.get("/static/app.js").status_code == 200
 
 
-def test_missing_api_key_returns_502_with_korean_detail(client, monkeypatch):
+def test_missing_api_key_returns_502_with_korean_detail(reporter, monkeypatch):
     from app import llm
     from app.pipeline import analyze
 
@@ -128,6 +153,6 @@ def test_missing_api_key_returns_502_with_korean_detail(client, monkeypatch):
     monkeypatch.setattr(main, "analyze", analyze)  # undo the fixture stub: go through the real call_llm
     monkeypatch.setattr(llm, "_client", None)
     monkeypatch.setattr(llm, "get_api_key", no_key)
-    r = client.post("/api/reports", json={"text": "제보"})
+    r = reporter.post("/api/intake", json={"text": "제보"})
     assert r.status_code == 502
     assert any("가" <= ch <= "힣" for ch in r.json()["detail"])

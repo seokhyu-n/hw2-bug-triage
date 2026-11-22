@@ -12,11 +12,9 @@
 </header>
 <main>
   <section class="panel" id="triage">
-    <h2>제보 입력</h2>
-    <textarea id="report-text" maxlength="5000" placeholder="제보 내용을 붙여넣으세요 (5,000자 이하)"></textarea>
-    <p><button id="submit-btn">분석하기</button></p>
-    <div class="error" id="submit-err"></div>
-    <h2>내 제보</h2>
+    <h2>내 담당 제보 <button id="refresh-btn" class="small">새로 고침</button></h2>
+    <p class="meta">제보는 <a href="/report" target="_blank" rel="noopener">문제 신고 페이지</a>로 들어오고, 기능 영역에 따라 담당자에게 자동 배정됩니다.</p>
+    <div class="error" id="list-err"></div>
     <ul class="report-list" id="report-list"></ul>
     <div id="detail"></div>
   </section>

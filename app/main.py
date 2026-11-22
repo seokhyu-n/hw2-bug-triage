@@ -1,4 +1,4 @@
-"""FastAPI service: login, report intake/triage, reanalysis, chatbot, static UI."""
+"""FastAPI service: public report intake, developer login, triage view, reanalysis, chatbot, static UI."""
 from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -113,16 +113,25 @@ def me(dev_id: str = Depends(current_dev)):
     return {"dev_id": dev_id}
 
 
-@app.post("/api/reports")
-def create_report(body: ReportIn, request: Request, _dev: str = Depends(current_dev)):
-    store = _store(request)
+@app.get("/report")
+def report_page():
+    return FileResponse(STATIC_DIR / "report.html")
+
+
+@app.post("/api/intake")
+def intake(body: ReportIn, request: Request):
+    """Public intake for reporters (app users, QA, support). No login.
+
+    The reporter only gets a receipt number; the triage result and the assignee
+    stay on the developer side.
+    """
     try:
         result, logs = analyze(body.text)
     except LLMError as exc:
         raise _llm_http_error(exc)
     owner = assign_developer(result.extraction.feature_area)
-    rid = store.create_report(owner, body.text, result, logs)
-    return _view(store.get_report(owner, rid))
+    rid = _store(request).create_report(owner, body.text, result, logs)
+    return {"request_id": rid, "message": f"제보가 접수되었습니다. 접수 번호는 {rid}입니다. 담당 개발자가 확인할 예정입니다."}
 
 
 @app.get("/api/reports")
