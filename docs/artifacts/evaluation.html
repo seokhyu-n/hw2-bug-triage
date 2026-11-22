@@ -146,6 +146,31 @@ li{margin:3px 0}
 <li>frequency는 원문 빈도 표현만 짧게 (6건, 채점상 표현 차이)</li>
 </ol>
 
+<h2>7. 평가 Excel 구성 (eval/runs.xlsx)</h2>
+<p>과제가 요구하는 "태스크별 평가 결과와 개선 히스토리"를 한눈에 보도록, Excel을 태스크별 시트로 나눴다. <code>eval/run_eval.py:build_xlsx</code>가 <code>eval/runs.csv</code>와 Run별 혼동 행렬 CSV에서 다시 만들기 때문에 API 호출 없이 갱신된다.</p>
+<div class="scroll"><table class="wide">
+<tr><th>시트</th><th>담긴 지표</th></tr>
+<tr><td>전체 Run</td><td>모든 지표 한 줄씩 (runs.csv와 같음)</td></tr>
+<tr><td>분류</td><td>분류 정확도, macro-F1, labels 정확도</td></tr>
+<tr><td>추출</td><td>추출 평균 정확도, 환각률, 누락률, symptom·expected·actual·repro_steps 유무 일치</td></tr>
+<tr><td>스코어링</td><td>완성도 MAE, 우선순위 exact, ±1</td></tr>
+<tr><td>이슈 연결</td><td>링크 정확도</td></tr>
+<tr><td>속도·비용</td><td>평균 응답시간, 총비용, 캐시 적중 토큰</td></tr>
+<tr><td>혼동행렬 Run-01 ~ Run-07</td><td>Run별 분류 혼동 행렬</td></tr>
+</table></div>
+<p>태스크별 시트에는 Run마다 지표, <b>같은 모델의 이전 Run 대비 변화</b>, 변경사항(개선 히스토리), 대표 지표의 막대 차트가 들어 있다. 변화량을 바로 앞 Run이 아니라 같은 모델끼리 비교하는 이유는, Run-06이 Sonnet 비교(Run-05)가 아니라 Haiku 기본 설정(Run-04)을 개선한 실험이기 때문이다. 3건짜리 시험 실행(Run-00-smoke)은 Excel에서만 빼고 CSV에는 남겼다.</p>
+<h3>예: 스코어링 시트의 우선순위 exact 변화</h3>
+<div class="scroll"><table>
+<tr><th>Run</th><th>모델</th><th class="n">우선순위 exact</th><th class="n">같은 모델 이전 Run 대비</th><th>변경사항</th></tr>
+<tr><td>Run-01</td><td>Haiku</td><td class="n">0.76</td><td class="n">-</td><td>기준선</td></tr>
+<tr><td>Run-02</td><td>Haiku</td><td class="n">0.79</td><td class="n">+0.03</td><td>Few-shot 추가</td></tr>
+<tr><td>Run-03</td><td>Haiku</td><td class="n">0.82</td><td class="n">+0.03</td><td>Rubric 추가</td></tr>
+<tr><td>Run-04</td><td>Haiku</td><td class="n">0.84</td><td class="n">+0.02</td><td>Context 선별</td></tr>
+<tr><td>Run-05</td><td>Sonnet</td><td class="n">0.93</td><td class="n">-</td><td>모델 비교 (Sonnet 첫 Run)</td></tr>
+<tr><td>Run-06</td><td>Haiku</td><td class="n">0.84</td><td class="n">0.00</td><td>개선1 추출 (Run-04 대비)</td></tr>
+<tr class="final"><td>Run-07</td><td>Haiku</td><td class="n">0.88</td><td class="n">+0.04</td><td>개선2 Rubric (최종)</td></tr>
+</table></div>
+
 </main>
 </body>
 </html>
