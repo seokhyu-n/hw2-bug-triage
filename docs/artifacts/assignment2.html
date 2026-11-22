@@ -110,6 +110,7 @@ li{margin:3px 0}
       <tr><td>Structured Outputs, Function calling</td><td>분석 체인 3번, Function calling 1~3번</td></tr>
       <tr><td>Context 선별·위치 배치·상태 관리, Prefix cache, 여러 태스크 조합</td><td>서비스 구조 3·4·6번, 분석 체인 2번</td></tr>
       <tr><td>평가셋·지표, 자동 채점, CSV·Excel, 품질·응답시간·비용, Baseline 후 한 변수씩</td><td>평가 결과 1~7번</td></tr>
+      <tr><td>반복 실행으로 흔들림 측정, 사람의 정답 검토, 경계 사례를 더한 dataset_v2</td><td>평가 결과 8번</td></tr>
     </table></div>
     <p class="legend">파일·함수 단위 대응표는 저장소 README에 있다.</p>
   </details>
@@ -393,6 +394,41 @@ li{margin:3px 0}
 <tr><td>Run-06</td><td>Haiku</td><td class="n">0.84</td><td class="n">0.00</td><td>개선1 추출 (Run-04 대비)</td></tr>
 <tr class="final"><td>Run-07</td><td>Haiku</td><td class="n">0.88</td><td class="n">+0.04</td><td>개선2 Rubric (최종)</td></tr>
 </table></div>
+
+<h2>8. 평가 보강: 반복 실행 · 정답 검토 · dataset_v2</h2>
+<p>세 가지를 더 확인했다. 같은 설정을 반복해 결과의 흔들림을 쟀고, 정답을 사람이 직접 검토했고, 헷갈리는 분류 사례 20건을 더한 dataset_v2(120건)로 다시 평가했다. 추가 비용은 약 $0.59. 원본은 <code>docs/analysis/eval_strengthening.md</code>.</p>
+
+<h3>반복 실행 (각 3회): 개선은 잡음보다 컸나</h3>
+<div class="scroll"><table>
+<tr><th>지표</th><th>Run-04 (3회)</th><th class="n">평균</th><th>Run-07 (3회)</th><th class="n">평균</th><th>판단</th></tr>
+<tr><td>우선순위 exact</td><td>0.84 / 0.81 / 0.82</td><td class="n">0.823</td><td>0.88 / 0.89 / 0.87</td><td class="n">0.880</td><td>범위가 겹치지 않음: 개선 확인</td></tr>
+<tr><td>추출 정확도</td><td>0.950 / 0.948 / 0.950</td><td class="n">0.949</td><td>0.972 / 0.976 / 0.972</td><td class="n">0.973</td><td>개선 확인</td></tr>
+<tr><td>완성도 MAE</td><td>0.107 / 0.089 / 0.179</td><td class="n">0.125</td><td>0.109 / 0.107 / 0.071</td><td class="n">0.096</td><td>많이 흔들림: 단정 어려움</td></tr>
+<tr><td>분류 정확도</td><td>0.98 / 0.99 / 0.98</td><td class="n">0.983</td><td>0.98 / 0.98 / 0.99</td><td class="n">0.983</td><td>차이 없음</td></tr>
+</table></div>
+
+<h3>정답 직접 검토</h3>
+<div class="note ok">기존 평가셋 36건(분류별로 골고루 뽑은 30건 + 앞서 확인한 6건)과 새 사례 20건, <b>모두 56건을 사람이 검토</b>했고 <b>고칠 정답은 0건</b>이었다. 검토 중 나온 의견(E-024: 3초 카운트다운은 이미 있는 기능)은 다음 개선 후보로 남겼다.</div>
+
+<h3>dataset_v2 (120건) 결과</h3>
+<p>v1 100건은 그대로 두고, 고장처럼 들리는 문의·요청처럼 보이는 버그 같은 경계 사례 20건(E-101~E-120)을 더했다.</p>
+<div class="scroll"><table>
+<tr><th>Run</th><th class="n">분류</th><th class="n">labels</th><th class="n">추출</th><th class="n">완성도 MAE</th><th class="n">우선순위 exact</th><th class="n">새 20건 분류</th><th class="n">새 20건 우선순위</th></tr>
+<tr><td>V2-Run-01 기준선</td><td class="n">0.983</td><td class="n">0.925</td><td class="n">0.972</td><td class="n">0.462</td><td class="n">0.775</td><td class="n">0.90</td><td class="n">0.80</td></tr>
+<tr class="final"><td>V2-Run-07 최종</td><td class="n">0.950</td><td class="n">0.867</td><td class="n">0.980</td><td class="n">0.077</td><td class="n">0.825</td><td class="n">0.80</td><td class="n">0.55</td></tr>
+</table></div>
+<div class="note"><b>최종 설정의 약점이 드러났다.</b> 전체로는 최종 설정이 낫지만(완성도 MAE 0.462 &rarr; 0.077, 우선순위 0.775 &rarr; 0.825) 새 경계 사례에서는 기준선보다 나빴다.
+<ul>
+<li><b>문의를 버그로:</b> E-101(러닝머신에서는 원래 경로가 안 그려지나요?), E-107(AI 코치가 기록을 못 보나요?), E-108(위치 권한 '항상 허용'이 꼭 필요한가요?)을 bug로 분류했다. v1에서 Few-shot 추가 뒤 E-021·E-052를 버그로 오분류한 것과 같은 방향이다.</li>
+<li><b>P3를 P2로:</b> E-109~E-112, E-114(카드 저장, 음성 설정, 지도 지연, AI 응답 언어 등 부가 기능 문제)를 P2로 올렸다. 6번에서 다음 후보로 적은 "Rubric에 핵심 기능 범위가 없음" 문제가 새 데이터에서도 재현됐다.</li>
+<li>각 1회 실행이고 새 사례 1건이 5%p다. 다만 우선순위 5건 차이는 반복 실행에서 본 흔들림(1~3건)보다 크다.</li>
+</ul></div>
+<h3>다음 개선 후보</h3>
+<ol>
+<li>Rubric에 핵심/부가 기능 범위 명시 (거리·경로·기록 저장·로그인 = 핵심, 카드·음성·AI 코치·표시 = 부가)</li>
+<li>분류 Few-shot에 "고장처럼 들리지만 정상 동작을 묻는 문의" 예시 추가, RunBuddy 현재 기능 목록(3초 카운트다운, 실내 러닝은 경로 없음 등)을 분류 프롬프트에 제공</li>
+<li>복합 제보에서 질문 문장이 있으면 question 라벨도 함께 붙이는 규칙 명확화</li>
+</ol>
 </section>
 </main>
 

@@ -39,6 +39,7 @@ SUMMARY = """
       <tr><td>Structured Outputs, Function calling</td><td>분석 체인 3번, Function calling 1~3번</td></tr>
       <tr><td>Context 선별·위치 배치·상태 관리, Prefix cache, 여러 태스크 조합</td><td>서비스 구조 3·4·6번, 분석 체인 2번</td></tr>
       <tr><td>평가셋·지표, 자동 채점, CSV·Excel, 품질·응답시간·비용, Baseline 후 한 변수씩</td><td>평가 결과 1~7번</td></tr>
+      <tr><td>반복 실행으로 흔들림 측정, 사람의 정답 검토, 경계 사례를 더한 dataset_v2</td><td>평가 결과 8번</td></tr>
     </table></div>
     <p class="legend">파일·함수 단위 대응표는 저장소 README에 있다.</p>
   </details>

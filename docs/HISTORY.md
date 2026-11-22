@@ -1,6 +1,10 @@
 # HISTORY
 
 Newest entry on top.
+## 2026-11-22 Eval strengthening: repeats, human label review, dataset_v2
+- Repeat runs: Run-04 x3 (at commit 988c4a5 via a temporary worktree) and Run-07 x3. Priority exact 0.823 -> 0.880 and extraction 0.949 -> 0.973 hold across all repeats; completeness MAE swings 0.071-0.179 within one setting.
+- Human review in chat (no Excel at hand): 56 labels (36 from v1 + 20 new) checked, 0 fixes. E-024 note: 3-second countdown already exists in RunBuddy (kept as feature_request).
+- dataset_v2 = v1 + 20 hard classification cases. V2-Run-01 (baseline) vs V2-Run-07 (final): overall final still better on priority/MAE, but worse on the new 20 (classification 0.90 vs 0.80, priority 0.80 vs 0.55): question->bug and P3->P2 over-rating. Docs: `docs/analysis/eval_strengthening.md`, README, evaluation tab 8. Excel gains 반복 실행 and dataset_v2 sheets. Cost ~$0.59.
 ## 2026-11-22 Analysis pages merged, repo on GitHub
 - Four analysis pages combined into one tabbed page (`docs/artifacts/assignment2.html`, builder `build_combined.py`); lecture references removed at the user's request.
 - Project pushed to private GitHub repo `seokhyu-n/hw2-bug-triage` so it can run on the academy PC; STATE rewritten with setup steps for another computer.

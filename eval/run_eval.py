@@ -22,6 +22,7 @@ from eval import grade
 
 EVAL_DIR = ROOT / "eval"
 DATASET = EVAL_DIR / "dataset_v1.jsonl"
+DATASET_V2 = EVAL_DIR / "dataset_v2.jsonl"  # v1 + 20 hard classification cases (E-101..E-120)
 RESULTS_DIR = EVAL_DIR / "results"
 RUNS_CSV = EVAL_DIR / "runs.csv"
 RUNS_XLSX = EVAL_DIR / "runs.xlsx"
@@ -39,8 +40,9 @@ RUNS_COLUMNS = [
 ]
 
 
-def load_dataset(only_hard: bool = False, limit: int | None = None) -> list[dict]:
-    cases = [json.loads(line) for line in DATASET.read_text(encoding="utf-8").splitlines() if line.strip()]
+def load_dataset(only_hard: bool = False, limit: int | None = None, dataset: str = "v1") -> list[dict]:
+    path = DATASET_V2 if dataset == "v2" else DATASET
+    cases = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
     cases.sort(key=lambda c: c["id"])
     if only_hard:
         cases = [c for c in cases if c.get("hard")]
@@ -159,6 +161,50 @@ def _in_report(run_id: str) -> bool:
     return not run_id.endswith("-smoke")
 
 
+_REPEAT = re.compile(r"^(?P<base>.+)-r\d+$")
+
+
+def _is_main_series(run_id: str) -> bool:
+    """The one-variable experiment series on dataset_v1: no repeats (Run-07-r2) and no V2- runs."""
+    return not _REPEAT.match(run_id) and not run_id.startswith("V2-")
+
+
+def _repeat_sheet(wb, runs: list[dict]) -> None:
+    """Mean / min / max / std of each metric over a run and its repeats (Run-07, Run-07-r2, Run-07-r3)."""
+    groups: dict[str, list[dict]] = {}
+    for r in runs:
+        m = _REPEAT.match(r["Run ID"])
+        base = m.group("base") if m else r["Run ID"]
+        groups.setdefault(base, []).append(r)
+    groups = {b: g for b, g in groups.items() if len(g) > 1}
+    if not groups:
+        return
+    ws = wb.create_sheet("반복 실행")
+    metrics = [c for c in RUNS_COLUMNS if c not in TEXT_COLUMNS and c not in ("데이터 건수", "오류 건수")]
+    ws.append(["설정", "지표", "실행 횟수", "평균", "최소", "최대", "표준편차", "각 실행 값"])
+    for base, group in groups.items():
+        for m in metrics:
+            vals = [v for v in (_xl_value(m, r.get(m, "")) for r in group) if isinstance(v, (int, float))]
+            if not vals:
+                continue
+            mean = sum(vals) / len(vals)
+            std = (sum((v - mean) ** 2 for v in vals) / (len(vals) - 1)) ** 0.5 if len(vals) > 1 else 0.0
+            ws.append([base, m, len(vals), round(mean, 4), min(vals), max(vals), round(std, 4),
+                       " / ".join(str(v) for v in vals)])
+    ws.freeze_panes = "C2"
+
+
+def _v2_sheet(wb, runs: list[dict]) -> None:
+    v2 = [r for r in runs if r["Run ID"].startswith("V2-")]
+    if not v2:
+        return
+    ws = wb.create_sheet("dataset_v2")
+    ws.append(RUNS_COLUMNS)
+    for r in v2:
+        ws.append([_xl_value(c, r.get(c, "")) for c in RUNS_COLUMNS])
+    ws.freeze_panes = "C2"
+
+
 def _task_sheet(wb, title: str, metrics: list[str], primary: str, runs: list[dict]) -> None:
     ws = wb.create_sheet(title)
     # compare with the previous run of the SAME model (a Sonnet comparison run must not become the
@@ -185,7 +231,8 @@ def _task_sheet(wb, title: str, metrics: list[str], primary: str, runs: list[dic
 
 def build_xlsx() -> None:
     """Regenerate runs.xlsx from runs.csv: all metrics, one sheet per task (분류·추출·스코어링·이슈 연결·
-    속도·비용) with the change history, then each run's confusion matrix."""
+    속도·비용) for the main v1 series with the change history, 반복 실행 (mean/std over repeats),
+    dataset_v2 runs, then each run's confusion matrix."""
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "전체 Run"
@@ -194,9 +241,12 @@ def build_xlsx() -> None:
     for r in runs:
         ws.append([_xl_value(c, r.get(c, "")) for c in RUNS_COLUMNS])
     ws.freeze_panes = "C2"
+    main = [r for r in runs if _is_main_series(r["Run ID"])]
     for title, (metrics, primary) in TASK_SHEETS.items():
-        _task_sheet(wb, title, metrics, primary, runs)
-    used = {"전체 Run", *TASK_SHEETS}
+        _task_sheet(wb, title, metrics, primary, main)
+    _repeat_sheet(wb, runs)
+    _v2_sheet(wb, runs)
+    used = set(wb.sheetnames)
     for r in runs:
         name = re.sub(r"[\[\]:*?/\\]", "_", f"혼동행렬 {r['Run ID']}")[:31]
         if name in used:
@@ -220,7 +270,7 @@ def run(args: argparse.Namespace) -> dict:
     model = MODEL_ALIASES.get(args.model, args.model)
     cfg = PipelineConfig(model=model, few_shot=cfg.few_shot, rubric=cfg.rubric,
                          context_select=cfg.context_select, effort=args.effort or cfg.effort)
-    cases = load_dataset(args.only_hard, args.limit)
+    cases = load_dataset(args.only_hard, args.limit, args.dataset)
     with ThreadPoolExecutor(max_workers=max(1, args.workers)) as pool:
         outs = list(pool.map(lambda c: _run_case(c, cfg), cases))  # map keeps dataset order
 
@@ -236,7 +286,7 @@ def run(args: argparse.Namespace) -> dict:
     pres = ext["presence"]
     summary = {
         "날짜": datetime.now().strftime("%Y-%m-%d %H:%M"), "Run ID": args.run_id, "모델": model,
-        "설정": describe(cfg), "데이터 건수": len(cases), "오류 건수": sum(bool(o["error"]) for o in outs),
+        "설정": describe(cfg) + ("" if args.dataset == "v1" else f" dataset={args.dataset}"), "데이터 건수": len(cases), "오류 건수": sum(bool(o["error"]) for o in outs),
         "분류 정확도": _fmt(cls["accuracy"]), "분류 macro-F1": _fmt(cls["macro_f1"]),
         "labels 정확도": _fmt(labels_acc), "추출 평균 정확도": _fmt(ext["accuracy"]),
         "추출 환각률": _fmt(ext["hallucination_rate"]), "추출 누락률": _fmt(ext["miss_rate"]),
@@ -280,6 +330,8 @@ def main(argv: list[str] | None = None) -> dict:
     ap.add_argument("--limit", type=int, default=None)
     ap.add_argument("--only-hard", action="store_true")
     ap.add_argument("--workers", type=int, default=4)
+    ap.add_argument("--dataset", choices=["v1", "v2"], default="v1",
+                    help="v1 = frozen 100 cases, v2 = v1 + 20 hard classification cases")
     summary = run(ap.parse_args(argv))
     print(f"{summary['Run ID']}: 분류 {summary['분류 정확도']} / 추출 {summary['추출 평균 정확도']} / "
           f"오류 {summary['오류 건수']} / 비용 ${summary['총비용(USD)']}")

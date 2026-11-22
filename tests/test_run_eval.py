@@ -178,3 +178,21 @@ def test_task_sheets_show_history_and_skip_smoke_runs(env, monkeypatch):
     assert rows[2][-2] == 0 and rows[2][-1] == "다음"
     assert len(ws._charts) == 1
     assert [r["Run ID"] for r in _rows(env / "runs.csv")][0] == "Run-00-smoke"  # still recorded in CSV
+
+
+def test_dataset_v2_option_and_report_sheets(env, monkeypatch):
+    v2 = env / "ds_v2.jsonl"
+    v2.write_text("\n".join(json.dumps(c, ensure_ascii=False) for c in CASES[:1]), encoding="utf-8")
+    monkeypatch.setattr(run_eval, "DATASET_V2", v2)
+    monkeypatch.setattr(run_eval, "analyze", lambda t, c: (_result(
+        "question", CASES[0]["expected"]["extraction"], None, "P4", None), _logs()))
+    run_eval.main(["--run-id", "Run-A"])
+    run_eval.main(["--run-id", "Run-A-r2"])
+    s = run_eval.main(["--run-id", "V2-Run-A", "--dataset", "v2"])
+    assert s["데이터 건수"] == 1 and s["설정"].endswith("dataset=v2")
+    wb = openpyxl.load_workbook(env / "runs.xlsx")
+    assert "반복 실행" in wb.sheetnames and "dataset_v2" in wb.sheetnames
+    assert [r[0] for r in wb["분류"].iter_rows(min_row=2, values_only=True)] == ["Run-A"]  # main series only
+    rep = [r for r in wb["반복 실행"].iter_rows(min_row=2, values_only=True) if r[1] == "분류 정확도"]
+    assert rep[0][0] == "Run-A" and rep[0][2] == 2
+    assert [r[1] for r in wb["dataset_v2"].iter_rows(min_row=2, values_only=True)] == ["V2-Run-A"]
