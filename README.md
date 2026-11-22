@@ -14,7 +14,7 @@
         ▼                                   ▼
                     FastAPI (app/main.py)
         ┌──────────────────────────┬───────────────────────────┐
-   POST /api/intake          POST /api/reports/{id}/reanalyze   POST /api/chat
+   POST /api/intake          POST /api/reports/{id}/reanalyze   POST /api/chat/stream (스트리밍)
    (접수 번호만 응답,          GET /api/reports[/{id}]
     feature_area로 담당 배정)  (담당자만 조회)
         │                          │                            │
@@ -63,13 +63,13 @@ python -m pip install -r requirements.txt     # 재현용 고정 버전은 requi
    python -m eval.run_eval --run-id Run-X --only-hard --limit 10 --change "어려운 사례만"
    python -m eval.check_dataset                  # 평가셋 분포 표
    ```
-   옵션: `--no-few-shot`, `--no-rubric`, `--no-context-select`, `--effort`, `--workers`(기본 4). 결과는 `eval/results/<Run>.csv·.jsonl·_confusion.csv`, 누적 표는 `eval/runs.csv`, `eval/runs.xlsx`.
+   옵션: `--no-few-shot`, `--no-rubric`, `--no-context-select`, `--effort`, `--workers`(기본 4). 결과는 `eval/results/<Run>.csv·.jsonl·_confusion.csv`, 누적 표는 `eval/runs.csv`, `eval/runs.xlsx`(태스크별 시트 포함, 3건짜리 `-smoke` Run은 Excel에서 제외).
 
 ## 강의 68쪽 필수 조건 → 구현 위치
 
 | 조건 | 구현 위치 |
 |---|---|
-| LLM API 호출, System·User 분리, 주요 파라미터 | `app/llm.py:call_llm` 하나로 모든 호출. `model`, `system`(블록 리스트), `messages`, `max_tokens`, `output_config`(`effort`, `format`), `tools`, `tool_choice=auto`, `stop_sequences`. 가격·모델명은 `app/config.py` |
+| LLM API 호출, System·User 분리, 주요 파라미터 | `app/llm.py:call_llm` 하나로 모든 호출. `model`, `system`(블록 리스트), `messages`, `max_tokens`, `output_config`(`effort`, `format`), `tools`, `tool_choice=auto`, `stop_sequences`, **스트리밍**(`on_text`를 주면 `client.messages.stream()`으로 받아 글자가 생성되는 대로 전달, `_send`). 챗봇은 `POST /api/chat/stream`으로 답변을 실시간 표시한다(NDJSON: text·tool·done 이벤트). 가격·모델명은 `app/config.py` |
 | Markdown 프롬프트 템플릿 | `prompts/extract.md`, `classify.md`, `link.md`, `score.md`, `chat.md` (Task / Context / Constraints / Input / Output format / Success criteria). 로딩은 `app/prompts.py:load` |
 | Few-shot | `prompts/extract_fewshot.md`, `classify_fewshot.md`, `score_fewshot.md` (버그 vs 문의, 버그 vs 개선 요청, 복합, 주입 시도 경계 사례). `app/prompts.py:build_system`이 `few_shot` 옵션일 때 붙임 |
 | Decomposition, Prompt Chaining | `app/pipeline.py:analyze`: 추출 → 분류 → 링크 → 스코어. 앞 단계 결과를 다음 호출의 user 메시지에 넣음(`_user`, `_json`) |
@@ -81,8 +81,8 @@ python -m pip install -r requirements.txt     # 재현용 고정 버전은 requi
 | Context 선별·위치·상태 관리 | 선별: `PipelineConfig.context_select`, `app/pipeline.py:analyze`(링크·스코어에는 원문 대신 추출 결과). 재분석: `_source_block`(확정 필드 + 새 정보만). 챗봇: `app/chat.py:build_messages`(최근 6턴), `summarize_state`(코드로 만든 상태 요약). 원본 이력은 `app/store.py:Store`가 서버에 보관 |
 | Prefix cache 고려 배치 | `app/prompts.py:build_system`: 규칙 → Few-shot → Rubric 순으로 system에 두고 마지막 블록에만 `cache_control`. 제보 원문·조회 결과는 user 메시지(`app/pipeline.py:_user`). 확인은 `app/llm.py:call_llm`이 기록하는 `cache_read` |
 | 여러 LLM 태스크 조합 | 추출·분류·이슈 연결·스코어링 + 챗봇이 한 서비스(`app/main.py`)로 동작 |
-| 평가셋·지표 | `eval/dataset_v1.jsonl`(100건, 어려운 사례 25건 `hard: true`), 채점 함수 `eval/grade.py` (`classification_metrics`, `extraction_metrics`, `completeness_mae`, `priority_metrics`, `link_accuracy`) |
-| Python 자동 채점, CSV·Excel | `eval/run_eval.py:run` → `eval/results/*.csv`, `eval/runs.csv`, `eval/runs.xlsx`(`build_xlsx`). Confusion matrix는 `eval/results/<Run>_confusion.csv` |
+| 평가셋·지표 | `eval/dataset_v1.jsonl`(100건, 어려운 사례 25건 `hard: true`; Claude Code가 루브릭·알려진 이슈를 근거로 초안을 쓰고, 판단이 애매한 6건은 사람이 검토해 정답을 확정한 뒤 고정), 채점 함수 `eval/grade.py` (`classification_metrics`, `extraction_metrics`, `completeness_mae`, `priority_metrics`, `link_accuracy`) |
+| Python 자동 채점, CSV·Excel | `eval/run_eval.py:run` → `eval/results/*.csv`, `eval/runs.csv`, `eval/runs.xlsx`(`build_xlsx`): **전체 Run 시트 + 태스크별 시트(분류·추출·스코어링·이슈 연결·속도·비용)**. 태스크별 시트는 Run마다 지표, 같은 모델 이전 Run 대비 변화, 변경사항(개선 히스토리)과 막대 차트를 담는다. Confusion matrix는 Run별 `혼동행렬` 시트와 `eval/results/<Run>_confusion.csv` |
 | 품질·응답시간·비용 비교 | `eval/runs.csv`의 한 줄에 정확도·MAE·평균 응답시간·총비용·캐시 적중 토큰을 함께 기록 |
 | Baseline 후 한 변수씩 개선 | 아래 평가 요약의 Run-01~07 표, `docs/analysis/run_comparison.md` |
 

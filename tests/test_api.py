@@ -156,3 +156,34 @@ def test_missing_api_key_returns_502_with_korean_detail(reporter, monkeypatch):
     r = reporter.post("/api/intake", json={"text": "제보"})
     assert r.status_code == 502
     assert any("가" <= ch <= "힣" for ch in r.json()["detail"])
+
+
+def _ndjson(resp):
+    import json
+    return [json.loads(x) for x in resp.text.splitlines() if x.strip()]
+
+
+def test_chat_stream_sends_text_tool_and_done(client, monkeypatch):
+    def fake(dev_id, message, store, on_text=None, on_tool=None, **kw):
+        on_tool("list_my_reports")
+        on_text("담당 ")
+        on_text("제보 없음")
+        return ChatReply(text="담당 제보 없음", tool_calls=["list_my_reports"], cost_usd=0.001,
+                         latency_s=1.0, cache_read=5)
+    monkeypatch.setattr(main, "chat_turn", fake)
+    r = client.post("/api/chat/stream", json={"message": "내 제보"})
+    assert r.status_code == 200 and r.headers["content-type"].startswith("application/x-ndjson")
+    events = _ndjson(r)
+    assert [e["type"] for e in events] == ["tool", "text", "text", "done"]
+    assert events[-1]["text"] == "담당 제보 없음" and events[-1]["tool_calls"] == ["list_my_reports"]
+
+
+def test_chat_stream_error_event_and_login(client, monkeypatch):
+    def boom(*a, **kw):
+        raise LLMUnavailable("x")
+    monkeypatch.setattr(main, "chat_turn", boom)
+    events = _ndjson(client.post("/api/chat/stream", json={"message": "x"}))
+    assert events == [{"type": "error", "detail": events[0]["detail"]}]
+    assert any("가" <= ch <= "힣" for ch in events[0]["detail"])
+    assert TestClient(main.app).post("/api/chat/stream", json={"message": "x"}).status_code == 401
+    assert client.post("/api/chat/stream", json={"message": " "}).status_code == 422

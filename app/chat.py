@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import re
+from collections.abc import Callable
 from dataclasses import dataclass
 
 from app.config import MODEL_DEFAULT
@@ -193,7 +194,10 @@ class ChatReply:
     cache_read: int
 
 
-def chat_turn(dev_id: str, message: str, store: Store, model: str = MODEL_DEFAULT) -> ChatReply:
+def chat_turn(dev_id: str, message: str, store: Store, model: str = MODEL_DEFAULT,
+              on_text: Callable[[str], None] | None = None,
+              on_tool: Callable[[str], None] | None = None) -> ChatReply:
+    """One chat turn. on_text streams text deltas of every round; on_tool reports each tool call."""
     history = store.get_chat(dev_id)
     messages = build_messages(history, summarize_state(dev_id, store, history), message)
     system = build_chat_system()
@@ -203,7 +207,8 @@ def chat_turn(dev_id: str, message: str, store: Store, model: str = MODEL_DEFAUL
     changed: list[str] = []  # state-changing tools that succeeded this turn
     for round_no in range(MAX_TOOL_ROUNDS + 1):
         try:
-            res = call_llm(step="chat", system=system, messages=messages, tools=CHAT_TOOL_DEFS, model=model)
+            res = call_llm(step="chat", system=system, messages=messages, tools=CHAT_TOOL_DEFS, model=model,
+                           on_text=on_text)
         except LLMError:
             if not changed:
                 raise
@@ -229,6 +234,8 @@ def chat_turn(dev_id: str, message: str, store: Store, model: str = MODEL_DEFAUL
             if getattr(block, "type", None) != "tool_use":
                 continue
             tool_calls.append(block.name)
+            if on_tool:
+                on_tool(block.name)
             json_str, is_error = run_chat_tool(dev_id, store, block.name, block.input, message, history)
             if block.name == "reanalyze_report" and not is_error:
                 changed.append(block.name)

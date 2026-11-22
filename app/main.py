@@ -1,6 +1,10 @@
 """FastAPI service: public report intake, developer login, triage view, reanalysis, chatbot, static UI."""
+import json
+import queue
+import threading
+
 from fastapi import Depends, FastAPI, HTTPException, Request, Response
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, field_validator
 
@@ -173,6 +177,38 @@ def chat(body: ChatIn, request: Request, dev_id: str = Depends(current_dev)):
         raise _llm_http_error(exc)
     return {"text": reply.text, "tool_calls": reply.tool_calls, "cost_usd": reply.cost_usd,
             "latency_s": reply.latency_s, "cache_read": reply.cache_read}
+
+
+@app.post("/api/chat/stream")
+def chat_stream(body: ChatIn, request: Request, dev_id: str = Depends(current_dev)):
+    """Streamed chat turn as NDJSON lines:
+    {"type":"text","text":...} per text delta, {"type":"tool","name":...} per tool call,
+    then {"type":"done", ...reply} or {"type":"error","detail":...}."""
+    store = _store(request)
+    events: queue.Queue = queue.Queue()
+
+    def worker():
+        try:
+            reply = chat_turn(dev_id, body.message, store,
+                              on_text=lambda t: events.put({"type": "text", "text": t}),
+                              on_tool=lambda n: events.put({"type": "tool", "name": n}))
+            events.put({"type": "done", "text": reply.text, "tool_calls": reply.tool_calls,
+                        "cost_usd": reply.cost_usd, "latency_s": reply.latency_s,
+                        "cache_read": reply.cache_read})
+        except LLMError as exc:
+            events.put({"type": "error", "detail": _llm_http_error(exc).detail})
+        except Exception:  # noqa: BLE001 - the stream has started; report instead of a broken connection
+            events.put({"type": "error", "detail": "답변 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요."})
+        finally:
+            events.put(None)
+
+    threading.Thread(target=worker, daemon=True).start()
+
+    def lines():
+        while (ev := events.get()) is not None:
+            yield json.dumps(ev, ensure_ascii=False) + "\n"
+
+    return StreamingResponse(lines(), media_type="application/x-ndjson")
 
 
 @app.get("/api/chat/history")

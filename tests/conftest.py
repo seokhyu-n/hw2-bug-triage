@@ -29,7 +29,8 @@ class FakeClient:
     def __init__(self):
         self.responses: list = []
         self.calls: list[dict] = []
-        self.messages = SimpleNamespace(create=self._create)
+        self.messages = SimpleNamespace(create=self._create, stream=self._stream)
+        self.streamed_calls = 0
 
     def queue(self, *responses):
         self.responses.extend(responses)
@@ -41,6 +42,34 @@ class FakeClient:
         if isinstance(item, Exception):
             raise item
         return item
+
+    def _stream(self, **kwargs):
+        """Mimics messages.stream(): a context manager with text_stream and get_final_message()."""
+        self.streamed_calls += 1
+        resp = self._create(**kwargs)
+        return _FakeStream(resp)
+
+
+class _FakeStream:
+    def __init__(self, resp):
+        self._resp = resp
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+    @property
+    def text_stream(self):
+        for block in self._resp.content:
+            if getattr(block, "type", None) == "text":
+                # deliver each text block in two chunks, like real deltas
+                mid = len(block.text) // 2
+                yield from (block.text[:mid], block.text[mid:])
+
+    def get_final_message(self):
+        return self._resp
 
 
 @pytest.fixture

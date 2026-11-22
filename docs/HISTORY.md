@@ -1,6 +1,11 @@
 # HISTORY
 
 Newest entry on top.
+## 2026-11-22 Streaming chatbot and per-task eval sheets (PDF gap check)
+- Gap check against lecture p65/p68: all required items present; `stream` (p14 key parameter) was unused and eval results were not split by task.
+- `app/llm.py`: `call_llm(on_text=...)` streams via `client.messages.stream()` (`text_stream`, `get_final_message()`), same LLMResult. `app/chat.py`: `chat_turn(on_text, on_tool)`. New `POST /api/chat/stream` (NDJSON text/tool/done/error); UI renders replies as they arrive. Verified live: one reply = 13 text chunks.
+- `eval/run_eval.py:build_xlsx`: sheets 전체 Run + 분류/추출/스코어링/이슈 연결/속도·비용 (metrics, delta vs previous run of the same model, 변경사항, bar chart) + 혼동행렬 per run; `-smoke` runs excluded from Excel only. runs.xlsx regenerated (no API calls).
+- README: streaming, task sheets, how the eval set was made. 154 tests pass.
 ## 2026-11-22 Split reporter intake from developer screen
 - New public page `/report` + `POST /api/intake` (no login): reporter gets only the receipt number; triage result and assignee stay on the developer side. Assignment by `feature_area` unchanged.
 - Removed the authenticated `POST /api/reports` and the report input box from `/app`; added a refresh button. Login page links to `/report`.

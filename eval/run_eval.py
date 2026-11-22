@@ -13,6 +13,7 @@ from datetime import datetime
 from pathlib import Path
 
 import openpyxl
+from openpyxl.chart import BarChart, Reference
 
 from app.config import MODEL_COMPARE, MODEL_DEFAULT, ROOT
 from app.llm import LLMError
@@ -142,19 +143,62 @@ def _xl_value(col: str, v: str):
             return v
 
 
+# Per-task sheets: (metric columns, primary metric for the chart and the "vs previous run" column)
+TASK_SHEETS: dict[str, tuple[list[str], str]] = {
+    "분류": (["분류 정확도", "분류 macro-F1", "labels 정확도"], "분류 정확도"),
+    "추출": (["추출 평균 정확도", "추출 환각률", "추출 누락률", "symptom 유무 일치", "expected 유무 일치",
+             "actual 유무 일치", "repro_steps 유무 일치"], "추출 평균 정확도"),
+    "스코어링": (["완성도 MAE", "우선순위 exact", "우선순위 ±1"], "우선순위 exact"),
+    "이슈 연결": (["링크 정확도"], "링크 정확도"),
+    "속도·비용": (["평균 응답시간(s)", "총비용(USD)", "캐시 적중 토큰"], "총비용(USD)"),
+}
+
+
+def _in_report(run_id: str) -> bool:
+    """Smoke runs (e.g. Run-00-smoke, 3 cases) stay in runs.csv but not in the Excel report."""
+    return not run_id.endswith("-smoke")
+
+
+def _task_sheet(wb, title: str, metrics: list[str], primary: str, runs: list[dict]) -> None:
+    ws = wb.create_sheet(title)
+    # compare with the previous run of the SAME model (a Sonnet comparison run must not become the
+    # baseline of the next Haiku improvement)
+    ws.append(["Run ID", "모델", *metrics, f"{primary} 같은 모델 이전 Run 대비", "변경사항"])
+    prev_by_model: dict[str, float] = {}
+    for r in runs:
+        cur = _xl_value(primary, r.get(primary, ""))
+        prev = prev_by_model.get(r["모델"])
+        delta = round(cur - prev, 4) if isinstance(cur, (int, float)) and isinstance(prev, (int, float)) else ""
+        ws.append([r["Run ID"], r["모델"], *[_xl_value(m, r.get(m, "")) for m in metrics], delta, r["변경사항"]])
+        if isinstance(cur, (int, float)):
+            prev_by_model[r["모델"]] = cur
+    ws.freeze_panes = "B2"
+    if runs:
+        chart = BarChart()
+        chart.title = f"{primary} (Run별)"
+        col = 3 + metrics.index(primary)
+        chart.add_data(Reference(ws, min_col=col, min_row=1, max_row=len(runs) + 1), titles_from_data=True)
+        chart.set_categories(Reference(ws, min_col=1, min_row=2, max_row=len(runs) + 1))
+        chart.legend = None
+        ws.add_chart(chart, f"A{len(runs) + 4}")
+
+
 def build_xlsx() -> None:
-    """Regenerate runs.xlsx from runs.csv + each run's confusion CSV."""
+    """Regenerate runs.xlsx from runs.csv: all metrics, one sheet per task (분류·추출·스코어링·이슈 연결·
+    속도·비용) with the change history, then each run's confusion matrix."""
     wb = openpyxl.Workbook()
     ws = wb.active
-    ws.title = "runs"
+    ws.title = "전체 Run"
     ws.append(RUNS_COLUMNS)
-    runs = _read_csv(RUNS_CSV)
+    runs = [r for r in _read_csv(RUNS_CSV) if _in_report(r["Run ID"])]
     for r in runs:
         ws.append([_xl_value(c, r.get(c, "")) for c in RUNS_COLUMNS])
     ws.freeze_panes = "C2"
-    used = {"runs"}
+    for title, (metrics, primary) in TASK_SHEETS.items():
+        _task_sheet(wb, title, metrics, primary, runs)
+    used = {"전체 Run", *TASK_SHEETS}
     for r in runs:
-        name = re.sub(r"[\[\]:*?/\\]", "_", r["Run ID"])[:31]
+        name = re.sub(r"[\[\]:*?/\\]", "_", f"혼동행렬 {r['Run ID']}")[:31]
         if name in used:
             continue
         used.add(name)

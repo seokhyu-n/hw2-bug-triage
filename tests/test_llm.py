@@ -139,3 +139,24 @@ def test_other_sdk_errors_become_llm_error(fake_llm):
     fake_llm.queue(anthropic.APIError("weird", httpx.Request("POST", "http://x"), body=None))
     with pytest.raises(llm.LLMError, match="API 오류"):
         llm.call_llm(step="x", system=[], messages=[])
+
+
+def test_stream_path_calls_on_text_and_returns_same_result(fake_llm):
+    fake_llm.queue(make_response('{"a": 1}', cache_read=5))
+    chunks = []
+    res = call_llm(step="t", system=[], messages=[], on_text=chunks.append)
+    assert fake_llm.streamed_calls == 1
+    assert "".join(chunks) == '{"a": 1}' and len(chunks) == 2
+    assert res.parsed == {"a": 1} and res.usage.cache_read == 5 and res.cost_usd > 0
+
+
+def test_no_on_text_uses_create(fake_llm):
+    fake_llm.queue(make_response("{}"))
+    call_llm(step="t", system=[], messages=[])
+    assert fake_llm.streamed_calls == 0
+
+
+def test_stream_refusal_still_raises(fake_llm):
+    fake_llm.queue(make_response("", stop_reason="refusal"))
+    with pytest.raises(LLMRefusal):
+        call_llm(step="t", system=[], messages=[], on_text=lambda t: None)

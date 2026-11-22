@@ -76,11 +76,12 @@ def test_run_eval_appends_row(env, monkeypatch):
     assert (env / "results" / "Run-T1_confusion.csv").exists()
     assert (env / "results" / "Run-T1.jsonl").exists()
     wb = openpyxl.load_workbook(env / "runs.xlsx")
-    assert wb.sheetnames == ["runs", "Run-T1"]
+    assert wb.sheetnames == ["전체 Run", "분류", "추출", "스코어링", "이슈 연결", "속도·비용", "혼동행렬 Run-T1"]
     # appends on second run
     run_eval.main(["--run-id", "Run-T2", "--no-rubric"])
     assert [r["Run ID"] for r in _rows(env / "runs.csv")] == ["Run-T1", "Run-T2"]
-    assert openpyxl.load_workbook(env / "runs.xlsx").sheetnames == ["runs", "Run-T1", "Run-T2"]
+    assert openpyxl.load_workbook(env / "runs.xlsx").sheetnames == [
+        "전체 Run", "분류", "추출", "스코어링", "이슈 연결", "속도·비용", "혼동행렬 Run-T1", "혼동행렬 Run-T2"]
 
 
 def test_run_eval_records_errors(env, monkeypatch):
@@ -126,7 +127,7 @@ def test_xlsx_numeric_columns_are_numbers(env, monkeypatch):
     monkeypatch.setattr(run_eval, "analyze", lambda t, c: (_result(
         "question", CASES[0]["expected"]["extraction"], None, "P4", None), _logs()))
     run_eval.main(["--run-id", "Run-N"])
-    ws = openpyxl.load_workbook(env / "runs.xlsx")["runs"]
+    ws = openpyxl.load_workbook(env / "runs.xlsx")["전체 Run"]
     hdr = [c.value for c in ws[1]]
     row = [c.value for c in ws[2]]
     d = dict(zip(hdr, row))
@@ -159,3 +160,21 @@ def test_analyze_attaches_partial_logs_on_failure(fake_llm):
     with pytest.raises(LLMError) as ei:
         analyze("제보")
     assert [s.step for s in ei.value.partial_logs] == ["extract"]
+
+
+def test_task_sheets_show_history_and_skip_smoke_runs(env, monkeypatch):
+    monkeypatch.setattr(run_eval, "analyze", lambda t, c: (_result(
+        "question", CASES[0]["expected"]["extraction"], None, "P4", None), _logs()))
+    run_eval.main(["--run-id", "Run-00-smoke", "--limit", "1"])
+    run_eval.main(["--run-id", "Run-A", "--change", "기준"])
+    run_eval.main(["--run-id", "Run-B", "--change", "다음"])
+    wb = openpyxl.load_workbook(env / "runs.xlsx")
+    assert "혼동행렬 Run-00-smoke" not in wb.sheetnames
+    ws = wb["분류"]
+    rows = [[c.value for c in r] for r in ws.iter_rows()]
+    assert rows[0][:3] == ["Run ID", "모델", "분류 정확도"] and rows[0][-1] == "변경사항"
+    assert [r[0] for r in rows[1:]] == ["Run-A", "Run-B"]  # smoke run left out
+    assert rows[1][-2] == "" or rows[1][-2] is None      # no previous run for the first row
+    assert rows[2][-2] == 0 and rows[2][-1] == "다음"
+    assert len(ws._charts) == 1
+    assert [r["Run ID"] for r in _rows(env / "runs.csv")][0] == "Run-00-smoke"  # still recorded in CSV

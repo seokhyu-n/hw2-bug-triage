@@ -200,3 +200,15 @@ def test_chat_turn_still_raises_when_no_state_changed(fake_llm, tmp_path):
     with pytest.raises(LLMUnavailable):
         chat.chat_turn("dev1", f"{rid} 보여줘", store)
     assert store.get_chat("dev1") == []
+
+
+def test_chat_turn_streams_text_and_reports_tools(fake_llm, tmp_path):
+    store = Store(tmp_path)
+    fake_llm.queue(tool_use("list_my_reports", {"priority": None, "category": None}),
+                   make_response("담당 제보가 없습니다"))
+    texts, tools = [], []
+    reply = chat.chat_turn("dev1", "내 제보 보여줘", store, on_text=texts.append, on_tool=tools.append)
+    assert fake_llm.streamed_calls == 2
+    assert tools == ["list_my_reports"]
+    assert "".join(texts).endswith("담당 제보가 없습니다")
+    assert reply.text == "담당 제보가 없습니다"

@@ -2,6 +2,7 @@
 import json
 import logging
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 
 import anthropic
@@ -67,9 +68,23 @@ def get_client() -> anthropic.Anthropic:
     return _client
 
 
+def _send(kwargs: dict, on_text: Callable[[str], None] | None):
+    """Non-streaming create(), or messages.stream() when the caller wants text as it is generated."""
+    client = get_client()
+    if on_text is None:
+        return client.messages.create(**kwargs)
+    with client.messages.stream(**kwargs) as stream:
+        for text in stream.text_stream:
+            on_text(text)
+        return stream.get_final_message()
+
+
 def call_llm(*, step: str, system: list[dict], messages: list[dict], schema: dict | None = None,
              tools: list[dict] | None = None, model: str = MODEL_DEFAULT, effort: str = "low",
-             max_tokens: int = 4096, stop_sequences: list[str] | None = None) -> LLMResult:
+             max_tokens: int = 4096, stop_sequences: list[str] | None = None,
+             on_text: Callable[[str], None] | None = None) -> LLMResult:
+    """One Claude request. With on_text the response is streamed (stream parameter) and each text
+    delta is passed to on_text; the returned LLMResult is the same either way."""
     output_config: dict = {"effort": effort}
     if schema is not None:
         output_config["format"] = {"type": "json_schema", "schema": schema}
@@ -83,7 +98,7 @@ def call_llm(*, step: str, system: list[dict], messages: list[dict], schema: dic
 
     start = time.perf_counter()
     try:
-        resp = get_client().messages.create(**kwargs)
+        resp = _send(kwargs, on_text)
     except anthropic.AuthenticationError as e:
         raise LLMError("API 키 오류") from e
     except (anthropic.RateLimitError, anthropic.APIConnectionError) as e:

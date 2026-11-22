@@ -119,10 +119,39 @@ $("refresh-btn").onclick = async () => {
 
 function addMsg(role, text, tools) {
   const m = el("div", null, "msg " + role);
-  m.appendChild(document.createTextNode(text));
-  if (tools && tools.length) m.appendChild(el("div", "사용한 도구: " + tools.join(", "), "tools"));
+  const body = document.createTextNode(text);
+  m.appendChild(body);
+  const toolLine = el("div", tools && tools.length ? "사용한 도구: " + tools.join(", ") : "", "tools");
+  m.appendChild(toolLine);
   $("chat-log").appendChild(m);
   $("chat-log").scrollTop = $("chat-log").scrollHeight;
+  return {body, toolLine};
+}
+
+// Reads the NDJSON stream from /api/chat/stream and calls onEvent per line.
+async function streamChat(message, onEvent) {
+  const r = await fetch("/api/chat/stream", {method: "POST", headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({message})});
+  if (r.status === 401) { location.href = "/"; throw new Error("로그인이 필요합니다"); }
+  if (!r.ok) {
+    const data = await r.json().catch(() => ({}));
+    let d = data.detail;
+    if (Array.isArray(d)) d = d.map(x => (x.msg || "").replace(/^Value error, /, "")).join("; ");
+    throw new Error(d || "요청에 실패했습니다");
+  }
+  const reader = r.body.getReader(), dec = new TextDecoder();
+  let buf = "";
+  for (;;) {
+    const {value, done} = await reader.read();
+    if (done) break;
+    buf += dec.decode(value, {stream: true});
+    let nl;
+    while ((nl = buf.indexOf("\n")) >= 0) {
+      const lineText = buf.slice(0, nl).trim();
+      buf = buf.slice(nl + 1);
+      if (lineText) onEvent(JSON.parse(lineText));
+    }
+  }
 }
 
 async function sendChat() {
@@ -130,14 +159,28 @@ async function sendChat() {
   if (!msg.trim()) return;
   err.textContent = ""; $("chat-btn").disabled = true;
   addMsg("user", msg); input.value = "";
+  const reply = addMsg("assistant", "…");
+  let streamed = "", tools = [], final = null;
   try {
-    const r = await api("/api/chat", "POST", {message: msg});
-    addMsg("assistant", r.text, r.tool_calls);
+    await streamChat(msg, ev => {
+      if (ev.type === "text") { streamed += ev.text; reply.body.textContent = streamed; }
+      else if (ev.type === "tool") { tools.push(ev.name); reply.toolLine.textContent = "사용 중인 도구: " + tools.join(", "); }
+      else if (ev.type === "done") final = ev;
+      else if (ev.type === "error") throw new Error(ev.detail);
+      $("chat-log").scrollTop = $("chat-log").scrollHeight;
+    });
+    if (!final) throw new Error("답변이 중간에 끊겼습니다. 다시 시도해 주세요.");
+    // the saved reply is the final round's text (earlier rounds may hold short notes before tool calls)
+    reply.body.textContent = final.text;
+    reply.toolLine.textContent = final.tool_calls.length ? "사용한 도구: " + final.tool_calls.join(", ") : "";
     loadList();
-    if (selectedId && r.tool_calls.includes("reanalyze_report")) {
+    if (selectedId && final.tool_calls.includes("reanalyze_report")) {
       try { showDetail(await api("/api/reports/" + selectedId)); } catch (e2) { /* list reload still shows the change */ }
     }
-  } catch (e) { err.textContent = e.message; }
+  } catch (e) {
+    err.textContent = e.message;
+    if (!streamed) reply.body.textContent = "(답변 실패)";
+  }
   $("chat-btn").disabled = false;
 }
 $("chat-btn").onclick = sendChat;
