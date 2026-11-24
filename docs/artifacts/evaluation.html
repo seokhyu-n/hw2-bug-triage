@@ -73,7 +73,7 @@ li{margin:3px 0}
 <body>
 <main>
 <h1>평가 결과 분석</h1>
-<p class="lead">Run-01~07 비교, 분류 혼동 행렬, 어려운 사례, 틀린 사례 분석, 그리고 경계 사례 120건에서 이어간 개선(Run-08~12, 9번)과 추가 기능 평가(10번). <b>현재 서비스 설정은 V2-Run-12</b>다.</p>
+<p class="lead">Run-01~07 비교, 분류 혼동 행렬, 어려운 사례, 틀린 사례 분석, 그리고 경계 사례 120건에서 이어간 개선(Run-08~12, 9번)과 추가 기능 평가(10번), 250건 기법 비교와 새 사례 검증(11번). <b>현재 서비스 설정은 V3-Run-12</b>다.</p>
 
 <h2>1. Run-01 ~ Run-07 지표</h2>
 <p>평가셋 100건(bug 56 / question 22 / feature_request 22, 어려운 사례 25건), 모든 Run 오류 0건. Run-05만 Sonnet 5.5이고 나머지는 Haiku 5.5. 한 번에 한 변수만 바꿨다. 원본은 <code>eval/runs.csv</code>.</p>
@@ -90,7 +90,7 @@ li{margin:3px 0}
 <h2>2. 지표별 막대 비교</h2>
 <div class="grid"><div class="chart"><h3>우선순위 exact (높을수록 좋음)</h3><div class="br"><span>Run-01</span><div class="t"><i style="width:76.0%"></i></div><span>0.76</span></div><div class="br"><span>Run-02</span><div class="t"><i style="width:79.0%"></i></div><span>0.79</span></div><div class="br"><span>Run-03</span><div class="t"><i style="width:82.0%"></i></div><span>0.82</span></div><div class="br"><span>Run-04</span><div class="t"><i style="width:84.0%"></i></div><span>0.84</span></div><div class="br s"><span>Run-05</span><div class="t"><i style="width:93.0%"></i></div><span>0.93</span></div><div class="br"><span>Run-06</span><div class="t"><i style="width:84.0%"></i></div><span>0.84</span></div><div class="br"><span>Run-07</span><div class="t"><i style="width:88.0%"></i></div><span>0.88</span></div><div class="legend">주황 = Sonnet</div></div><div class="chart"><h3>완성도 MAE (낮을수록 좋음)</h3><div class="br"><span>Run-01</span><div class="t"><i style="width:100.0%"></i></div><span>0.411</span></div><div class="br"><span>Run-02</span><div class="t"><i style="width:82.6%"></i></div><span>0.339</span></div><div class="br"><span>Run-03</span><div class="t"><i style="width:43.5%"></i></div><span>0.179</span></div><div class="br"><span>Run-04</span><div class="t"><i style="width:26.1%"></i></div><span>0.107</span></div><div class="br s"><span>Run-05</span><div class="t"><i style="width:8.9%"></i></div><span>0.036</span></div><div class="br"><span>Run-06</span><div class="t"><i style="width:34.8%"></i></div><span>0.143</span></div><div class="br"><span>Run-07</span><div class="t"><i style="width:26.6%"></i></div><span>0.109</span></div><div class="legend">주황 = Sonnet</div></div><div class="chart"><h3>추출 정확도</h3><div class="br"><span>Run-01</span><div class="t"><i style="width:95.2%"></i></div><span>0.952</span></div><div class="br"><span>Run-02</span><div class="t"><i style="width:94.8%"></i></div><span>0.948</span></div><div class="br"><span>Run-03</span><div class="t"><i style="width:94.8%"></i></div><span>0.948</span></div><div class="br"><span>Run-04</span><div class="t"><i style="width:95.0%"></i></div><span>0.950</span></div><div class="br s"><span>Run-05</span><div class="t"><i style="width:96.2%"></i></div><span>0.962</span></div><div class="br"><span>Run-06</span><div class="t"><i style="width:97.2%"></i></div><span>0.972</span></div><div class="br"><span>Run-07</span><div class="t"><i style="width:97.2%"></i></div><span>0.972</span></div></div><div class="chart"><h3>평균 응답시간 (s)</h3><div class="br"><span>Run-01</span><div class="t"><i style="width:85.0%"></i></div><span>9.28</span></div><div class="br"><span>Run-02</span><div class="t"><i style="width:73.1%"></i></div><span>7.98</span></div><div class="br"><span>Run-03</span><div class="t"><i style="width:73.6%"></i></div><span>8.05</span></div><div class="br"><span>Run-04</span><div class="t"><i style="width:75.6%"></i></div><span>8.26</span></div><div class="br s"><span>Run-05</span><div class="t"><i style="width:100.0%"></i></div><span>10.93</span></div><div class="br"><span>Run-06</span><div class="t"><i style="width:75.3%"></i></div><span>8.23</span></div><div class="br"><span>Run-07</span><div class="t"><i style="width:73.8%"></i></div><span>8.06</span></div></div><div class="chart"><h3>총비용 (USD, 100건)</h3><div class="br"><span>Run-01</span><div class="t"><i style="width:6.2%"></i></div><span>0.0967</span></div><div class="br"><span>Run-02</span><div class="t"><i style="width:5.7%"></i></div><span>0.0898</span></div><div class="br"><span>Run-03</span><div class="t"><i style="width:5.8%"></i></div><span>0.0910</span></div><div class="br"><span>Run-04</span><div class="t"><i style="width:5.7%"></i></div><span>0.0887</span></div><div class="br s"><span>Run-05</span><div class="t"><i style="width:100.0%"></i></div><span>1.5677</span></div><div class="br"><span>Run-06</span><div class="t"><i style="width:5.8%"></i></div><span>0.0914</span></div><div class="br"><span>Run-07</span><div class="t"><i style="width:5.5%"></i></div><span>0.0868</span></div><div class="legend">Sonnet은 Haiku의 약 18배</div></div><div class="chart"><h3>캐시 적중 토큰</h3><div class="br"><span>Run-01</span><div class="t"><i style="width:65.5%"></i></div><span>885,810</span></div><div class="br"><span>Run-02</span><div class="t"><i style="width:89.8%"></i></div><span>1,213,552</span></div><div class="br"><span>Run-03</span><div class="t"><i style="width:96.8%"></i></div><span>1,308,698</span></div><div class="br"><span>Run-04</span><div class="t"><i style="width:97.9%"></i></div><span>1,323,316</span></div><div class="br s"><span>Run-05</span><div class="t"><i style="width:92.1%"></i></div><span>1,245,044</span></div><div class="br"><span>Run-06</span><div class="t"><i style="width:98.1%"></i></div><span>1,326,110</span></div><div class="br"><span>Run-07</span><div class="t"><i style="width:100.0%"></i></div><span>1,351,670</span></div></div></div>
 
-<h2>3. 1차 최종 선택: Run-07 (Haiku, 9번에서 V2-Run-12로 갱신)</h2>
+<h2>3. 1차 최종 선택: Run-07 (Haiku, 11번에서 V3-Run-12로 갱신)</h2>
 <div class="note ok">Sonnet이 앞선 것: 우선순위 exact(0.93 vs 0.88), 완성도 MAE(0.036 vs 0.109), labels(0.98 vs 0.95), 링크(0.97 vs 0.96). 같은 것: 분류 정확도 0.98. Haiku가 앞선 것: 추출 정확도(0.972 vs 0.962), 비용(약 18배 저렴, $0.0868 vs $1.5677), 응답시간(8.06s vs 10.93s). 남은 격차가 18배 비용과 36% 느린 응답을 감수할 만큼은 아니라고 판단했다. Sonnet은 개선된 프롬프트로 다시 돌리지 않았다.</div>
 <p>Run-01~07 총비용 약 $2.11 (Haiku 6회 $0.544 + Sonnet 1회 $1.568).</p>
 
@@ -234,7 +234,7 @@ li{margin:3px 0}
 <li>링크 오류 4건 중 3건(E-043·E-049·E-090)은 "수정된 버전에서 재발한 크래시를 옛 이슈에 연결"하는 기존 패턴이다.</li>
 </ul>
 
-<h3>V2-Run-12: 수정 버전 링크 규칙 (현재 설정)</h3>
+<h3>V2-Run-12: 수정 버전 링크 규칙</h3>
 <p>코드 규칙 하나를 더했다: <b>제보자 앱 버전이 이미 그 이슈의 수정 버전 이상이면 연결하지 않는다</b>(<code>_finalize_link</code>). 수정된 버전에서 같은 증상이 나면 재발이나 다른 원인이라 새 신고로 남아야 한다. 모델 출력 뒤에 적용하는 규칙이라 저장된 결과로 먼저 효과를 쟀다(비용 없음).</p>
 <div class="scroll"><table>
 <tr><th>결과</th><th class="n">링크 정확도</th><th>바뀐 사례</th></tr>
@@ -252,6 +252,33 @@ li{margin:3px 0}
 <tr><td>제보자 답변 재분석 (Haiku, V2-Run-10·11 설정에서 같은 결과)</td><td>모호한 제보 8건 → 상태 페이지 답변 → "확정 필드 + 새 정보" 재분석. 답변 속 "P1으로 바꿔 주세요" 1건 포함</td><td>답변에 있는 값 <b>16개 중 16개</b> 반영, 답변에 없는 값 8개 중 <b>지어낸 값 0개</b>, 분류 유지 8/8, 답변 속 지시문 무시 1/1. 정보 부족 해소 5/8(남은 3건은 답변에도 버전·재현 순서가 없는 경우라 정상). $0.019</td></tr>
 <tr><td>아이폰(iOS) 제보 (V2-Run-11 설정)</td><td>아이폰 9건 + 안드로이드 대조 1건(<code>eval/dataset_ios.jsonl</code>): iOS 크래시, 기종만 있는 제보, 안드로이드 이슈와 증상이 같은 제보, 문의·요청, 신고 화면 형식</td><td>플랫폼 <b>10/10</b>, iOS 버전 6/6, 안 적힌 iOS 버전 지어냄 0/3, 아이폰 제보의 android_version 오염 <b>0/9</b>, 부족한 정보를 iOS 버전으로 1/1, 이슈 연결 10/10(아이폰은 안드로이드 전용 이슈에 연결 안 함), 분류 10/10, 우선순위 10/10. $0.010</td></tr>
 </table></div>
+
+<h2>11. 대규모 평가: 기법 비교와 새 사례 검증</h2>
+<p>평가셋을 250건(<code>dataset_v3</code>, 어려운 사례 175건)으로 늘려 기법을 하나씩 껐다. 끄기 실험과 Sonnet은 1회씩이라, 튜닝 전 설정의 3회 범위를 크게 벗어난 값(굵게)만 효과로 본다.</p>
+<div class="scroll"><table class="wide" id="v3-ablation">
+<tr><th>설정 (250건)</th><th class="n">분류</th><th class="n">우선순위</th><th class="n">완성도 MAE</th><th class="n">추출 환각률</th><th class="n">비용</th></tr>
+<tr><td>튜닝 전 설정 (3회 범위)</td><td class="n">0.944~0.952</td><td class="n">0.852~0.880</td><td class="n">0.112~0.130</td><td class="n">0.035~0.041</td><td class="n">$0.25</td></tr>
+<tr><td>Rubric 끔</td><td class="n">0.944</td><td class="n"><b>0.688</b></td><td class="n"><b>0.419</b></td><td class="n">0.038</td><td class="n">$0.25</td></tr>
+<tr><td>Few-shot 끔</td><td class="n">0.952</td><td class="n">0.864</td><td class="n"><b>0.191</b></td><td class="n">0.036</td><td class="n">$0.27</td></tr>
+<tr><td>Context 선별 끔</td><td class="n">0.940</td><td class="n">0.856</td><td class="n">0.132</td><td class="n">0.042</td><td class="n">$0.26</td></tr>
+<tr><td>CoT 끔</td><td class="n">0.932</td><td class="n">0.840</td><td class="n"><b>0.231</b></td><td class="n">0.039</td><td class="n">$0.21</td></tr>
+<tr><td>체이닝 끔 (한 번 호출)</td><td class="n">0.960</td><td class="n">0.860</td><td class="n"><b>0.037</b></td><td class="n"><b>0.052</b></td><td class="n">$0.33</td></tr>
+<tr><td>effort medium</td><td class="n">0.948</td><td class="n">0.848</td><td class="n">0.117</td><td class="n">0.041</td><td class="n">$0.29</td></tr>
+<tr><td>Sonnet 5.5</td><td class="n">0.964</td><td class="n">0.888</td><td class="n">0.068</td><td class="n">0.034</td><td class="n">$4.51</td></tr>
+</table></div>
+<p>CoT는 점수 단계에만 쓰이는데도 분류가 0.932로 나왔다. 분류 1%p 안팎의 차이는 흔들림이다. 한 번 호출은 API의 스키마 제한 때문에 다른 스키마를 써서 순수한 체이닝 비교가 아니다.</p>
+<h3>튜닝 전후: 튜닝에 쓰지 않은 새 사례 100건 (각 3회)</h3>
+<div class="scroll"><table id="holdout">
+<tr><th>지표</th><th class="n">튜닝 전</th><th class="n">튜닝 후</th><th>판단</th></tr>
+<tr><td>분류</td><td class="n">0.950</td><td class="n">0.993</td><td>좋아짐(한 유형의 4건)</td></tr>
+<tr><td>labels</td><td class="n">0.973</td><td class="n">0.980</td><td>차이 확인 안 됨</td></tr>
+<tr><td>우선순위</td><td class="n">0.957</td><td class="n">0.973</td><td>확실하지 않음</td></tr>
+<tr><td>완성도 MAE</td><td class="n">0.147</td><td class="n">0.122</td><td>차이 확인 안 됨</td></tr>
+<tr><td>링크</td><td class="n">0.993</td><td class="n">1.000</td><td>1건 안팎</td></tr>
+</table></div>
+<p><b>한계.</b> 오류를 보고 고친 250건에서는 labels가 0.868 &rarr; 0.947까지 올랐지만, 그 실행(V3-Run-10·11)에는 평가 사례와 겹치는 예시 문구가 있어 최종 성능으로 쓰지 않는다. 문구를 바꾼 현재 설정 <b>V3-Run-12</b>는 250건에서 분류 0.956, labels 0.932, 우선순위 0.884, 완성도 MAE 0.149다. 새 사례는 AI가 쓰고 사람 검토 전이며 250건보다 쉽다. 따지는 질문에 문의 라벨을 잘못 붙이는 부작용(E-342)이 생겼다.</p>
+<h3>챗봇과 추가 기능 (각 100건)</h3>
+<p>챗봇 어려운 100건은 94 &rarr; 99, 안전 위반 5 &rarr; 0이다(실패를 보고 고친 같은 100건의 점수이고, 첫 실행 92 뒤 사례 2건을 교체했다). 인용한 제보자 답장 속 "넘겨 달라"를 실행하던 구멍은 따옴표 안의 이름을 무시하게 막았으나, 따옴표 없이 붙여 넣은 글은 구분하지 못한다. 스크린샷·답변·아이폰은 모두 100%지만 틀로 만든 쉬운 사례다.</p>
 
 </main>
 </body>

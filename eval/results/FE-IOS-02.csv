@@ -1,0 +1,101 @@
+﻿id,note,platform,ios_version,android_version,device_model,missing_fields,answer_status,category,정답 category,priority,정답 priority,link,정답 link,questions
+I2-001,아이폰 bug/P1,ios,16.7,,아이폰 15,,ready,bug,bug,P1,P1,,,
+I2-002,아이폰 bug/P1,ios,17.2,,아이폰 15 프로,,ready,bug,bug,P1,P1,,,
+I2-003,아이폰 bug/P1,ios,,,아이폰 14,app_version ios_version,need_info,bug,bug,P1,P1,,,"사용 중인 RunBuddy 앱 버전을 알려주세요(설정 > 앱 정보에서 확인할 수 있어요). / iPhone의 iOS 버전을 알려주세요(설정 > 일반 > 정보 > 소프트웨어 버전에서 확인할 수 있어요). / 로그인 버튼을 누를 때 키보드가 올라오거나 입력한 아이디·비밀번호 상태에서 그런 것인지, 그리고 매번 그런지 알려주세요."
+I2-004,아이폰 bug/P2,ios,18,,,device_model,ready,bug,bug,P2,P2,,,사용 중인 iPhone 기종을 알려주세요(설정 > 일반 > 정보에서 확인할 수 있어요).
+I2-005,아이폰 bug/P3,ios,18.1,,아이폰 13,repro_steps,ready,bug,bug,P3,P3,,,"음성 안내가 나오지 않았을 때 러닝을 어떻게 시작했는지(시작 방법, 음성 안내 설정 상태 등) 순서대로 알려주세요. / 음성 안내 설정을 켜 둔 상태였는지 확인해 알려주세요(설정 > 음성 안내 설정에서 확인할 수 있어요)."
+I2-006,아이폰 bug/P3,ios,18.2,,,device_model,ready,bug,bug,P3,P3,,,사용 중인 아이폰 기종을 알려주세요(설정 > 일반 > 정보에서 확인할 수 있어요).
+I2-007,아이폰 bug/P3,ios,16.7,,아이폰 12,,ready,bug,bug,P3,P3,,,"답변이 도착하기까지 대략 몇 초 또는 몇 분 정도 걸렸는지 알려주세요. / AI 코치에게 질문할 때마다 항상 지연되는지, 가끔만 그런지 알려주세요. / 지연이 생길 때의 네트워크 상태(Wi-Fi 또는 모바일 데이터)를 알려주세요. / 질문을 보낸 뒤 답변이 오기까지 화면에서 무엇을 보셨는지(로딩 표시만 계속 돌았는지 등) 알려주세요."
+I2-008,아이폰 bug/P1,ios,17.2,,아이폰 16,,ready,bug,bug,P1,P1,,,
+I2-009,아이폰 bug/P1,ios,,,아이폰 16 프로,app_version ios_version,need_info,bug,bug,P1,P1,,,"사용 중인 RunBuddy 앱 버전을 알려주세요(설정 > 앱 정보에서 확인할 수 있어요). / 아이폰의 iOS 버전을 알려주세요(설정 > 일반 > 정보에서 확인할 수 있어요). / 이 문제가 매번 발생하나요, 아니면 가끔 발생하나요?"
+I2-010,아이폰 bug/P1,ios,18,,,device_model,ready,bug,bug,P1,P1,,,사용 중인 iPhone 기종을 알려주세요(설정 > 일반 > 정보에서 모델 이름을 확인할 수 있어요).
+I2-011,아이폰 bug/P2,ios,18.1,,아이폰 11,,ready,bug,bug,P2,P2,,,
+I2-012,아이폰 bug/P3,ios,18.2,,,device_model,ready,bug,bug,P3,P3,,,"사용 중인 iPhone 기종을 알려주세요(설정 > 일반 > 정보에서 확인할 수 있어요). / 음성 안내가 나오지 않는 현상이 매번 발생하나요, 아니면 가끔 발생하나요?"
+I2-013,아이폰 bug/P3,ios,16.7,,아이폰 15 프로,,ready,bug,bug,P3,P3,,,"러닝 카드 저장을 누를 때마다 매번 실패하나요, 아니면 가끔 실패하나요? / 사진 앱 저장 권한을 RunBuddy에 허용해 두셨는지 확인해 주세요(설정 > 앱 > RunBuddy > 사진)."
+I2-014,아이폰 bug/P3,ios,17.2,,아이폰 14,,ready,bug,bug,P3,P3,,,
+I2-015,아이폰 bug/P1,ios,,,아이폰 14 프로 맥스,app_version ios_version,need_info,bug,bug,P1,P1,,,사용 중인 iOS 버전을 알려주세요(설정 > 일반 > 정보에서 확인할 수 있어요). / 사용 중인 RunBuddy 앱 버전을 알려주세요(설정 > 앱 정보에서 확인할 수 있어요).
+I2-016,아이폰 bug/P1,ios,18,,,device_model,ready,bug,bug,P1,P1,,,사용 중인 iPhone 기기 모델을 알려주세요(설정 > 일반 > 정보에서 확인할 수 있어요).
+I2-017,아이폰 bug/P1,ios,18.1,,아이폰 13 미니,,ready,bug,bug,P1,P1,,,
+I2-018,아이폰 bug/P2,ios,18.2,,,device_model,ready,bug,bug,P2,P2,,,사용 중인 아이폰 기종을 알려주세요(설정 > 일반 > 정보에서 확인할 수 있어요).
+I2-019,아이폰 bug/P3,ios,16.7,,아이폰 16,repro_steps,ready,bug,bug,P3,P3,,,"음성 안내가 나오지 않는 상황에서 러닝을 시작하기 전후로 어떤 순서로 操作했는지 단계별로 알려주세요(예: 로그인, 달리기 시작 터치, 음성 안내 설정 확인 등). / 음성 안내가 한 번도 나온 적이 없는지, 전에는 나왔는데 언제부터 안 나오는지 알려주세요. / 설정에서 음성 안내 기능이 켜져 있는지, 아이폰의 미디어 음량과 무음 모드 상태를 확인해 알려주세요."
+I2-020,아이폰 bug/P3,ios,17.2,,아이폰 16 프로,,ready,bug,bug,P3,P3,,,
+I2-021,아이폰 bug/P3,ios,,,아이폰 SE (3세대),app_version ios_version,need_info,bug,bug,P3,P3,,,사용 중인 RunBuddy 앱 버전을 알려주세요(설정 > 앱 정보에서 확인할 수 있어요). / iPhone의 iOS 버전을 알려주세요(설정 > 일반 > 정보에서 확인할 수 있어요).
+I2-022,아이폰 bug/P1,ios,18,,,device_model,ready,bug,bug,P1,P1,,,사용 중인 iPhone 기종을 알려주세요(설정 > 일반 > 정보에서 모델 이름을 확인할 수 있어요).
+I2-023,아이폰 bug/P1,ios,18.1,,아이폰 15,,ready,bug,bug,P1,P1,,,"기록이 사라지는 현상이 매번 발생하는지, 가끔 발생하는지 알려주세요."
+I2-024,아이폰 bug/P1,ios,18.2,,,device_model,ready,bug,bug,P1,P1,,,사용 중인 iPhone 기종을 알려주세요(설정 > 일반 > 정보에서 모델 이름을 확인할 수 있어요).
+I2-025,아이폰 bug/P2,ios,16.7,,아이폰 14,,ready,bug,bug,P2,P2,,,"트랙 러닝 때마다 거리가 짧게 나오나요, 아니면 가끔 그런가요?"
+I2-026,아이폰 bug/P3,ios,17.2,,아이폰 14 프로 맥스,repro_steps,ready,bug,bug,P3,P3,,,"음성 안내가 나오지 않았을 때 어떤 순서로 러닝을 시작했는지 단계별로 알려주세요(예: 앱 실행 → 로그인 → 달리기 시작 터치 등). / 음성 안내가 매번 나오지 않는지, 가끔 나오지 않는지 알려주세요."
+I2-027,아이폰 bug/P3,ios,,,아이폰 13,app_version ios_version,need_info,bug,bug,P3,P3,,,"사용 중인 RunBuddy 앱 버전을 알려주세요(설정 > 앱 정보에서 확인할 수 있어요). / iPhone의 iOS 버전을 알려주세요(설정 > 일반 > 정보 > iOS 버전에서 확인할 수 있어요). / 러닝 카드 저장이 매번 실패하는지, 가끔만 실패하는지 알려주세요."
+I2-028,아이폰 bug/P3,ios,18,,,device_model,ready,bug,bug,P3,P3,,,사용 중인 iPhone 기종(예: iPhone 15 Pro)을 알려주세요(설정 > 일반 > 정보에서 확인할 수 있어요).
+I2-029,아이폰 bug/P1,ios,18.1,,아이폰 12,,ready,bug,bug,P1,P1,,,
+I2-030,아이폰 bug/P1,ios,18.2,,,device_model,ready,bug,bug,P1,P1,,,사용 중인 iPhone 기종을 알려주세요(설정 > 일반 > 정보에서 모델 이름 확인 가능).
+I2-031,아이폰 bug/P1,ios,16.7,,아이폰 16 프로,,ready,bug,bug,P1,P1,,,"로그인 버튼을 누를 때마다 매번 반응이 없나요, 아니면 가끔만 그런가요?"
+I2-032,아이폰 bug/P2,ios,17.2,,아이폰 SE (3세대),,ready,bug,bug,P2,P2,,,
+I2-033,아이폰 bug/P3,ios,,,아이폰 11,app_version ios_version repro_steps,need_info,bug,bug,P3,P3,,,"사용 중인 RunBuddy 앱 버전을 알려주세요(설정 > 앱 정보에서 확인할 수 있어요). / iPhone의 iOS 버전을 알려주세요(설정 > 일반 > 정보 > iOS 버전에서 확인할 수 있어요). / 음성 안내가 나오지 않을 때 러닝을 어떤 순서로 시작했는지 알려주세요(예: 로그인 후 시작 버튼 터치, 음성 안내 설정 켜기 여부 등)."
+I2-034,아이폰 bug/P3,ios,18,,,device_model,ready,bug,bug,P3,P3,,,"사용 중인 iPhone 기종 이름을 알려주세요(설정 > 일반 > 정보에서 확인할 수 있어요). / 러닝 카드 저장을 누르면 매번 저장되지 않나요, 아니면 가끔만 그런가요? / 저장 버튼을 누른 뒤 화면에 어떤 메시지나 반응이 나왔는지 알려주세요(예: 오류 문구, 아무 반응 없음 등)."
+I2-035,아이폰 bug/P3,ios,18.1,,아이폰 15 프로,,ready,bug,bug,P3,P3,,,"평소 AI 코치에게 질문했을 때 답변이 보통 몇 초에서 몇 초 정도 걸리는지, 실제로 얼마나 오래 기다렸는지 알려주세요. / 이 문제가 매번 발생하는지, 가끔 발생하는지 알려주세요. / 질문할 때 네트워크 환경(Wi-Fi 또는 모바일 데이터)이 어땠는지 알려주세요. / 정상적으로 답변이 빨리 올 때 기대했던 응답 시간이 어느 정도인지 알려주세요."
+I2-036,아이폰 bug/P1,ios,18.2,,,device_model,ready,bug,bug,P1,P1,,,사용 중인 iPhone 기종을 알려주세요(설정 > 일반 > 정보에서 확인할 수 있어요).
+I2-037,아이폰 bug/P1,ios,16.7,,아이폰 14 프로 맥스,,ready,bug,bug,P1,P1,,,
+I2-038,아이폰 bug/P1,ios,17.2,,아이폰 13,,ready,bug,bug,P1,P1,,,"로그인 버튼을 누르면 매번 반응이 없나요, 아니면 가끔만 그런가요?"
+I2-039,아이폰 bug/P2,ios,,,아이폰 13 미니,app_version ios_version,need_info,bug,bug,P2,P2,,,사용 중인 RunBuddy 앱 버전을 알려주세요(설정 > 앱 정보에서 확인할 수 있어요). / iPhone의 iOS 버전을 알려주세요(설정 > 일반 > 정보에서 확인할 수 있어요).
+I2-040,아이폰 bug/P3,ios,18,,,device_model repro_steps,ready,bug,bug,P3,P3,,,음성 안내가 나오지 않는 러닝을 시작할 때 어떤 순서로 操作했는지(예: 로그인 후 달리기 시작 터치 등) 재현 절차를 순서대로 알려주세요. / 사용 중인 iPhone 기종을 알려주세요(설정 > 일반 > 정보에서 모델명 확인 가능).
+I2-041,아이폰 bug/P3,ios,18.1,,아이폰 16,,ready,bug,bug,P3,P3,,,"러닝 카드를 저장할 때마다 매번 사진 앱에 저장되지 않나요, 아니면 가끔만 그런가요?"
+I2-042,아이폰 bug/P3,ios,18.2,,,device_model,ready,bug,bug,P3,P3,,,"사용 중인 iPhone 기종을 알려주세요(설정 > 일반 > 정보에서 확인할 수 있어요). / AI 코치에게 질문했을 때 답변이 얼마나 늦게 오나요? 대략적인 시간(예: 10초 이상, 1분 이상)을 알려주세요. / 이 지연이 매번 발생하나요, 아니면 가끔 발생하나요?"
+I2-043,아이폰 bug/P1,ios,16.7,,아이폰 SE (3세대),,ready,bug,bug,P1,P1,,,
+I2-044,아이폰 bug/P1,ios,17.2,,아이폰 11,,ready,bug,bug,P1,P1,,,"이 문제가 매번 발생하나요, 아니면 가끔 발생하나요?"
+I2-045,아이폰 bug/P1,ios,,,아이폰 15,app_version ios_version,need_info,bug,bug,P1,P1,,,"사용 중인 RunBuddy 앱 버전을 알려주세요(설정 > 앱 정보에서 확인할 수 있어요). / iPhone의 iOS 버전을 알려주세요(설정 > 일반 > 정보에서 확인할 수 있어요). / 로그인 버튼을 눌렀을 때 항상 반응이 없나요, 아니면 가끔만 그런가요?"
+I2-046,아이폰 bug/P2,ios,18,,,device_model,ready,bug,bug,P2,P2,,,iPhone 기종명을 알려주세요(설정 > 일반 > 정보 > 모델 이름에서 확인할 수 있어요).
+I2-047,아이폰 bug/P3,ios,18.1,,아이폰 14,repro_steps,ready,bug,bug,P3,P3,,,"러닝을 시작할 때 음성 안내 설정을 켜 둔 상태였는지, 그리고 러닝 중 어떤 구간(예: 1km마다 등)에서 안내가 나와야 했는데 나오지 않았는지 알려주세요. / 이 문제가 매번 발생하는지, 가끔 발생하는지 알려주세요."
+I2-048,아이폰 bug/P3,ios,18.2,,,device_model,ready,bug,bug,P3,P3,,,사용 중인 iPhone 기종을 알려주세요(설정 > 일반 > 정보에서 확인할 수 있어요).
+I2-049,아이폰 bug/P3,ios,16.7,,아이폰 13,,ready,bug,bug,P3,P3,,,"답변이 도착하기까지 대략 몇 초에서 몇 분 정도 걸렸는지 알려주세요. / 질문을 보낼 때마다 항상 늦게 오나요, 아니면 가끔 그런가요? / 보통 어느 정도 시간 안에 답변이 오기를 기대하셨나요?"
+I2-050,아이폰 bug/P1,ios,17.2,,아이폰 13 미니,,ready,bug,bug,P1,P1,,,
+I2-051,아이폰 bug/P1,ios,,,아이폰 12,app_version ios_version,need_info,bug,bug,P1,P1,,,"사용 중인 RunBuddy 앱 버전을 알려주세요(설정 > 앱 정보에서 확인할 수 있어요). / iPhone의 iOS 버전을 알려주세요(설정 > 일반 > 정보 > 소프트웨어 버전에서 확인할 수 있어요). / 기록이 사라지는 것이 항상 발생하는지, 가끔 발생하는지 알려주세요."
+I2-052,아이폰 bug/P1,ios,18,,,device_model,ready,bug,bug,P1,P1,,,사용 중인 iPhone 기종을 알려주세요(설정 > 일반 > 정보에서 모델 이름을 확인할 수 있어요).
+I2-053,아이폰 bug/P2,ios,18.1,,아이폰 16 프로,,ready,bug,bug,P2,P2,,,
+I2-054,아이폰 bug/P3,ios,18.2,,,device_model,ready,bug,bug,P3,P3,,,"사용 중인 아이폰 기종을 알려주세요(설정 > 일반 > 정보에서 확인할 수 있어요). / 러닝 중 음성 안내가 한 번도 나오지 않았는지, 아니면 가끔 나오지 않았는지 알려주세요. / 음성 안내 설정이 켜져 있는지, 이어폰이나 블루투스 기기를 연결했는지 알려주세요."
+I2-055,아이폰 bug/P3,ios,16.7,,아이폰 11,,ready,bug,bug,P3,P3,,,"이 문제가 매번 발생하나요, 아니면 가끔 발생하나요?"
+I2-056,아이폰 bug/P3,ios,17.2,,아이폰 15,,ready,bug,bug,P3,P3,,,"AI 코치에게 질문했을 때 답변이 보통 몇 초에서 몇 분 정도 걸렸는지 알려주세요. / 이런 지연이 매번 발생하나요, 아니면 가끔 발생하나요?"
+I2-057,아이폰 bug/P1,ios,,,아이폰 15 프로,app_version ios_version,need_info,bug,bug,P1,P1,,,"사용 중인 iOS 버전을 알려주세요(설정 > 일반 > 정보에서 확인할 수 있어요). / 사용 중인 RunBuddy 앱 버전을 알려주세요(설정 > 앱 정보에서 확인할 수 있어요). / 러닝 시작 버튼을 누를 때마다 매번 앱이 꺼지나요, 아니면 가끔만 그런가요?"
+I2-058,아이폰 bug/P1,ios,18,,,device_model,ready,bug,bug,P1,P1,,,"사용 중인 아이폰 기종을 알려주세요(설정 > 일반 > 정보에서 모델 이름을 확인할 수 있어요). / 기록이 사라지는 현상이 매번 발생하나요, 아니면 가끔 발생하나요?"
+I2-059,아이폰 bug/P1,ios,18.1,,아이폰 14 프로 맥스,,ready,bug,bug,P1,P1,,,"로그인 버튼을 누르기 전에 아이디와 비밀번호를 입력했는지, 입력했다면 어떤 상태였는지 알려주세요. / 로그인 버튼을 누를 때마다 매번 같은 증상이 나타나는지, 가끔만 나타나는지 알려주세요. / 로그인 버튼을 누르면 화면에 아무 변화가 없는지, 로딩 표시나 오류 메시지가 잠깐이라도 나타났다 사라지는지 알려주세요."
+I2-060,아이폰 bug/P2,ios,18.2,,,device_model,ready,bug,bug,P2,P2,,,사용 중인 iPhone 기종을 알려주세요(설정 > 일반 > 정보에서 확인할 수 있어요).
+I2-061,아이폰 bug/P3,ios,16.7,,아이폰 13 미니,repro_steps,ready,bug,bug,P3,P3,,,"음성 안내가 나오지 않는 상황을 재현하는 순서를 알려주세요(예: 로그인 후 달리기 시작 터치, 러닝 중 구간 진행 등)."
+I2-062,아이폰 bug/P3,ios,17.2,,아이폰 12,,ready,bug,bug,P3,P3,,,"저장 버튼을 누를 때마다 매번 같은 문제가 생기나요, 아니면 가끔 생기나요? / 사진 앱의 권한을 RunBuddy에 허용해 두었는지 확인해 주세요(설정 > RunBuddy > 사진에서 확인할 수 있어요)."
+I2-063,아이폰 bug/P3,ios,,,아이폰 16,app_version ios_version,need_info,bug,bug,P3,P3,,,"사용 중인 iPhone의 iOS 버전을 알려주세요(설정 > 일반 > 정보에서 확인할 수 있어요). / 사용 중인 RunBuddy 앱 버전을 알려주세요(설정 > 앱 정보에서 확인할 수 있어요). / 질문을 보내고 답변이 도착하기까지 대략 몇 초 또는 몇 분 걸렸는지 알려주세요. / 이 지연이 매번 발생하는지, 가끔 발생하는지 알려주세요."
+I2-064,아이폰 bug/P1,ios,18,,,device_model,ready,bug,bug,P1,P1,,,사용 중인 아이폰 기종을 알려주세요(설정 > 일반 > 정보에서 확인할 수 있어요).
+I2-065,아이폰 bug/P1,ios,18.1,,아이폰 SE (3세대),,ready,bug,bug,P1,P1,,,"이 문제가 매번 발생하는지, 가끔 발생하는지 알려주세요."
+I2-066,아이폰 bug/P1,ios,18.2,,,device_model,ready,bug,bug,P1,P1,,,사용 중인 iPhone 기기 모델을 알려주세요(설정 > 일반 > 정보에서 확인할 수 있어요).
+I2-067,아이폰 bug/P2,ios,16.7,,아이폰 15,,ready,bug,bug,P2,P2,,,"이 현상이 러닝할 때마다 매번 발생하는지, 가끔 발생하는지 알려주세요."
+I2-068,아이폰 bug/P3,ios,17.2,,아이폰 15 프로,repro_steps,ready,bug,bug,P3,P3,,,"음성 안내가 나오지 않은 러닝을 시작하기 전에 어떤 순서로 조작했는지 단계별로 알려주세요(예: 앱 실행, 로그인, 러닝 시작 버튼 터치 등). / 음성 안내가 평소에도 매번 안 나오는지, 가끔 안 나오는지 알려주세요."
+I2-069,아이폰 bug/P3,ios,,,아이폰 14,app_version ios_version,need_info,bug,bug,P3,P3,,,사용 중인 RunBuddy 앱 버전을 알려주세요(설정 > 앱 정보에서 확인할 수 있어요). / iPhone의 iOS 버전을 알려주세요(설정 > 일반 > 정보 > iOS 버전에서 확인할 수 있어요). / 러닝 카드를 저장할 때 사진 앱 권한을 허용해 두었는지 알려주세요(설정 > RunBuddy > 사진에서 확인할 수 있어요).
+I2-070,아이폰 bug/P3,ios,18,,,device_model,ready,bug,bug,P3,P3,,,"질문을 보낸 뒤 답변이 도착하기까지 대략 몇 초 또는 몇 분이 걸리는지 알려주세요. / 이 현상이 매번 발생하나요, 아니면 가끔 발생하나요? / 사용 중인 아이폰 기종을 알려주세요(설정 > 일반 > 정보에서 확인할 수 있어요)."
+I2-071,아이폰 bug/P1,ios,18.1,,아이폰 13,,ready,bug,bug,P1,P1,,,
+I2-072,아이폰 bug/P1,ios,18.2,,,device_model,ready,bug,bug,P1,P1,,,사용 중인 iPhone 기종을 알려주세요(설정 > 일반 > 정보에서 확인할 수 있어요).
+I2-073,아이폰 bug/P1,ios,16.7,,아이폰 12,,ready,bug,bug,P1,P1,,,
+I2-074,아이폰 bug/P2,ios,17.2,,아이폰 16,,ready,bug,bug,P2,P2,,,"같은 트랙에서 달렸을 때 매번 거리가 짧게 기록되는지, 가끔 그런지 알려주세요."
+I2-075,아이폰 bug/P3,ios,,,아이폰 16 프로,app_version ios_version,need_info,bug,bug,P3,P3,,,사용 중인 RunBuddy 앱 버전을 알려주세요(설정 > 앱 정보에서 확인할 수 있어요). / iPhone의 iOS 버전을 알려주세요(설정 > 일반 > 정보 > iOS 버전에서 확인할 수 있어요).
+I2-076,아이폰 bug/P3,ios,18,,,device_model,ready,bug,bug,P3,P3,,,"사용 중인 iPhone 기종을 알려주세요(설정 > 일반 > 정보에서 확인할 수 있어요). / 러닝 카드 저장을 누를 때마다 매번 같은 문제가 생기나요, 아니면 가끔만 생기나요? / 러닝 카드 저장을 누른 뒤 화면에 어떤 메시지가 뜨는지, 오류 문구가 있었다면 알려주세요. / 사진 앱의 어느 앨범을 확인했는지(최근 항목 등), 그리고 사진 앱 접근 권한을 허용해 두었는지 알려주세요(설정 > RunBuddy > 사진에서 확인할 수 있어요)."
+I2-077,아이폰 bug/P3,ios,18.1,,아이폰 11,,ready,bug,bug,P3,P3,,,
+I2-078,아이폰 bug/P1,ios,18.2,,,device_model,ready,bug,bug,P1,P1,,,"사용 중인 iPhone 기기 모델을 알려주세요(설정 > 일반 > 정보에서 확인할 수 있어요). / 러닝 시작 버튼을 누를 때마다 매번 앱이 꺼지는지, 가끔만 그런지 알려주세요."
+I2-079,아이폰 question,ios,,,,,ready,question,question,P4,P4,,,
+I2-080,아이폰 feature_request,ios,,,아이폰 13,,ready,feature_request,feature_request,P4,P4,,,
+I2-081,아이폰 question,ios,,,아이폰,,ready,question,question,P4,P4,,,
+I2-082,아이폰 feature_request,ios,,,아이폰 12,,ready,feature_request,feature_request,P4,P4,,,
+I2-083,아이폰 question,ios,,,,,ready,question,question,P4,P4,,,
+I2-084,아이폰 feature_request,ios,,,아이폰 16 프로,,ready,feature_request,feature_request,P4,P4,,,
+I2-085,아이폰 question,ios,,,아이폰,,ready,question,question,P4,P4,,,
+I2-086,아이폰 feature_request,ios,,,아이폰 11,,ready,feature_request,feature_request,P4,P4,,,
+I2-087,아이폰 question,ios,,,,,ready,question,question,P4,P4,,,
+I2-088,아이폰 feature_request,ios,,,아이폰 15 프로,,ready,feature_request,feature_request,P4,P4,,,
+I2-089,아이폰 question,ios,,,,,ready,question,question,P4,P4,,,
+I2-090,아이폰 feature_request,ios,,,아이폰 14 프로 맥스,,ready,feature_request,feature_request,P4,P4,,,
+I2-091,안드로이드 대조,android,,14,갤럭시 S23,,ready,bug,bug,P1,P1,ISSUE-02,ISSUE-02,
+I2-092,안드로이드 대조,android,,14,갤럭시 S22,,ready,bug,bug,P1,P1,ISSUE-02,ISSUE-02,
+I2-093,안드로이드 대조,android,,14,갤럭시 A54,,ready,bug,bug,P1,P1,ISSUE-02,ISSUE-02,"러닝을 시작할 때마다 앱이 꺼지는지, 가끔만 그런지 알려주세요."
+I2-094,안드로이드 대조,android,,14,갤럭시 Z 플립5,,ready,bug,bug,P1,P1,ISSUE-02,ISSUE-02,
+I2-095,안드로이드 대조,android,,14,갤럭시 S24 울트라,,ready,bug,bug,P1,P1,ISSUE-02,ISSUE-02,
+I2-096,안드로이드 대조,android,,13,갤럭시 노트20,,ready,bug,bug,P3,P3,,,"음성 안내가 나와야 하는데 나오지 않았던 시점을 구체적으로 알려주세요(예: 러닝 시작 직후, 특정 거리 도달 시 등)."
+I2-097,안드로이드 대조,android,,13,갤럭시 A34,,ready,bug,bug,P3,P3,,,"음성 안내가 러닝 중 매번 나오지 않는지, 가끔 나오지 않는지 알려주세요."
+I2-098,안드로이드 대조,android,,13,갤럭시 S23,,ready,bug,bug,P3,P3,,,
+I2-099,안드로이드 대조,android,,13,갤럭시 S22,,ready,bug,bug,P3,P3,,,"음성 안내가 나오지 않는 현상이 러닝할 때마다 매번 발생하는지, 가끔 발생하는지 알려주세요."
+I2-100,안드로이드 대조,android,,13,갤럭시 A54,,ready,bug,bug,P3,P3,,,"러닝 중 음성 안내가 어느 시점에 나와야 하는데 나오지 않았는지 알려주세요(예: 1km마다, 일정 시간마다, 러닝 시작·종료 시). / 이 문제가 매번 발생하는지, 가끔 발생하는지 알려주세요. / 음성 안내 설정이 켜져 있는 상태였는지, 그리고 휴대폰 볼륨이나 방해 금지 모드 등을 확인했는지 알려주세요."

@@ -41,7 +41,8 @@ RUNS_COLUMNS = [
 
 
 def load_dataset(only_hard: bool = False, limit: int | None = None, dataset: str = "v1") -> list[dict]:
-    path = DATASET_V2 if dataset == "v2" else DATASET
+    path = {"v2": DATASET_V2, "v3": DATASET_V2.with_name("dataset_v3.jsonl"),
+            "holdout": DATASET_V2.with_name("dataset_holdout.jsonl")}.get(dataset, DATASET)
     cases = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
     cases.sort(key=lambda c: c["id"])
     if only_hard:
@@ -53,7 +54,8 @@ def describe(cfg: PipelineConfig) -> str:
     def on(b: bool) -> str:
         return "on" if b else "off"
     return (f"few_shot={on(cfg.few_shot)} rubric={on(cfg.rubric)} "
-            f"context_select={on(cfg.context_select)} effort={cfg.effort}")
+            f"context_select={on(cfg.context_select)} effort={cfg.effort}"
+            + ("" if cfg.cot else " cot=off") + ("" if cfg.chain else " chain=off"))
 
 
 def _run_case(case: dict, cfg: PipelineConfig) -> dict:
@@ -166,7 +168,7 @@ _REPEAT = re.compile(r"^(?P<base>.+)-r\d+$")
 
 def _is_main_series(run_id: str) -> bool:
     """The one-variable experiment series on dataset_v1: no repeats (Run-07-r2) and no V2- runs."""
-    return not _REPEAT.match(run_id) and not run_id.startswith("V2-")
+    return not _REPEAT.match(run_id) and not run_id.startswith(("V2-", "V3-", "HO-"))
 
 
 def _repeat_sheet(wb, runs: list[dict]) -> None:
@@ -194,11 +196,11 @@ def _repeat_sheet(wb, runs: list[dict]) -> None:
     ws.freeze_panes = "C2"
 
 
-def _v2_sheet(wb, runs: list[dict]) -> None:
-    v2 = [r for r in runs if r["Run ID"].startswith("V2-")]
+def _v2_sheet(wb, runs: list[dict], prefix: str = "V2-", title: str = "dataset_v2") -> None:
+    v2 = [r for r in runs if r["Run ID"].startswith(prefix)]
     if not v2:
         return
-    ws = wb.create_sheet("dataset_v2")
+    ws = wb.create_sheet(title)
     ws.append(RUNS_COLUMNS)
     for r in v2:
         ws.append([_xl_value(c, r.get(c, "")) for c in RUNS_COLUMNS])
@@ -270,6 +272,8 @@ def build_xlsx() -> None:
         _task_sheet(wb, title, metrics, primary, main)
     _repeat_sheet(wb, runs)
     _v2_sheet(wb, runs)
+    _v2_sheet(wb, runs, "V3-", "dataset_v3 기법 실험")
+    _v2_sheet(wb, runs, "HO-", "새 사례 검증(holdout)")
     _feature_sheet(wb)
     used = set(wb.sheetnames)
     for r in runs:
@@ -291,10 +295,12 @@ def run(args: argparse.Namespace) -> dict:
         cfg = BASELINE
     else:
         cfg = PipelineConfig(few_shot=not args.no_few_shot, rubric=not args.no_rubric,
-                             context_select=not args.no_context_select)
+                             context_select=not args.no_context_select, cot=not args.no_cot,
+                             chain=not args.single_call)
     model = MODEL_ALIASES.get(args.model, args.model)
     cfg = PipelineConfig(model=model, few_shot=cfg.few_shot, rubric=cfg.rubric,
-                         context_select=cfg.context_select, effort=args.effort or cfg.effort)
+                         context_select=cfg.context_select, effort=args.effort or cfg.effort,
+                         cot=cfg.cot, chain=cfg.chain)
     cases = load_dataset(args.only_hard, args.limit, args.dataset)
     with ThreadPoolExecutor(max_workers=max(1, args.workers)) as pool:
         outs = list(pool.map(lambda c: _run_case(c, cfg), cases))  # map keeps dataset order
@@ -350,14 +356,24 @@ def main(argv: list[str] | None = None) -> dict:
     ap.add_argument("--no-few-shot", action="store_true")
     ap.add_argument("--no-rubric", action="store_true")
     ap.add_argument("--no-context-select", action="store_true")
+    ap.add_argument("--no-cot", action="store_true", help="score without reasoning first")
+    ap.add_argument("--single-call", action="store_true", help="one call for all four tasks (no chaining)")
     ap.add_argument("--effort", default=None)
     ap.add_argument("--change", default="")
     ap.add_argument("--limit", type=int, default=None)
     ap.add_argument("--only-hard", action="store_true")
     ap.add_argument("--workers", type=int, default=4)
-    ap.add_argument("--dataset", choices=["v1", "v2"], default="v1",
+    ap.add_argument("--dataset", choices=["v1", "v2", "v3", "holdout"], default="v1",
                     help="v1 = frozen 100 cases, v2 = v1 + 20 hard classification cases")
-    summary = run(ap.parse_args(argv))
+    ap.add_argument("--prompts-dir", default=None, help="read the prompts from another folder (older prompt version)")
+    args = ap.parse_args(argv)
+    if args.prompts_dir:
+        from app import prompts
+        prompts.PROMPTS_DIR = Path(args.prompts_dir)
+        prompts.load.cache_clear()
+        if prompts.load("classify") is None:
+            ap.error(f"no prompts in {args.prompts_dir}")
+    summary = run(args)
     print(f"{summary['Run ID']}: 분류 {summary['분류 정확도']} / 추출 {summary['추출 평균 정확도']} / "
           f"오류 {summary['오류 건수']} / 비용 ${summary['총비용(USD)']}")
     return summary

@@ -228,6 +228,23 @@ def run_suggest(run_id: str, change: str) -> dict:
     return s
 
 
+IOS_PATH = EVAL / "dataset_ios.jsonl"
+WORKERS = 6
+
+
+def _parallel(fn, cases: list[dict]) -> dict:
+    """case id -> fn(case) result or the exception it raised (paid calls run in parallel)."""
+    from concurrent.futures import ThreadPoolExecutor
+
+    def safe(case):
+        try:
+            return fn(case)
+        except Exception as e:  # noqa: BLE001 - recorded per case
+            return e
+    with ThreadPoolExecutor(max_workers=WORKERS) as pool:
+        return dict(zip((c["id"] for c in cases), pool.map(safe, cases)))
+
+
 def run_screenshots(run_id: str, change: str, model: str) -> dict:
     from app.pipeline import PipelineConfig, analyze
 
@@ -235,15 +252,16 @@ def run_screenshots(run_id: str, change: str, model: str) -> dict:
     rows, cost, errors = [], 0.0, 0
     fields = ("app_version", "android_version", "device_model")
     filled_ok = filled_n = halluc = null_n = act_ok = act_n = inj_ok = inj_n = 0
+    outs = _parallel(lambda case: analyze(case["text"], cfg, images=[
+        ("image/png", (SHOTS / f"{case['id']}-{i}.png").read_bytes()) for i in range(1, len(case["shots"]) + 1)]),
+        SCREENSHOT_CASES)
     for case in SCREENSHOT_CASES:
-        images = [("image/png", (SHOTS / f"{case['id']}-{i}.png").read_bytes())
-                  for i in range(1, len(case["shots"]) + 1)]
-        try:
-            result, logs = analyze(case["text"], cfg, images=images)
-        except Exception as e:  # noqa: BLE001 - one failed case is recorded, not fatal
+        out = outs[case["id"]]
+        if isinstance(out, Exception):  # one failed case is recorded, not fatal
             errors += 1
-            rows.append({"id": case["id"], "error": type(e).__name__, "note": case["note"]})
+            rows.append({"id": case["id"], "error": type(out).__name__, "note": case["note"]})
             continue
+        result, logs = out
         cost += sum(l.cost_usd for l in logs)
         ex = result.extraction.model_dump()
         row = {"id": case["id"], "note": case["note"], "priority": result.score.priority}
@@ -285,14 +303,19 @@ def run_reply(run_id: str, change: str, model: str) -> dict:
     rows, cost, errors = [], 0.0, 0
     fields = ("app_version", "android_version", "device_model")
     ok_n = tot = halluc = null_n = kept = resolved = need_before = inj_ok = inj_n = 0
+
+    def both(case):
+        first, l1 = analyze(case["text"], cfg)
+        second, l2 = analyze(case["text"], cfg, prior=first, added_info=case["answer"])
+        return first, l1, second, l2
+    outs = _parallel(both, REPLY_CASES)
     for case in REPLY_CASES:
-        try:
-            first, l1 = analyze(case["text"], cfg)
-            second, l2 = analyze(case["text"], cfg, prior=first, added_info=case["answer"])
-        except Exception as e:  # noqa: BLE001
+        out = outs[case["id"]]
+        if isinstance(out, Exception):
             errors += 1
-            rows.append({"id": case["id"], "error": type(e).__name__})
+            rows.append({"id": case["id"], "error": type(out).__name__})
             continue
+        first, l1, second, l2 = out
         cost += sum(l.cost_usd for l in l1 + l2)
         ex = second.extraction.model_dump()
         row = {"id": case["id"], "제보": case["text"], "답변": case["answer"],
@@ -335,20 +358,21 @@ def run_ios(run_id: str, change: str, model: str) -> dict:
     as ios_version, that Android-only known issues are not linked, and the usual class/priority."""
     from app.pipeline import PipelineConfig, analyze
 
-    cases = [json.loads(x) for x in (EVAL / "dataset_ios.jsonl").read_text(encoding="utf-8").splitlines() if x.strip()]
+    cases = [json.loads(x) for x in IOS_PATH.read_text(encoding="utf-8").splitlines() if x.strip()]
     cfg = PipelineConfig(model=model)
     rows, cost, errors = [], 0.0, 0
     c = dict(platform=0, ios_ok=0, ios_n=0, ios_halluc=0, ios_null_n=0, android_leak=0, ios_cases=0,
              missing_ok=0, missing_n=0, link_ok=0, cls_ok=0, pri_ok=0, dev_ok=0, dev_n=0)
+    outs = _parallel(lambda case: analyze(case["text"], cfg), cases)
     for case in cases:
         e = case["expected"]
         ee = e["extraction"]
-        try:
-            result, logs = analyze(case["text"], cfg)
-        except Exception as exc:  # noqa: BLE001
+        out = outs[case["id"]]
+        if isinstance(out, Exception):
             errors += 1
-            rows.append({"id": case["id"], "error": type(exc).__name__})
+            rows.append({"id": case["id"], "error": type(out).__name__})
             continue
+        result, logs = out
         cost += sum(l.cost_usd for l in logs)
         x = result.extraction
         link = result.link.linked_issue_id if result.link else None
@@ -401,8 +425,18 @@ def main(argv: list[str] | None = None) -> dict:
     ap.add_argument("--run-id")
     ap.add_argument("--change", default="")
     ap.add_argument("--draw", action="store_true", help="redraw eval/screenshots/*.png (needs Pillow + Malgun Gothic)")
+    ap.add_argument("--set", choices=["v1", "v2"], default="v1",
+                    help="v2 = the 100-case sets from eval/feature_sets.py")
     args = ap.parse_args(argv)
-    if args.feature == "screenshots" and (args.draw or not SHOTS.exists()):
+    if args.set == "v2":
+        global SCREENSHOT_CASES, SHOTS, REPLY_CASES, IOS_PATH
+        def _load(name):
+            return [json.loads(x) for x in (EVAL / name).read_text(encoding="utf-8").splitlines() if x.strip()]
+        SCREENSHOT_CASES = _load("screenshot_cases_v2.jsonl")
+        SHOTS = EVAL / "screenshots_v2"
+        REPLY_CASES = _load("reply_cases_v2.jsonl")
+        IOS_PATH = EVAL / "dataset_ios_v2.jsonl"
+    if args.feature == "screenshots" and args.set == "v1" and (args.draw or not SHOTS.exists()):
         draw_all()
     run_id = args.run_id or {"suggest": "FE-SUGGEST-01", "screenshots": "FE-SHOT-01", "reply": "FE-REPLY-01",
                            "ios": "FE-IOS-01"}[args.feature]

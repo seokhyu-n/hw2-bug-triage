@@ -9,8 +9,9 @@ from pydantic import BaseModel, ValidationError
 
 from app.config import MODEL_DEFAULT
 from app.llm import LLMError, LLMResult, Usage, call_llm
-from app.prompts import build_system
-from app.schemas import Classification, Extraction, Link, Score, TriageResult, to_json_schema
+from app.prompts import build_single_system, build_system
+from app.schemas import (Classification, Extraction, Link, Score, ScoreDirect, SingleResult, TriageResult,
+                         empty_to_null, strip_null_strings, to_json_schema, wire_schema)
 from app.tools import ISSUE_TOOL_DEFS, known_issues, run_tool, version_lt
 
 LINK_MAX_TOOL_ROUNDS = 4
@@ -35,7 +36,9 @@ def required_fields(extraction: Extraction) -> tuple[str, ...]:
 BUG_INFO_FIELDS = ("app_version", "android_version", "device_model", "repro_steps")
 REQUIRED_FIELDS = ("app_version", "android_version", "repro_steps")
 
-_SCHEMAS = {m: to_json_schema(m) for m in (Extraction, Classification, Link, Score)}
+_SCHEMAS = {m: to_json_schema(m) for m in (Extraction, Classification, Link, Score, ScoreDirect)}
+_SINGLE_MARKED = strip_null_strings(to_json_schema(SingleResult))  # under the API's union-type limit
+_SCHEMAS[SingleResult] = wire_schema(_SINGLE_MARKED)
 
 
 @dataclass(frozen=True)
@@ -45,6 +48,8 @@ class PipelineConfig:
     rubric: bool = True
     context_select: bool = True
     effort: str = "low"
+    cot: bool = True    # score step writes its reasoning before the verdict (off = verdict only)
+    chain: bool = True  # 4 separate calls (off = one call does all four tasks; ablation only)
 
 
 BASELINE = PipelineConfig(few_shot=False, rubric=False, context_select=False)
@@ -126,8 +131,8 @@ def _extract_messages(source: str, images: list[tuple[str, bytes]], log: str | N
 # ---------- step calls ----------
 
 def _call(step: str, cfg: PipelineConfig, messages: list[dict], model_cls: type[BaseModel],
-          logs: list[StepLog], tools: list[dict] | None = None) -> LLMResult:
-    res = call_llm(step=step, system=build_system(step, cfg), messages=messages,
+          logs: list[StepLog], tools: list[dict] | None = None, system: list[dict] | None = None) -> LLMResult:
+    res = call_llm(step=step, system=system or build_system(step, cfg), messages=messages,
                    schema=_SCHEMAS[model_cls], tools=tools, model=cfg.model, effort=cfg.effort)
     logs.append(StepLog(step, res.model, res.latency_s, res.cost_usd, res.usage))
     return res
@@ -137,7 +142,8 @@ def _validate(step: str, model_cls: type[BaseModel], res: LLMResult):
     if res.parsed is None:
         raise LLMError(f"{step}: 응답 형식 오류")
     try:
-        return model_cls.model_validate(res.parsed)
+        parsed = empty_to_null(res.parsed, _SINGLE_MARKED) if model_cls is SingleResult else res.parsed
+        return model_cls.model_validate(parsed)
     except ValidationError as e:
         raise LLMError(f"{step}: 응답 형식 오류") from e
 
@@ -159,12 +165,17 @@ def _remember_ids(name: str, json_str: str, seen: dict[str, str | None]) -> None
 
 
 def _run_link(cfg: PipelineConfig, messages: list[dict], logs: list[StepLog]) -> tuple[Link, dict]:
-    """tool_use -> run_tool -> tool_result loop; the final turn is Link JSON (tools + schema each call)."""
+    return _run_tools("link", Link, cfg, messages, logs)
+
+
+def _run_tools(step: str, model_cls: type[BaseModel], cfg: PipelineConfig, messages: list[dict],
+               logs: list[StepLog], system: list[dict] | None = None):
+    """tool_use -> run_tool -> tool_result loop; the final turn is the step's JSON (tools + schema each call)."""
     seen: dict[str, str | None] = {}
     for round_no in range(LINK_MAX_TOOL_ROUNDS + 1):
-        res = _call("link", cfg, messages, Link, logs, tools=ISSUE_TOOL_DEFS)
+        res = _call(step, cfg, messages, model_cls, logs, tools=ISSUE_TOOL_DEFS, system=system)
         if res.stop_reason != "tool_use":
-            return _validate("link", Link, res), seen
+            return _validate(step, model_cls, res), seen
         if round_no == LINK_MAX_TOOL_ROUNDS:
             break
         messages.append({"role": "assistant", "content": res.content})  # unchanged, thinking included
@@ -178,7 +189,7 @@ def _run_link(cfg: PipelineConfig, messages: list[dict], logs: list[StepLog]) ->
             results.append({"type": "tool_result", "tool_use_id": block.id,
                             "content": json_str, "is_error": is_error})
         messages.append({"role": "user", "content": results})  # all results in ONE message
-    raise LLMError(f"link: 도구 호출이 {LINK_MAX_TOOL_ROUNDS}라운드를 넘었습니다")
+    raise LLMError(f"{step}: 도구 호출이 {LINK_MAX_TOOL_ROUNDS}라운드를 넘었습니다")
 
 
 def _finalize_link(link: Link, seen: dict[str, str | None], extraction: Extraction) -> Link:
@@ -231,6 +242,8 @@ def _analyze(report_text: str, cfg: PipelineConfig, prior: TriageResult | None, 
              images: list[tuple[str, bytes]], log: str | None,
              logs: list[StepLog]) -> tuple[TriageResult, list[StepLog]]:
     source = _source_block(report_text, prior, added_info)
+    if not cfg.chain:
+        return _analyze_single(source, cfg, prior, images, log, logs)
     full = not cfg.context_select  # Baseline: every step gets the source + every previous result
 
     # 1. extract
@@ -267,11 +280,51 @@ def _analyze(report_text: str, cfg: PipelineConfig, prior: TriageResult | None, 
                 "## 이슈 연결 결과\n" + link_text]
     if full:
         sections.insert(0, source)
-    score = _validate("score", Score, _call("score", cfg, _user(sections, "근거를 먼저 쓰고 점수를 JSON으로 출력하라."),
-                                            Score, logs))
+    if cfg.cot:
+        score = _validate("score", Score, _call("score", cfg, _user(sections, "근거를 먼저 쓰고 점수를 JSON으로 출력하라."),
+                                                Score, logs))
+    else:  # ablation: no reasoning before the verdict (the schema has no reasoning field)
+        direct = _validate("score", ScoreDirect, _call(
+            "score", cfg, _user(sections, "근거를 쓰지 말고 점수만 바로 JSON으로 출력하라."), ScoreDirect, logs))
+        score = Score(reasoning="", **direct.model_dump())
     if not is_bug:
         score.completeness = None
 
+    missing_required = sum(_is_missing(extraction, f) for f in required_fields(extraction))
+    status = "need_info" if is_bug and missing_required >= 2 else "ready"
+    return TriageResult(extraction=extraction, classification=classification, link=link, score=score,
+                        answer_status=status), logs
+
+
+def _analyze_single(source: str, cfg: PipelineConfig, prior: TriageResult | None,
+                    images: list[tuple[str, bytes]], log: str | None,
+                    logs: list[StepLog]) -> tuple[TriageResult, list[StepLog]]:
+    """Ablation without decomposition/prompt chaining: one call (with the issue tools) returns all
+    four results; the same code rules (labels, missing_fields, link guards, answer_status) apply."""
+    if prior is None:
+        msgs = _extract_messages(source, images, log)
+    else:
+        msgs = _user([source], "위 입력에서 필드를 추출해 JSON으로 출력하라.")
+    text_msg = msgs[0]["content"]
+    instruction = "위 입력을 추출·분류하고, 버그면 도구로 알려진 이슈를 확인한 뒤, 근거를 먼저 쓰고 점수까지 매겨 하나의 JSON으로 출력하라."
+    if isinstance(text_msg, str):
+        msgs = [{"role": "user", "content": text_msg.replace("위 입력에서 필드를 추출해 JSON으로 출력하라.", instruction)}]
+    else:
+        blocks = list(text_msg)
+        blocks[-1] = {"type": "text", "text": blocks[-1]["text"].replace("위 입력에서 필드를 추출해 JSON으로 출력하라.", instruction)}
+        msgs = [{"role": "user", "content": blocks}]
+    out, seen = _run_tools("single", SingleResult, cfg, msgs, logs, system=build_single_system(cfg))
+    extraction, classification = out.extraction, out.classification
+    if classification.category not in classification.labels:
+        classification.labels.insert(0, classification.category)
+    is_bug = "bug" in classification.labels
+    extraction.missing_fields = ([f for f in bug_info_fields(extraction) if _is_missing(extraction, f)]
+                                 if is_bug else [])
+    link = _finalize_link(out.link, seen, extraction) if is_bug and out.link else (
+        Link(linked_issue_id=None, match_reason=None, fixed_in=None, user_should_update=None) if is_bug else None)
+    score = out.score
+    if not is_bug:
+        score.completeness = None
     missing_required = sum(_is_missing(extraction, f) for f in required_fields(extraction))
     status = "need_info" if is_bug and missing_required >= 2 else "ready"
     return TriageResult(extraction=extraction, classification=classification, link=link, score=score,

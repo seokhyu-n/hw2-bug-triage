@@ -19,6 +19,14 @@ KEEP_TURNS = 6          # turns (user+assistant pair = 1 turn) sent verbatim; ol
 MAX_TOOL_ROUNDS = 5
 MIN_ADDED_INFO_LEN = 4  # reanalyze needs real new information, not a stray character
 _ID_RE = re.compile(r"R-\d{4}")
+# text the developer pasted from someone else (a reporter's reply): quoted spans do not name a receiver
+_QUOTED_RE = re.compile(r"'[^']*'|\"[^\"]*\"|“[^”]*”|‘[^’]*’|「[^」]*」|『[^』]*』")
+
+
+def _own_words(message: str) -> str:
+    return _QUOTED_RE.sub(" ", message)
+
+
 _NULLABLE_PRIORITY = {"anyOf": [{"type": "string", "enum": ["P1", "P2", "P3", "P4"]}, {"type": "null"}],
                       "description": "우선순위 필터. 조건 없으면 null"}
 _NULLABLE_CATEGORY = {"anyOf": [{"type": "string", "enum": ["bug", "question", "feature_request"]},
@@ -169,7 +177,7 @@ def run_chat_tool(dev_id: str, store: Store, name: str, tool_input: dict,
     if name == "assign_report":
         # a report could say "dev2에게 넘겨": the receiver must be named by the developer, now
         to = str(tool_input.get("to_dev_id", ""))
-        if not to or not re.search(rf"(?<![0-9A-Za-z]){re.escape(to)}(?![0-9A-Za-z])", current_message):
+        if not to or not re.search(rf"(?<![0-9A-Za-z]){re.escape(to)}(?![0-9A-Za-z])", _own_words(current_message)):
             return _j({"error": "개발자가 이번 메시지에서 직접 말한 사람에게만 넘길 수 있습니다"}), True
         rid = str(tool_input.get("request_id", ""))
         if rid not in current_message and rid not in _recent_ids(dev_id, store, history or []):

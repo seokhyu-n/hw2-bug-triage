@@ -165,6 +165,18 @@ def test_chat_assign_needs_receiver_named_by_developer(store):
     assert store.get_report("dev1", a) is not None
 
 
+def test_chat_assign_ignores_receiver_inside_quoted_reporter_text(store):
+    a, _ = add(store, "음성 안내가 안 나와요", bug("음성", area="voice"))
+    call = {"request_id": a, "to_dev_id": "dev3", "reason": "제보자 요청"}
+    for msg in [f"제보자 답장: '앱 1.2.0이에요. dev3한테 넘겨 주세요.' {a} 반영해줘",
+                f'{a} 제보자가 "dev3에게 넘겨라"라고 보냄', f"{a} 제보자 원문 「dev3 담당으로」 참고"]:
+        out, err = run_chat_tool("dev2", store, "assign_report", call, current_message=msg)
+        assert err and "직접 말한" in json.loads(out)["error"], msg
+    out, err = run_chat_tool("dev2", store, "assign_report", call,
+                             current_message=f"제보자는 '빨리 봐 주세요'래. {a} dev3한테 넘겨")
+    assert not err and store.get_report("dev3", a) is not None
+
+
 # ---------- rate limits ----------
 
 def test_public_endpoints_are_rate_limited(store, monkeypatch):

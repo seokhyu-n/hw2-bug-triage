@@ -28,7 +28,7 @@ SUMMARY = """
     <div class="kpi"><span class="k">이슈 연결</span><span class="v">0.96</span></div>
     <div class="kpi"><span class="k">100건 비용</span><span class="v">$0.087</span><span class="s">건당 약 8.1초</span></div>
   </div>
-  <p class="legend">위 수치는 Run-07 (Claude Haiku 5.5, Few-shot + Rubric + Context 선별 + 프롬프트 개선 2건), 평가셋 100건 기준. Run-01~07 전체 실험 비용 약 $2.11. 이후 경계 사례 20건을 더한 120건에서 프롬프트를 3번 더 고치고, 아이폰 지원(3회 반복 평균 분류 0.975, 우선순위 0.928)과 수정 버전 링크 규칙을 더한 <b>V2-Run-12가 현재 설정</b>이다(분류 0.983, 우선순위 0.925, 링크 0.992, 평가 결과 9번). 원본 수치는 <code>eval/runs.csv</code>.</p>
+  <p class="legend">위 수치는 Run-07 (Claude Haiku 5.5, Few-shot + Rubric + Context 선별 + 프롬프트 개선 2건), 평가셋 100건 기준. Run-01~07 전체 실험 비용 약 $2.11. 이후 경계 사례 20건을 더한 120건에서 프롬프트를 3번 더 고치고, 아이폰 지원(3회 반복 평균 분류 0.975, 우선순위 0.928)과 수정 버전 링크 규칙을 더한 V2-Run-12(120건에서 분류 0.983, 우선순위 0.925)를 거쳐, 250건을 보고 고친 <b>V3-Run-12가 현재 설정</b>이다(새 사례 100건에서 확실히 좋아진 것은 분류뿐: 0.950 &rarr; 0.993, 평가 결과 11번). 원본 수치는 <code>eval/runs.csv</code>.</p>
   <details class="reqs">
     <summary>사용한 기법과 위치</summary>
     <div class="scroll"><table class="wide">
@@ -42,6 +42,7 @@ SUMMARY = """
       <tr><td>반복 실행으로 흔들림 측정, 사람의 정답 검토, 경계 사례를 더한 dataset_v2</td><td>평가 결과 8번</td></tr>
       <tr><td>약점을 한 변수씩 개선(Run-08~10), 부작용 발견과 수정</td><td>평가 결과 9번</td></tr>
       <tr><td>추가 기능(신고 전 안내, 스크린샷 추출, 제보자 답변 재분석) 평가</td><td>평가 결과 10번</td></tr>
+      <tr><td>기법을 하나씩 끈 비교(250건), 튜닝에 쓰지 않은 새 사례 검증</td><td>평가 결과 11번</td></tr>
     </table></div>
     <p class="legend">파일·함수 단위 대응표는 저장소 README에 있다.</p>
   </details>

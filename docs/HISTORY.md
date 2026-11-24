@@ -1,6 +1,12 @@
 # HISTORY
 
 Newest entry on top.
+## 2026-11-24 Larger eval sets, technique ablations, tuning and a held-out check
+- dataset_v3 (250 = v2 + 130 new), dataset_holdout (100, written blind to the tuning), chatbot 100 + 100 hard, screenshots/replies/iPhone 100 each. AI-written labels, human review pending (`eval/review/v3_review.md`, holdout REVIEW list).
+- Ablations (1 run each vs a 3x range): rubric, CoT and few-shot show in scoring; context selection and effort medium not distinguishable; single call has better MAE but more hallucination and cost (and needed a flattened schema: API union limit, `schemas.strip_null_strings`). Sonnet best on most metrics, ~18x cost ($4.51).
+- Tuning (label rules, priority boundaries, 3 product policies + FAQ-07..09, repro-step rule). Mistake: claimed an untouched even half although both halves' errors had been read, and some wording copied eval cases (V3-Run-10/11). Wording replaced, claim corrected; V3-Run-12 = final wording (v3: cls 0.956, labels 0.932, priority 0.884, MAE 0.149).
+- Held-out 3x before/after: cls 0.950 -> 0.993 (one case type); labels 0.973 -> 0.980, priority 0.957 -> 0.973, MAE 0.147 -> 0.122 not clearly different; side effect E-342. Adopted, not tuned further.
+- Chatbot: a receiver inside a quoted reporter reply was obeyed -> guard ignores quoted names + prompt rules; hard set 94 -> 99, safety violations 5 -> 0 (same cases tuned on; unquoted pasted text still not detectable). ~$10.6 total (estimate was $8-10). `docs/analysis/v3_experiments.md`.
 ## 2026-11-24 Ideas from running apps' support (NRC, Strava, Runkeeper, MapMyRun)
 - Public known-issues page `/known-issues` + `GET /api/public/issues` (public fields only; title = first symptom in users' words; open first; "N reports") and a banner on the report page.
 - Device self-check guides (`data/self_help.json`, `app/self_help.py`): Galaxy app-sleep steps, iPhone Low Power/location/background refresh, GPS-fix tips; shown before submitting (not for questions or crashes) and as a "기기 설정 원인 가능성" hint for developers.

@@ -336,3 +336,52 @@ def test_link_kept_when_app_version_unknown(fake_llm):
     )
     result, _ = analyze("최신 버전인데 러닝 시작하면 꺼져요. 안드로이드 14")
     assert result.link.linked_issue_id == "ISSUE-02" and result.link.user_should_update is None
+
+
+# ---------- ablation switches (eval only) ----------
+
+def test_cot_off_scores_without_reasoning(fake_llm):
+    fake_llm.queue(jr(extraction()), jr(classification()), jr(link()),
+                   jr({"completeness": 1, "priority": "P1", "questions_to_reporter": []}))
+    result, _ = analyze(REPORT, PipelineConfig(cot=False))
+    score_call = fake_llm.calls[-1]
+    assert "reasoning" not in score_call["output_config"]["format"]["schema"]["properties"]
+    assert "근거를 쓰지 말고" in user_texts(score_call)
+    assert result.score.reasoning == "" and result.score.priority == "P1"
+
+
+def test_single_call_does_all_tasks_in_one_conversation(fake_llm):
+    single = {"extraction": extraction(app_version="1.1.1"), "classification": classification(),
+              "link": link("ISSUE-02", "1.2.0"), "score": score()}
+    fake_llm.queue(tool_use("search_known_issues", SEARCH_CRASH), jr(single))
+    result, logs = analyze(REPORT, PipelineConfig(chain=False))
+    assert [l.step for l in logs] == ["single", "single"]  # tool round + final answer, no 4-step chain
+    system_text = " ".join(b["text"] for b in fake_llm.calls[0]["system"])
+    assert "한 번에 처리" in system_text and "# Rubric" in system_text
+    assert set(fake_llm.calls[-1]["output_config"]["format"]["schema"]["properties"]) == \
+        {"extraction", "classification", "link", "score"}
+    # the same code rules as the chain: tool-verified link, update flag, missing_fields
+    assert result.link.linked_issue_id == "ISSUE-02" and result.link.user_should_update is True
+    assert result.extraction.missing_fields == []
+
+
+def test_single_call_non_bug_has_no_link_and_no_completeness(fake_llm):
+    single = {"extraction": extraction(), "classification": classification("question"),
+              "link": None, "score": score(completeness=2, priority="P4")}
+    fake_llm.queue(jr(single))
+    result, _ = analyze("기록 내보내기 되나요?", PipelineConfig(chain=False))
+    assert result.link is None and result.score.completeness is None and len(fake_llm.calls) == 1
+
+
+def test_single_call_schema_stays_under_union_limit_and_reads_empty_as_null():
+    import json as _json
+    from app.pipeline import _SCHEMAS, _SINGLE_MARKED
+    from app.schemas import SingleResult, empty_to_null
+    wire = _json.dumps(_SCHEMAS[SingleResult])
+    assert wire.count("anyOf") <= 8 and "x-nullable" not in wire  # the API rejected 19 union-typed params
+    got = empty_to_null({"extraction": {"app_version": "", "device_model": "null", "repro_steps": [""]},
+                         "link": {"linked_issue_id": "", "fixed_in": ""}, "classification": {"reason": ""}},
+                        _SINGLE_MARKED)
+    assert got["extraction"]["app_version"] is None and got["extraction"]["device_model"] is None
+    assert got["extraction"]["repro_steps"] == [""]
+    assert got["link"]["linked_issue_id"] is None and got["classification"]["reason"] == ""

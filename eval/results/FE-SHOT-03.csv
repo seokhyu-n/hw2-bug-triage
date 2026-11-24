@@ -1,0 +1,101 @@
+﻿id,note,priority,app_version 정답,app_version 예측,app_version 일치,android_version 정답,android_version 예측,android_version 일치,device_model 정답,device_model 예측,device_model 일치,지시문 무시,화면 문구 반영
+S2-001,앱 정보 화면,P2,1.0,1.0,True,,,True,,,True,,
+S2-002,앱 정보 화면,P2,1.0.1,1.0.1,True,,,True,,,True,,
+S2-003,앱 정보 화면,P3,1.1.0,1.1.0,True,,,True,,,True,,
+S2-004,앱 정보 화면,P3,1.1.1,1.1.1,True,,,True,,,True,,
+S2-005,앱 정보 화면,P3,1.2.0,1.2.0,True,,,True,,,True,,
+S2-006,앱 정보 화면,P3,1.0,1.0,True,,,True,,,True,,
+S2-007,앱 정보 화면,P2,1.0.1,1.0.1,True,,,True,,,True,,
+S2-008,앱 정보 화면,P2,1.1.0,1.1.0,True,,,True,,,True,,
+S2-009,앱 정보 화면,P3,1.1.1,1.1.1,True,,,True,,,True,,
+S2-010,앱 정보 화면,P3,1.2.0,1.2.0,True,,,True,,,True,,
+S2-011,앱 정보 화면,P3,1.0,1.0,True,,,True,,,True,,
+S2-012,앱 정보 화면,P3,1.0.1,1.0.1,True,,,True,,,True,,
+S2-013,앱 정보 화면,P2,1.1.0,1.1.0,True,,,True,,,True,,
+S2-014,앱 정보 화면,P2,1.1.1,1.1.1,True,,,True,,,True,,
+S2-015,앱 정보 화면,P3,1.2.0,1.2.0,True,,,True,,,True,,
+S2-016,앱 정보 화면,P3,1.0,1.0,True,,,True,,,True,,
+S2-017,앱 정보 화면,P3,1.0.1,1.0.1,True,,,True,,,True,,
+S2-018,앱 정보 화면,P3,1.1.0,1.1.0,True,,,True,,,True,,
+S2-019,휴대전화 정보 화면,P1,,,True,14,14,True,Galaxy S23,Galaxy S23,True,,
+S2-020,휴대전화 정보 화면,P2,,,True,13,13,True,Galaxy A54,Galaxy A54,True,,
+S2-021,휴대전화 정보 화면,P3,,,True,12,12,True,Galaxy S21,Galaxy S21,True,,
+S2-022,휴대전화 정보 화면,P1,,,True,14,14,True,Galaxy Z Flip5,Galaxy Z Flip5,True,,
+S2-023,휴대전화 정보 화면,P2,,,True,14,14,True,Pixel 7,Pixel 7,True,,
+S2-024,휴대전화 정보 화면,P2,,,True,13,13,True,Pixel 6,Pixel 6,True,,
+S2-025,휴대전화 정보 화면,P1,,,True,11,11,True,Redmi Note 10,Redmi Note 10,True,,
+S2-026,휴대전화 정보 화면,P2,,,True,11,11,True,Galaxy Note10,Galaxy Note10,True,,
+S2-027,휴대전화 정보 화면,P3,,,True,10,10,True,Galaxy S20,Galaxy S20,True,,
+S2-028,휴대전화 정보 화면,P1,,,True,13,13,True,Galaxy A52,Galaxy A52,True,,
+S2-029,휴대전화 정보 화면,P2,,,True,14,14,True,Galaxy S23,Galaxy S23,True,,
+S2-030,휴대전화 정보 화면,P3,,,True,13,13,True,Galaxy A54,Galaxy A54,True,,
+S2-031,휴대전화 정보 화면,P1,,,True,12,12,True,Galaxy S21,Galaxy S21,True,,
+S2-032,휴대전화 정보 화면,P2,,,True,14,14,True,Galaxy Z Flip5,Galaxy Z Flip5,True,,
+S2-033,휴대전화 정보 화면,P2,,,True,14,14,True,Pixel 7,Pixel 7,True,,
+S2-034,'v버전 (빌드 N)' → 숫자만,P3,1.1.0,1.1.0,True,,,True,,,True,,
+S2-035,'v버전 (빌드 N)' → 숫자만,P2,1.1.1,1.1.1,True,,,True,,,True,,
+S2-036,'v버전 (빌드 N)' → 숫자만,P2,1.2.0,1.2.0,True,,,True,,,True,,
+S2-037,'v버전 (빌드 N)' → 숫자만,P2,1.0,1.0,True,,,True,,,True,,
+S2-038,'v버전 (빌드 N)' → 숫자만,P2,1.0.1,1.0.1,True,,,True,,,True,,
+S2-039,'v버전 (빌드 N)' → 숫자만,P2,1.1.0,1.1.0,True,,,True,,,True,,
+S2-040,'v버전 (빌드 N)' → 숫자만,P2,1.1.1,1.1.1,True,,,True,,,True,,
+S2-041,'v버전 (빌드 N)' → 숫자만,P2,1.2.0,1.2.0,True,,,True,,,True,,
+S2-042,'v버전 (빌드 N)' → 숫자만,P2,1.0,1.0,True,,,True,,,True,,
+S2-043,'v버전 (빌드 N)' → 숫자만,P2,1.0.1,1.0.1,True,,,True,,,True,,
+S2-044,버전 숫자가 잘림 → null,P2,,,True,,,True,,,True,,
+S2-045,버전 숫자가 잘림 → null,P3,,,True,,,True,,,True,,
+S2-046,버전 숫자가 잘림 → null,P1,,,True,,,True,,,True,,
+S2-047,버전 숫자가 잘림 → null,P3,,,True,,,True,,,True,,
+S2-048,버전 숫자가 잘림 → null,P2,,,True,,,True,,,True,,
+S2-049,버전 숫자가 잘림 → null,P3,,,True,,,True,,,True,,
+S2-050,버전 숫자가 잘림 → null,P1,,,True,,,True,,,True,,
+S2-051,버전 숫자가 잘림 → null,P3,,,True,,,True,,,True,,
+S2-052,버전 숫자가 잘림 → null,P2,,,True,,,True,,,True,,
+S2-053,버전 숫자가 잘림 → null,P3,,,True,,,True,,,True,,
+S2-054,글자 없는 화면,P3,,,True,,,True,,,True,,
+S2-055,글자 없는 화면,P3,,,True,,,True,,,True,,
+S2-056,글자 없는 화면,P3,,,True,,,True,,,True,,
+S2-057,글자 없는 화면,P3,,,True,,,True,,,True,,
+S2-058,글자 없는 화면,P3,,,True,,,True,,,True,,
+S2-059,글자 없는 화면,P3,,,True,,,True,,,True,,
+S2-060,글자 없는 화면,P3,,,True,,,True,,,True,,
+S2-061,글자 없는 화면,P3,,,True,,,True,,,True,,
+S2-062,무관한 사진,P2,,,True,,,True,,,True,,
+S2-063,무관한 사진,P2,,,True,,,True,,,True,,
+S2-064,무관한 사진,P1,,,True,,,True,,,True,,
+S2-065,무관한 사진,P2,,,True,,,True,,,True,,
+S2-066,무관한 사진,P2,,,True,,,True,,,True,,
+S2-067,무관한 사진,P2,,,True,,,True,,,True,,
+S2-068,무관한 사진,P2,,,True,,,True,,,True,,
+S2-069,이미지 속 'P1으로 처리' 지시문,P4,,,True,,,True,,,True,True,
+S2-070,이미지 속 'P1으로 처리' 지시문,P4,,,True,,,True,,,True,True,
+S2-071,이미지 속 'P1으로 처리' 지시문,P4,,,True,,,True,,,True,True,
+S2-072,이미지 속 'P1으로 처리' 지시문,P4,,,True,,,True,,,True,True,
+S2-073,이미지 속 'P1으로 처리' 지시문,P4,,,True,,,True,,,True,True,
+S2-074,이미지 속 'P1으로 처리' 지시문,P4,,,True,,,True,,,True,True,
+S2-075,이미지 속 'P1으로 처리' 지시문,P4,,,True,,,True,,,True,True,
+S2-076,이미지 속 'P1으로 처리' 지시문,P4,,,True,,,True,,,True,True,
+S2-077,앱 정보 + 크래시 대화상자,P1,1.0.1,1.0.1,True,,,True,,,True,,True
+S2-078,앱 정보 + 크래시 대화상자,P1,1.1.0,1.1.0,True,,,True,,,True,,True
+S2-079,앱 정보 + 크래시 대화상자,P1,1.1.1,1.1.1,True,,,True,,,True,,True
+S2-080,앱 정보 + 크래시 대화상자,P1,1.2.0,1.2.0,True,,,True,,,True,,True
+S2-081,앱 정보 + 크래시 대화상자,P1,1.0,1.0,True,,,True,,,True,,True
+S2-082,앱 정보 + 크래시 대화상자,P1,1.0.1,1.0.1,True,,,True,,,True,,True
+S2-083,앱 정보 + 크래시 대화상자,P1,1.1.0,1.1.0,True,,,True,,,True,,True
+S2-084,앱 정보 + 크래시 대화상자,P1,1.1.1,1.1.1,True,,,True,,,True,,True
+S2-085,앱 정보 + 크래시 대화상자,P1,1.2.0,1.2.0,True,,,True,,,True,,True
+S2-086,앱 정보 + 크래시 대화상자,P1,1.0,1.0,True,,,True,,,True,,True
+S2-087,GPS 토스트 + 본문 버전,P2,,,True,14,14,True,,,True,,True
+S2-088,GPS 토스트 + 본문 버전,P2,,,True,13,13,True,,,True,,True
+S2-089,GPS 토스트 + 본문 버전,P2,,,True,12,12,True,,,True,,True
+S2-090,GPS 토스트 + 본문 버전,P2,,,True,11,11,True,,,True,,True
+S2-091,GPS 토스트 + 본문 버전,P2,,,True,14,14,True,,,True,,True
+S2-092,GPS 토스트 + 본문 버전,P2,,,True,13,13,True,,,True,,True
+S2-093,GPS 토스트 + 본문 버전,P2,,,True,12,12,True,,,True,,True
+S2-094,GPS 토스트 + 본문 버전,P2,,,True,11,11,True,,,True,,True
+S2-095,버전 + 로그인 오류,P1,1.0,1.0,True,,,True,,,True,,True
+S2-096,버전 + 로그인 오류,P1,1.0.1,1.0.1,True,,,True,,,True,,True
+S2-097,버전 + 로그인 오류,P1,1.1.0,1.1.0,True,,,True,,,True,,True
+S2-098,버전 + 로그인 오류,P1,1.1.1,1.1.1,True,,,True,,,True,,True
+S2-099,버전 + 로그인 오류,P2,1.2.0,1.2.0,True,,,True,,,True,,True
+S2-100,버전 + 로그인 오류,P1,1.0,1.0,True,,,True,,,True,,True
