@@ -17,7 +17,9 @@ DATA = ROOT / "data"
 CATEGORIES = set(get_args(Category))
 FEATURE_AREAS = {"tracking", "map", "record", "card_image", "voice", "login", "ai_chat", "other"}
 PRIORITIES = {"P1", "P2", "P3", "P4"}
-LABEL_EXTRACTION_FIELDS = set(Extraction.model_fields) - {"missing_fields"}  # missing_fields is computed in code
+# missing_fields is computed in code; platform/ios_version came with iOS support after v1/v2 were
+# frozen (all v1/v2 reports are Android), so they are labelled only in eval/dataset_ios.jsonl
+LABEL_EXTRACTION_FIELDS = set(Extraction.model_fields) - {"missing_fields", "platform", "ios_version"}
 REQUIRED_FIELDS = ("app_version", "android_version", "repro_steps")
 TAGS = {"missing", "boundary_bug_question", "boundary_bug_feature", "mixed_labels", "known_issue_match",
         "known_issue_near_miss", "already_fixed_version", "version_variant", "vague", "crash",

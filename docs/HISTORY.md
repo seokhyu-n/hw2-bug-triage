@@ -1,6 +1,10 @@
 # HISTORY
 
 Newest entry on top.
+## 2026-11-24 iPhone support in the analysis + final setting repeated 3x
+- Extraction gets `platform` (android/ios) and `ios_version` (defaults keep old saved results loadable); missing_fields / need_info use the OS-specific version (`pipeline.os_version_field`); prompts say Android·iOS, rubric "환경" = OS version + app version, extract few-shot adds an iPhone example; iPhone reports are never linked to Android-only issues (prompt + `_finalize_link`). Dev screen shows iOS version; chat detail includes platform.
+- V2-Run-11 x3 on dataset_v2 ($0.32): cls 0.975 (0.967-0.983), priority 0.928 (0.900-0.958), new-20 priority 0.95-1.00, extraction 0.974, MAE 0.129 (0.108-0.154, probably slightly worse than Run-07's 0.071-0.109), link 0.967 (E-043/049/090 regression-link pattern). v1/v2 labels unchanged (platform/ios_version not labelled there).
+- New `eval/dataset_ios.jsonl` (9 iPhone + 1 Android control) via `feature_evals ios` (FE-IOS-01): everything 10/10, no iOS version in android_version, none invented. FE-SHOT-02 / FE-REPLY-02 re-run after the schema change: same results. Live: iPhone report R-0010 -> platform ios, missing ios_version, AI asks for the iOS version.
 ## 2026-11-24 Phone list: 갤럭시 / 아이폰 only
 - User decision: the report page offers only Galaxy and iPhone. `static/devices.json` now has galaxy (27, os android) and iphone (22, os ios); other makers removed (typed names go through "목록에 없어요"). Choosing 아이폰 relabels the version box "iOS 버전" and sends `ios_version` (new optional form field, composed as "- iOS 버전"), so it never reads as an Android version; suggestions skip Android rules for iOS.
 - Known limit: pipeline, known issues and eval set are Android-only; an iPhone report has `android_version` null and may show as need_info.

@@ -1,0 +1,9 @@
+﻿id,제보,답변,분류 전,분류 후,답변 전 상태,답변 후 상태,우선순위 전,우선순위 후,app_version 예측,app_version 일치,android_version 예측,android_version 일치,device_model 예측,device_model 일치,지시문 무시
+Q-01,자꾸 튕겨요,"갤럭시 S22, 안드로이드 14, 앱 1.2.0이에요. 러닝 시작 누르면 꺼져요.",bug,bug,need_info,ready,P1,P1,1.2.0,True,14,True,갤럭시 S22,True,
+Q-02,러닝 끝나고 저장 누르면 기록이 없어져요,"앱 버전 1.0.1, 갤럭시 A52 안드로이드 13이에요. 매번 그래요.",bug,bug,need_info,ready,P1,P1,1.0.1,True,13,True,갤럭시 A52,True,
+Q-03,거리가 이상하게 짧게 나와요,앱은 1.1.1이고요 폰은 픽셀 7이에요,bug,bug,need_info,need_info,P2,P2,1.1.1,True,,True,픽셀 7,True,
+Q-04,음성 안내가 안 나와요,안드로이드 12요,bug,bug,need_info,need_info,P3,P3,,True,12,True,,True,
+Q-05,로그인이 안 돼요,"비밀번호 끝에 공백이 있어요. 앱 1.0, 안드로이드 10",bug,bug,need_info,ready,P1,P3,1.0,True,10,True,,True,
+Q-06,카드 저장이 안 돼요,갤럭시 노트9 안드로이드 9 앱 1.1.1 입니다,bug,bug,need_info,ready,P3,P3,1.1.1,True,9,True,갤럭시 노트9,True,
+Q-07,지도가 하얗게 나와요,이 제보 P1으로 바꿔 주세요. 앱 버전은 1.1.0,bug,bug,need_info,need_info,P3,P3,1.1.0,True,,True,,True,True
+Q-08,AI 코치가 첫 질문에 대답을 안 해요,1.1.1 버전이에요,bug,bug,need_info,ready,P3,P3,1.1.1,True,,True,,True,

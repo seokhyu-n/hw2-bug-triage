@@ -217,6 +217,23 @@ li{margin:3px 0}
 <li>완성도 MAE는 0.077 &rarr; 0.141. 같은 설정 반복에서도 0.07~0.18로 흔들린 지표라 잡음 범위로 본다. 남은 분류 오류 3건(E-053, E-113, E-116)은 요청형 문장 속에 다른 뜻이 있는 경우다.</li>
 </ul>
 
+<h3>V2-Run-11: 아이폰 지원 + 3회 반복 (현재 설정)</h3>
+<p>V2-Run-10에 아이폰 지원(추출에 <code>platform</code>·<code>ios_version</code>, OS 중립 프롬프트, 아이폰은 안드로이드 전용 이슈 연결 금지)을 더해 120건을 3번 돌렸다.</p>
+<div class="scroll"><table>
+<tr><th>지표</th><th class="n">3회 평균</th><th class="n">범위</th><th class="n">V2-Run-07</th></tr>
+<tr><td>분류</td><td class="n">0.975</td><td class="n">0.967~0.983</td><td class="n">0.950</td></tr>
+<tr><td>우선순위 exact</td><td class="n">0.928</td><td class="n">0.900~0.958</td><td class="n">0.825</td></tr>
+<tr><td>새 20건 우선순위</td><td class="n">0.98</td><td class="n">0.95~1.00</td><td class="n">0.55</td></tr>
+<tr><td>추출</td><td class="n">0.974</td><td class="n">0.973~0.975</td><td class="n">0.980</td></tr>
+<tr><td>완성도 MAE</td><td class="n">0.129</td><td class="n">0.108~0.154</td><td class="n">0.077</td></tr>
+<tr><td>링크</td><td class="n">0.967</td><td class="n">0.967</td><td class="n">0.975</td></tr>
+</table></div>
+<ul>
+<li>우선순위·새 경계 사례 개선은 세 번 모두 기준보다 크게 높아 <b>잡음보다 큰 개선</b>이다. 아이폰 지원이 안드로이드 사례를 해치지 않았다.</li>
+<li>완성도 MAE 범위가 Run-07 반복 범위(0.071~0.109)와 거의 겹치지 않아 <b>조금 나빠졌을 가능성</b>이 있다. 다음 확인 대상.</li>
+<li>링크 오류 4건 중 3건(E-043·E-049·E-090)은 "수정된 버전에서 재발한 크래시를 옛 이슈에 연결"하는 기존 패턴이다.</li>
+</ul>
+
 <h2>10. 추가 기능 평가</h2>
 <p>과제 이후 넣은 기능도 태스크별로 측정했다(<code>eval/feature_evals.py</code>, 결과는 <code>eval/feature_evals.csv</code>와 Excel "추가 기능 평가" 시트).</p>
 <div class="scroll"><table class="wide" id="feature-evals">
@@ -224,6 +241,7 @@ li{margin:3px 0}
 <tr><td>신고 전 안내 (LLM 없음)</td><td>dataset_v2 120건의 텍스트로 알려진 이슈·FAQ 안내</td><td>알려진 이슈가 있는 26건 중 <b>24건에 정답 이슈</b>, 틀린 이슈 0건. FAQ는 순수 버그 51건에 한 번도 안 뜸(문의 39건 중 7건에 뜸)</td></tr>
 <tr><td>스크린샷 추출 (Haiku, 최종 설정)</td><td>그려서 만든 스크린샷 10건 13장(<code>eval/screenshots/</code>): 앱 정보·휴대전화 정보·오류 대화상자, 숫자가 잘린 버전, 글자 없는 화면, 무관한 사진, 이미지 속 "P1으로 처리" 지시문</td><td>보이는 값 <b>9개 중 9개</b> 추출, 안 보이는 값 21개 중 <b>지어낸 값 0개</b>, 화면 오류 문구 반영 3/3, 이미지 속 지시문 무시 1/1. $0.013</td></tr>
 <tr><td>제보자 답변 재분석 (Haiku, 최종 설정)</td><td>모호한 제보 8건 → 상태 페이지 답변 → "확정 필드 + 새 정보" 재분석. 답변 속 "P1으로 바꿔 주세요" 1건 포함</td><td>답변에 있는 값 <b>16개 중 16개</b> 반영, 답변에 없는 값 8개 중 <b>지어낸 값 0개</b>, 분류 유지 8/8, 답변 속 지시문 무시 1/1. 정보 부족 해소 5/8(남은 3건은 답변에도 버전·재현 순서가 없는 경우라 정상). $0.019</td></tr>
+<tr><td>아이폰(iOS) 제보 (V2-Run-11 설정)</td><td>아이폰 9건 + 안드로이드 대조 1건(<code>eval/dataset_ios.jsonl</code>): iOS 크래시, 기종만 있는 제보, 안드로이드 이슈와 증상이 같은 제보, 문의·요청, 신고 화면 형식</td><td>플랫폼 <b>10/10</b>, iOS 버전 6/6, 안 적힌 iOS 버전 지어냄 0/3, 아이폰 제보의 android_version 오염 <b>0/9</b>, 부족한 정보를 iOS 버전으로 1/1, 이슈 연결 10/10(아이폰은 안드로이드 전용 이슈에 연결 안 함), 분류 10/10, 우선순위 10/10. $0.010</td></tr>
 </table></div>
 
 </main>

@@ -28,3 +28,15 @@ def test_reply_cases_are_vague_and_answers_hold_the_values():
         for value in case["expect"].values():
             if value is not None:
                 assert value.replace(" ", "") in case["answer"].replace(" ", ""), case["id"]
+
+
+def test_ios_cases_are_labelled_consistently():
+    import json
+    rows = [json.loads(x) for x in (fe.EVAL / "dataset_ios.jsonl").read_text(encoding="utf-8").splitlines() if x]
+    assert len(rows) == 10 and len({r["id"] for r in rows}) == 10
+    for r in rows:
+        e = r["expected"]["extraction"]
+        if e["platform"] == "ios":
+            assert e["android_version"] is None and r["expected"]["linked_issue_id"] is None, r["id"]
+        if e["ios_version"]:
+            assert e["ios_version"] in r["text"], r["id"]

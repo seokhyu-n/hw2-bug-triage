@@ -11,12 +11,28 @@ from app.config import MODEL_DEFAULT
 from app.llm import LLMError, LLMResult, Usage, call_llm
 from app.prompts import build_system
 from app.schemas import Classification, Extraction, Link, Score, TriageResult, to_json_schema
-from app.tools import ISSUE_TOOL_DEFS, run_tool, version_lt
+from app.tools import ISSUE_TOOL_DEFS, known_issues, run_tool, version_lt
 
 LINK_MAX_TOOL_ROUNDS = 4
-# Fields a developer needs to reproduce a bug; order is the canonical missing_fields order.
+
+
+def os_version_field(extraction: Extraction) -> str:
+    """The OS version a developer needs: the iOS version for iPhone reports, else the Android one."""
+    return "ios_version" if extraction.platform == "ios" else "android_version"
+
+
+def bug_info_fields(extraction: Extraction) -> tuple[str, ...]:
+    """Fields needed to reproduce a bug, in the canonical missing_fields order."""
+    return ("app_version", os_version_field(extraction), "device_model", "repro_steps")
+
+
+def required_fields(extraction: Extraction) -> tuple[str, ...]:
+    """answer_status is need_info when 2+ of these are missing."""
+    return ("app_version", os_version_field(extraction), "repro_steps")
+
+
+# Android-only defaults, kept for callers that do not have an extraction at hand
 BUG_INFO_FIELDS = ("app_version", "android_version", "device_model", "repro_steps")
-# answer_status is need_info when 2+ of these are missing.
 REQUIRED_FIELDS = ("app_version", "android_version", "repro_steps")
 
 _SCHEMAS = {m: to_json_schema(m) for m in (Extraction, Classification, Link, Score)}
@@ -172,6 +188,12 @@ def _finalize_link(link: Link, seen: dict[str, str | None], extraction: Extracti
         return Link(linked_issue_id=None,
                     match_reason=f"도구 조회 결과에 없는 ID({issue_id})라 연결하지 않음",
                     fixed_in=None, user_should_update=None)
+    if issue_id is not None and extraction.platform == "ios":
+        issue = next((i for i in known_issues() if i["id"] == issue_id), {})
+        if issue.get("affected_android"):  # an Android-only issue cannot be an iPhone's problem
+            return Link(linked_issue_id=None,
+                        match_reason=f"{issue_id}는 안드로이드 전용 이슈라 아이폰 제보와 연결하지 않음",
+                        fixed_in=None, user_should_update=None)
     fixed_in = seen[issue_id] if issue_id is not None else None
     return Link(linked_issue_id=issue_id, match_reason=link.match_reason, fixed_in=fixed_in,
                 user_should_update=version_lt(extraction.app_version, fixed_in))
@@ -220,7 +242,8 @@ def _analyze(report_text: str, cfg: PipelineConfig, prior: TriageResult | None, 
     is_bug = "bug" in classification.labels
 
     # missing_fields means "needed to reproduce a bug": computed by code, empty for non-bugs
-    extraction.missing_fields = [f for f in BUG_INFO_FIELDS if _is_missing(extraction, f)] if is_bug else []
+    extraction.missing_fields = ([f for f in bug_info_fields(extraction) if _is_missing(extraction, f)]
+                                 if is_bug else [])
 
     # 3. link (bugs only)
     link: Link | None = None
@@ -242,7 +265,7 @@ def _analyze(report_text: str, cfg: PipelineConfig, prior: TriageResult | None, 
     if not is_bug:
         score.completeness = None
 
-    missing_required = sum(_is_missing(extraction, f) for f in REQUIRED_FIELDS)
+    missing_required = sum(_is_missing(extraction, f) for f in required_fields(extraction))
     status = "need_info" if is_bug and missing_required >= 2 else "ready"
     return TriageResult(extraction=extraction, classification=classification, link=link, score=score,
                         answer_status=status), logs

@@ -268,3 +268,44 @@ def test_non_bug_has_no_missing_fields(fake_llm):
     assert result.extraction.missing_fields == []
     assert '"missing_fields": []' in user_texts(fake_llm.calls[2])  # score sees the cleared list
     assert result.answer_status == "ready"
+
+
+# ---------- iOS reports ----------
+
+def test_ios_report_needs_ios_version_not_android(fake_llm):
+    fake_llm.queue(
+        jr(extraction(device_model="아이폰 15", platform="ios", android_version=None, ios_version=None,
+                      app_version="1.2.0", missing_fields=[])),
+        jr(classification()), jr(link()), jr(score()))
+    result, _ = analyze("아이폰 15, 앱 1.2.0. 러닝 시작하면 꺼져요")
+    assert result.extraction.missing_fields == ["ios_version"]  # not android_version
+    assert result.answer_status == "ready"  # only the OS version is missing
+
+
+def test_ios_report_with_ios_version_is_complete(fake_llm):
+    fake_llm.queue(
+        jr(extraction(device_model="아이폰 15", platform="ios", android_version=None, ios_version="17.5",
+                      app_version="1.2.0", missing_fields=[])),
+        jr(classification()), jr(link()), jr(score()))
+    result, _ = analyze("아이폰 15 / iOS 17.5 / 1.2.0. 러닝 시작 누르면 꺼져요")
+    assert result.extraction.missing_fields == []
+
+
+def test_ios_report_is_never_linked_to_an_android_only_issue(fake_llm):
+    fake_llm.queue(
+        jr(extraction(device_model="아이폰 15", platform="ios", android_version=None, ios_version="17.5",
+                      app_version="1.1.1", missing_fields=[])),
+        jr(classification()),
+        tool_use("search_known_issues", {**SEARCH_CRASH, "android_version": None, "app_version": "1.1.1"}),
+        jr(link("ISSUE-02", "1.2.0")),
+        jr(score()))
+    result, _ = analyze("아이폰 15 / iOS 17.5 / 1.1.1. 러닝 시작 누르면 꺼져요")
+    assert result.link.linked_issue_id is None and "안드로이드 전용" in result.link.match_reason
+
+
+def test_old_saved_result_without_platform_still_loads():
+    from app.schemas import TriageResult
+    from tests.test_store import make_result
+    raw = make_result().model_dump(mode="json")
+    del raw["extraction"]["platform"], raw["extraction"]["ios_version"]
+    assert TriageResult.model_validate(raw).extraction.platform is None

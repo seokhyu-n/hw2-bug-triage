@@ -319,7 +319,9 @@ function showDetail(r) {
 
   d.appendChild(el("h3", "추출"));
   const ex = el("div", null, "box");
-  line(ex, "기기:", val(x.device_model)); line(ex, "Android:", val(x.android_version));
+  line(ex, "기기:", val(x.device_model));
+  if (x.platform === "ios") line(ex, "iOS:", val(x.ios_version));
+  else line(ex, "Android:", val(x.android_version));
   line(ex, "앱 버전:", val(x.app_version)); line(ex, "기능:", val(x.feature_area));
   line(ex, "증상:", val(x.symptom)); line(ex, "기대 동작:", val(x.expected));
   line(ex, "실제 동작:", val(x.actual)); line(ex, "빈도:", val(x.frequency));

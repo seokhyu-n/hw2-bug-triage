@@ -3,6 +3,7 @@ r"""Evaluations for the features added after the main experiment series.
     venv\Scripts\python.exe -m eval.feature_evals suggest       # no API calls
     venv\Scripts\python.exe -m eval.feature_evals screenshots   # 10 cases, real API calls (Haiku)
     venv\Scripts\python.exe -m eval.feature_evals reply         # 8 cases x 2 analyses, real API calls
+    venv\Scripts\python.exe -m eval.feature_evals ios           # 10 iPhone/Android cases, real API calls
 
 - suggest: pre-submit known issue / FAQ suggestions (app/suggest.py) on dataset_v2.
 - screenshots: drawn screenshots (eval/screenshots/*.png, regenerated with --draw) with the values
@@ -328,21 +329,87 @@ def run_reply(run_id: str, change: str, model: str) -> dict:
     return s
 
 
+def run_ios(run_id: str, change: str, model: str) -> dict:
+    """eval/dataset_ios.jsonl: iPhone reports (+1 Android control). Checks the platform, that the iOS
+    version goes to ios_version and never to android_version, that a missing OS version is reported
+    as ios_version, that Android-only known issues are not linked, and the usual class/priority."""
+    from app.pipeline import PipelineConfig, analyze
+
+    cases = [json.loads(x) for x in (EVAL / "dataset_ios.jsonl").read_text(encoding="utf-8").splitlines() if x.strip()]
+    cfg = PipelineConfig(model=model)
+    rows, cost, errors = [], 0.0, 0
+    c = dict(platform=0, ios_ok=0, ios_n=0, ios_halluc=0, ios_null_n=0, android_leak=0, ios_cases=0,
+             missing_ok=0, missing_n=0, link_ok=0, cls_ok=0, pri_ok=0, dev_ok=0, dev_n=0)
+    for case in cases:
+        e = case["expected"]
+        ee = e["extraction"]
+        try:
+            result, logs = analyze(case["text"], cfg)
+        except Exception as exc:  # noqa: BLE001
+            errors += 1
+            rows.append({"id": case["id"], "error": type(exc).__name__})
+            continue
+        cost += sum(l.cost_usd for l in logs)
+        x = result.extraction
+        link = result.link.linked_issue_id if result.link else None
+        c["platform"] += x.platform == ee["platform"]
+        if ee["platform"] == "ios":
+            c["ios_cases"] += 1
+            c["android_leak"] += x.android_version is not None
+            if ee["ios_version"] is None:
+                c["ios_null_n"] += 1
+                c["ios_halluc"] += x.ios_version is not None
+                if e["category"] == "bug":
+                    c["missing_n"] += 1
+                    ok = "ios_version" in x.missing_fields and "android_version" not in x.missing_fields
+                    c["missing_ok"] += ok
+            else:
+                c["ios_n"] += 1
+                c["ios_ok"] += _same("app_version", ee["ios_version"], x.ios_version)
+        if ee["device_model"]:
+            c["dev_n"] += 1
+            c["dev_ok"] += _same("device_model", ee["device_model"], x.device_model)
+        c["link_ok"] += link == e["linked_issue_id"]
+        c["cls_ok"] += result.classification.category == e["category"]
+        c["pri_ok"] += result.score.priority == e["priority"]
+        rows.append({"id": case["id"], "note": case["note"], "platform": x.platform, "ios_version": x.ios_version,
+                     "android_version": x.android_version, "device_model": x.device_model,
+                     "missing_fields": " ".join(x.missing_fields), "answer_status": result.answer_status,
+                     "category": result.classification.category, "정답 category": e["category"],
+                     "priority": result.score.priority, "정답 priority": e["priority"],
+                     "link": link, "정답 link": e["linked_issue_id"],
+                     "questions": " / ".join(result.score.questions_to_reporter)})
+    _write_csv(RESULTS / f"{run_id}.csv", rows)
+    n = len(cases) - errors
+    s = {"날짜": datetime.now().strftime("%Y-%m-%d %H:%M"), "Run ID": run_id, "기능": "아이폰(iOS) 제보", "모델": model,
+         "건수": len(cases), "오류 건수": errors, "주 지표": "iOS 버전 추출 정확도",
+         "값": f"{c['ios_ok'] / max(1, c['ios_n']):.4f}",
+         "보조 지표": f"플랫폼 {c['platform']}/{n} / iOS 버전 {c['ios_ok']}/{c['ios_n']}, 안 적힌 iOS 버전 지어냄 "
+                  f"{c['ios_halluc']}/{c['ios_null_n']} / 아이폰 제보의 android_version 오염 {c['android_leak']}/{c['ios_cases']} / "
+                  f"부족한 정보를 ios_version으로 {c['missing_ok']}/{c['missing_n']} / 기종 {c['dev_ok']}/{c['dev_n']} / "
+                  f"이슈 연결 {c['link_ok']}/{n} / 분류 {c['cls_ok']}/{n} / 우선순위 {c['pri_ok']}/{n} / 비용 ${cost:.4f}",
+         "변경사항": change}
+    _summary(s)
+    return s
+
+
 def main(argv: list[str] | None = None) -> dict:
     from app.config import MODEL_DEFAULT
 
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("feature", choices=["suggest", "screenshots", "reply"])
+    ap.add_argument("feature", choices=["suggest", "screenshots", "reply", "ios"])
     ap.add_argument("--run-id")
     ap.add_argument("--change", default="")
     ap.add_argument("--draw", action="store_true", help="redraw eval/screenshots/*.png (needs Pillow + Malgun Gothic)")
     args = ap.parse_args(argv)
     if args.feature == "screenshots" and (args.draw or not SHOTS.exists()):
         draw_all()
-    run_id = args.run_id or {"suggest": "FE-SUGGEST-01", "screenshots": "FE-SHOT-01", "reply": "FE-REPLY-01"}[args.feature]
+    run_id = args.run_id or {"suggest": "FE-SUGGEST-01", "screenshots": "FE-SHOT-01", "reply": "FE-REPLY-01",
+                           "ios": "FE-IOS-01"}[args.feature]
     s = {"suggest": lambda: run_suggest(run_id, args.change),
          "screenshots": lambda: run_screenshots(run_id, args.change, MODEL_DEFAULT),
-         "reply": lambda: run_reply(run_id, args.change, MODEL_DEFAULT)}[args.feature]()
+         "reply": lambda: run_reply(run_id, args.change, MODEL_DEFAULT),
+         "ios": lambda: run_ios(run_id, args.change, MODEL_DEFAULT)}[args.feature]()
     from eval.run_eval import build_xlsx
     build_xlsx()
     print(f"{s['Run ID']} {s['기능']}: {s['주 지표']} {s['값']} | {s['보조 지표']}")

@@ -8,7 +8,11 @@ Category = Literal["bug", "question", "feature_request"]
 
 class Extraction(BaseModel):
     device_model: str | None
+    # from the text (갤럭시/안드로이드 vs 아이폰/iOS), else null. Defaults keep reports saved before
+    # iOS support loadable; the JSON schema still requires every field (to_json_schema).
+    platform: Literal["android", "ios"] | None = None
     android_version: str | None
+    ios_version: str | None = None
     app_version: str | None
     feature_area: str | None
     symptom: str | None

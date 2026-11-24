@@ -104,7 +104,8 @@ def _detail(rec: dict) -> dict:
     link = r.get("link") or {}
     ex = r["extraction"]
     return {**_compact(rec), "status": "ok", "answer_status": r["answer_status"],
-            "app_version": ex["app_version"], "android_version": ex["android_version"],
+            "app_version": ex["app_version"], "platform": ex.get("platform"),
+            "android_version": ex["android_version"], "ios_version": ex.get("ios_version"),
             "device_model": ex["device_model"], "feature_area": ex["feature_area"],
             "missing_fields": ex["missing_fields"], "fixed_in": link.get("fixed_in"),
             "questions_to_reporter": r["score"]["questions_to_reporter"],
