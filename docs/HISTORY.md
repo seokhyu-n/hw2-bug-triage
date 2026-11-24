@@ -1,6 +1,8 @@
 # HISTORY
 
 Newest entry on top.
+## 2026-11-24 One analysis page only
+- Before deleting the 4 single-tab artifacts, compared them with the combined page: same content, but the Function calling tab still said 5 tools (no `assign_report`) and the chain tab lacked the V2-Run-08/10 prompt rules and screenshot/log input. Fixed both sources, rebuilt, republished the combined page (v8), then deleted the 4 pages at the user's request. README/STATE now point to the combined page only.
 ## 2026-11-24 Run-08..10 and feature evals
 - V2-Run-08 (rubric core/aux feature scope): new-20 priority 0.55 -> 0.80, all 0.825 -> 0.892. V2-Run-09 (classify: current normal behaviours) fixed E-101/107/108 but turned 3 real v1 bugs into question/request (E-016, E-020, E-093) -> rejected. V2-Run-10 (exception limited to listed behaviours, "if possibly broken -> bug"): cls 0.975, priority 0.925, v1 missed bugs 0, new-20 cls 0.90 / priority 1.00. MAE 0.141 (noise range). Final service setting. ~$0.33. `docs/analysis/run_08_10.md`.
 - `eval/feature_evals.py`: suggest 24/26, 0 wrong; screenshots 9/9 visible, 0/21 invented, injection ignored; reply 16/16, 0/8 invented, class kept 8/8. Excel sheet "추가 기능 평가". Pillow added (draws test screenshots).

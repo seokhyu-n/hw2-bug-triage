@@ -11,8 +11,8 @@ Branch: main (GitHub private repo `seokhyu-n/hw2-bug-triage`). Service setting =
   chatbot (tools incl. guarded `assign_report`). Public endpoints rate-limited (`app/ratelimit.py`).
 - Eval: v1 Run-01..07, repeats, dataset_v2 V2-Run-01/07/08/09/10 (`docs/analysis/run_08_10.md`),
   feature evals `eval/feature_evals.py` -> `eval/feature_evals.csv` + Excel "추가 기능 평가".
-- Analysis page (4 tabs): https://claude.ai/artifact/XzpwoBQTWzGYMtCFiRppnX ; service tab alone
-  https://claude.ai/artifact/NhZ2Ag4B3WoGGaHh6ZTLdr . Source `docs/artifacts/*.html`, rebuild with
+- Analysis page (4 tabs, the ONLY one; the 4 single-tab pages were deleted 11-24):
+  https://claude.ai/artifact/XzpwoBQTWzGYMtCFiRppnX . Source `docs/artifacts/*.html`, rebuild with
   `build_combined.py`, publish the body only. Keep lecture page numbers/wording OUT of these pages.
 
 ## Setting up on another computer

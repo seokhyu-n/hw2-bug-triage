@@ -199,11 +199,4 @@ V2-Run-07에서 **새 경계 사례가 기준선보다 나빴던 것**(고장처
 원본 HTML은 `docs/artifacts/`에 있다.
 
 **과제 2 분석 페이지 (한 페이지, 탭 4개): https://claude.ai/artifact/XzpwoBQTWzGYMtCFiRppnX**
-맨 위에 핵심 지표와 필수 조건 대응 요약이 있고, 아래 탭으로 서비스 구조 · 분석 체인 · Function calling · 평가 결과를 본다. 원본은 `docs/artifacts/assignment2.html`이며 아래 네 페이지를 `docs/artifacts/build_combined.py`로 합쳐 만든다(네 페이지를 고친 뒤 다시 실행).
-
-개별 페이지(합친 페이지와 같은 내용):
-
-- Chaining 구조와 단계별 프롬프트: https://claude.ai/artifact/FD7MMatKFfYrfAEmpN4eza (원본 `docs/artifacts/chaining.html`)
-- Function calling 흐름: https://claude.ai/artifact/48mm2Bs8T1FqPeccnyEz7j (원본 `docs/artifacts/function_calling.html`)
-- 서비스 워크플로우·컨텍스트 엔지니어링: https://claude.ai/artifact/NhZ2Ag4B3WoGGaHh6ZTLdr (원본 `docs/artifacts/service_workflow.html`)
-- 평가 결과·어려운 사례·틀린 사례 분석: https://claude.ai/artifact/GCwmRSoUvuuqGDdAhnyeP2 (원본 `docs/artifacts/evaluation.html`)
+맨 위에 핵심 지표와 필수 조건 대응 요약이 있고, 아래 탭으로 서비스 구조 · 분석 체인 · Function calling · 평가 결과를 본다. 원본은 `docs/artifacts/assignment2.html`이며 탭 네 개의 원본(`service_workflow.html`, `chaining.html`, `function_calling.html`, `evaluation.html`)을 `docs/artifacts/build_combined.py`로 합쳐 만든다(원본을 고친 뒤 다시 실행). 탭별로 따로 올렸던 페이지 4개는 내용이 같아 지웠다(2026-11-24). 분석 페이지는 이 하나뿐이다.
