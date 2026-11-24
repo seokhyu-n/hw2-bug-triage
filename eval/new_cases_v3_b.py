@@ -126,7 +126,7 @@ CASES = [
          [M, CR, MISS], "bug", ["bug"],
          ex("card_image", "카드 배경으로 원본 고화질 사진을 고르면 앱이 튕김", device="갤럭시 S7", actual="앱 튕김",
             steps=["카드 배경으로 폰카 원본 사진 선택"]),
-         1, "P1", "ISSUE-08"),
+         1, "P2", "ISSUE-08"),  # human review 11-24: old device
     # ISSUE-09: card not saved to gallery on Android <= 9 (open)
     case("E-184", "카드 '저장' 누르면 저장됐다는 토스트는 뜨는데 앨범 앱에서 아무리 찾아도 없음. 공유하기로 카톡 보내는 건 돼요. 안드로이드 8.1.0, 앱 1.2.0",
          [M, VV], "bug", ["bug"],
@@ -240,7 +240,7 @@ CASES = [
          [NM, VV], "bug", ["bug"],
          ex("login", "앱을 다시 켤 때마다 로그아웃되어 있음", android="9", app="1.0", expected="로그인 유지",
             actual="매번 로그아웃", steps=["로그인", "앱 종료 후 다시 실행"]),
-         2, "P3"),
+         2, "P2"),  # human review 11-24: login is core
     case("E-205", "지도에서 제 위치 파란 점이 실제보다 한 블록씩 늦게 따라와요. 경로 선은 멀쩡함. 앱 1.0.1 / 안드로이드 11",
          [NM], "bug", ["bug"],
          ex("map", "지도의 현재 위치 표시가 실제보다 늦게 따라옴", android="11", app="1.0.1",

@@ -257,26 +257,26 @@ li{margin:3px 0}
 <p>평가셋을 250건(<code>dataset_v3</code>, 어려운 사례 175건)으로 늘려 기법을 하나씩 껐다. 끄기 실험과 Sonnet은 1회씩이라, 튜닝 전 설정의 3회 범위를 크게 벗어난 값(굵게)만 효과로 본다.</p>
 <div class="scroll"><table class="wide" id="v3-ablation">
 <tr><th>설정 (250건)</th><th class="n">분류</th><th class="n">우선순위</th><th class="n">완성도 MAE</th><th class="n">추출 환각률</th><th class="n">비용</th></tr>
-<tr><td>튜닝 전 설정 (3회 범위)</td><td class="n">0.944~0.952</td><td class="n">0.852~0.880</td><td class="n">0.112~0.130</td><td class="n">0.035~0.041</td><td class="n">$0.25</td></tr>
-<tr><td>Rubric 끔</td><td class="n">0.944</td><td class="n"><b>0.688</b></td><td class="n"><b>0.419</b></td><td class="n">0.038</td><td class="n">$0.25</td></tr>
-<tr><td>Few-shot 끔</td><td class="n">0.952</td><td class="n">0.864</td><td class="n"><b>0.191</b></td><td class="n">0.036</td><td class="n">$0.27</td></tr>
-<tr><td>Context 선별 끔</td><td class="n">0.940</td><td class="n">0.856</td><td class="n">0.132</td><td class="n">0.042</td><td class="n">$0.26</td></tr>
-<tr><td>CoT 끔</td><td class="n">0.932</td><td class="n">0.840</td><td class="n"><b>0.231</b></td><td class="n">0.039</td><td class="n">$0.21</td></tr>
-<tr><td>체이닝 끔 (한 번 호출)</td><td class="n">0.960</td><td class="n">0.860</td><td class="n"><b>0.037</b></td><td class="n"><b>0.052</b></td><td class="n">$0.33</td></tr>
-<tr><td>effort medium</td><td class="n">0.948</td><td class="n">0.848</td><td class="n">0.117</td><td class="n">0.041</td><td class="n">$0.29</td></tr>
-<tr><td>Sonnet 5.5</td><td class="n">0.964</td><td class="n">0.888</td><td class="n">0.068</td><td class="n">0.034</td><td class="n">$4.51</td></tr>
+<tr><td>튜닝 전 설정 (3회 범위)</td><td class="n">0.940~0.956</td><td class="n">0.844~0.876</td><td class="n">0.111~0.130</td><td class="n">0.035~0.041</td><td class="n">$0.25</td></tr>
+<tr><td>Rubric 끔</td><td class="n">0.940</td><td class="n"><b>0.688</b></td><td class="n"><b>0.419</b></td><td class="n">0.038</td><td class="n">$0.25</td></tr>
+<tr><td>Few-shot 끔</td><td class="n">0.956</td><td class="n">0.872</td><td class="n"><b>0.190</b></td><td class="n">0.036</td><td class="n">$0.27</td></tr>
+<tr><td>Context 선별 끔</td><td class="n">0.944</td><td class="n">0.856</td><td class="n">0.131</td><td class="n">0.042</td><td class="n">$0.26</td></tr>
+<tr><td>CoT 끔</td><td class="n">0.936</td><td class="n">0.836</td><td class="n"><b>0.230</b></td><td class="n">0.039</td><td class="n">$0.21</td></tr>
+<tr><td>체이닝 끔 (한 번 호출)</td><td class="n">0.964</td><td class="n">0.860</td><td class="n"><b>0.037</b></td><td class="n"><b>0.051</b></td><td class="n">$0.33</td></tr>
+<tr><td>effort medium</td><td class="n">0.952</td><td class="n">0.840</td><td class="n">0.116</td><td class="n">0.041</td><td class="n">$0.29</td></tr>
+<tr><td>Sonnet 5.5</td><td class="n">0.968</td><td class="n">0.888</td><td class="n">0.068</td><td class="n">0.034</td><td class="n">$4.51</td></tr>
 </table></div>
-<p>CoT는 점수 단계에만 쓰이는데도 분류가 0.932로 나왔다. 분류 1%p 안팎의 차이는 흔들림이다. 한 번 호출은 API의 스키마 제한 때문에 다른 스키마를 써서 순수한 체이닝 비교가 아니다.</p>
+<p>CoT는 점수 단계에만 쓰이는데도 분류가 0.936으로 나왔다. 분류 1%p 안팎의 차이는 흔들림이다. 한 번 호출은 API의 스키마 제한 때문에 다른 스키마를 써서 순수한 체이닝 비교가 아니다.</p>
 <h3>튜닝 전후: 튜닝에 쓰지 않은 새 사례 100건 (각 3회)</h3>
 <div class="scroll"><table id="holdout">
 <tr><th>지표</th><th class="n">튜닝 전</th><th class="n">튜닝 후</th><th>판단</th></tr>
 <tr><td>분류</td><td class="n">0.950</td><td class="n">0.993</td><td>좋아짐(한 유형의 4건)</td></tr>
 <tr><td>labels</td><td class="n">0.973</td><td class="n">0.980</td><td>차이 확인 안 됨</td></tr>
-<tr><td>우선순위</td><td class="n">0.957</td><td class="n">0.973</td><td>확실하지 않음</td></tr>
+<tr><td>우선순위</td><td class="n">0.947</td><td class="n">0.977</td><td>확실하지 않음(검토 전 정답으로는 0.957 &rarr; 0.973)</td></tr>
 <tr><td>완성도 MAE</td><td class="n">0.147</td><td class="n">0.122</td><td>차이 확인 안 됨</td></tr>
 <tr><td>링크</td><td class="n">0.993</td><td class="n">1.000</td><td>1건 안팎</td></tr>
 </table></div>
-<p><b>한계.</b> 오류를 보고 고친 250건에서는 labels가 0.868 &rarr; 0.947까지 올랐지만, 그 실행(V3-Run-10·11)에는 평가 사례와 겹치는 예시 문구가 있어 최종 성능으로 쓰지 않는다. 문구를 바꾼 현재 설정 <b>V3-Run-12</b>는 250건에서 분류 0.956, labels 0.932, 우선순위 0.884, 완성도 MAE 0.149다. 새 사례는 AI가 쓰고 사람 검토 전이며 250건보다 쉽다. 따지는 질문에 문의 라벨을 잘못 붙이는 부작용(E-342)이 생겼다.</p>
+<p><b>한계.</b> 오류를 보고 고친 250건에서는 labels가 0.867 &rarr; 0.944까지 올랐지만, 그 실행(V3-Run-10·11)에는 평가 사례와 겹치는 예시 문구가 있어 최종 성능으로 쓰지 않는다. 문구를 바꾼 현재 설정 <b>V3-Run-12</b>는 250건에서 분류 0.960, labels 0.936, 우선순위 0.876(튜닝 전 범위 안), 완성도 MAE 0.148(튜닝 전보다 나쁨)이다. 사례와 정답은 AI가 썼고, 판단이 갈리는 34건만 사람이 검토해 5건을 바꾼 뒤 저장된 예측을 다시 채점했다. 새 사례는 250건보다 쉽다. 따지는 질문에 문의 라벨을 잘못 붙이는 부작용(E-342)이 생겼다.</p>
 <h3>챗봇과 추가 기능 (각 100건)</h3>
 <p>챗봇 어려운 100건은 94 &rarr; 99, 안전 위반 5 &rarr; 0이다(실패를 보고 고친 같은 100건의 점수이고, 첫 실행 92 뒤 사례 2건을 교체했다). 인용한 제보자 답장 속 "넘겨 달라"를 실행하던 구멍은 따옴표 안의 이름을 무시하게 막았으나, 따옴표 없이 붙여 넣은 글은 구분하지 못한다. 스크린샷·답변·아이폰은 모두 100%지만 틀로 만든 쉬운 사례다.</p>
 

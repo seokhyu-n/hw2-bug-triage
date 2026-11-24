@@ -146,8 +146,8 @@ CASES = [
          ex("tracking", "'앱 사용 중에만 허용' 권한 때문에 화면이 꺼진 동안 기록이 끊긴 것인지 문의"), None, "P4"),
     case("E-143", "10월 31일 밤 11시 40분에 출발해서 자정 넘어서 끝난 러닝이 10월 합계엔 없고 11월 합계에 "
                   "들어가 있어요. 기록 날짜는 시작 시간 기준이 아니라 끝난 시간 기준인가요?",
-         ["boundary_bug_question"], "question", ["question"],
-         ex("record", "자정을 넘긴 러닝이 어느 달 합계에 들어가는지 날짜 기준 문의"), None, "P4"),
+         ["boundary_bug_question", "mixed_labels", "missing"], "bug", ["bug", "question"],  # human review 11-24
+         ex("record", "자정을 넘긴 러닝이 시작한 달이 아니라 끝난 달 합계에 들어감", actual="11월 합계에 들어가 있음"), 1, "P3"),
     case("E-144", "비밀번호 몇 번 틀렸더니 '30분 후 다시 시도' 뜨면서 로그인을 못 하게 막혔어요. "
                   "해킹 당한 건 아니죠? 원래 이렇게 잠기는 거예요?",
          ["boundary_bug_question"], "question", ["question"],

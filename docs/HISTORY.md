@@ -1,6 +1,9 @@
 # HISTORY
 
 Newest entry on top.
+## 2026-11-24 Human review of 34 debatable labels, re-graded
+- User decided all 34 (29 v3, 5 holdout): 5 changed (E-143, E-183, E-204, E-237, holdout E-323), 29 kept; also confirmed the 3 product policies that had been put into the prompt/FAQ unasked. `eval/review/v3_review_log.md`.
+- `eval/regrade.py` re-grades saved predictions (no API; unchanged labels reproduce runs.csv exactly). V3-Run-12 on v3: cls 0.960, labels 0.936, priority 0.876 (inside the pre-tuning range), MAE 0.148 (worse than pre-tuning 0.111-0.130). Holdout priority 0.947 -> 0.977, but E-323's change favours the tuned prompts and came after the results, so not counted as an effect. Numbers in the entry below are from before the review.
 ## 2026-11-24 Larger eval sets, technique ablations, tuning and a held-out check
 - dataset_v3 (250 = v2 + 130 new), dataset_holdout (100, written blind to the tuning), chatbot 100 + 100 hard, screenshots/replies/iPhone 100 each. AI-written labels, human review pending (`eval/review/v3_review.md`, holdout REVIEW list).
 - Ablations (1 run each vs a 3x range): rubric, CoT and few-shot show in scoring; context selection and effort medium not distinguishable; single call has better MAE but more hallucination and cost (and needed a flattened schema: API union limit, `schemas.strip_null_strings`). Sonnet best on most metrics, ~18x cost ($4.51).

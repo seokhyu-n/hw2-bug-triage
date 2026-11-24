@@ -22,7 +22,7 @@ Branch: main (GitHub private repo `seokhyu-n/hw2-bug-triage`). Service setting =
 - Also set up at `C:\Users\hi\부트캠프\hw2-bug-triage` (11-24); git author set repo-locally to match earlier commits.
 
 ## Next (optional)
-- Human review: 29 v3 labels (`eval/review/v3_review.md`), 5 holdout labels. Harder holdout; held-out chatbot cases; iPhone / new-policy holdout cases.
+- Human label review done (34, `eval/review/v3_review_log.md`); after a label fix run `eval.regrade V3- HO-`. Completeness MAE got worse on v3 (0.148). Harder holdout; held-out chatbot cases; iPhone / new-policy holdout cases.
 - Known: E-342 (rhetorical question gets a question label); unquoted pasted reporter text can still name a receiver in chat.
 - Eval runner must keep NOT importing `app.main` (registered issues stay out of eval).
 - `.env` holds the real key; never read it. `data/faq.json` and the classify "정상 동작" list must change together.

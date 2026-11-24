@@ -152,7 +152,7 @@ BUGS = [
     bug("E-323", "하루에 두세 번씩 저절로 로그아웃돼 있어요. 다시 로그인하면 되긴 하는데 짜증나요. 앱은 1.1.1이고, 비밀번호 변경 메뉴는 어디 있는지도 알려주세요",
         ["boundary_bug_question"],
         ex("login", "하루에 여러 번 저절로 로그아웃됨", app="1.1.1", actual="저절로 로그아웃됨", freq="하루에 두세 번씩"),
-        1, "P3", also=[Q]),
+        1, "P2", also=[Q]),  # human review 11-24, after the before/after runs (same as E-204)
     bug("E-324", "러닝 시작해도 조용, 끝내도 조용. 볼륨은 최대예요. 미국에서 산 폰이라 한국어 음성이 안 깔려 있긴 해요. Moto G 안드로이드 11 앱 1.0.1. "
         "안내 문구를 화면 글자로도 볼 수 있나요?", ["already_fixed_version"],
         ex("voice", "러닝 시작·종료 음성 안내가 나오지 않음", device="Moto G", android="11", app="1.0.1", actual="소리가 나지 않음",
