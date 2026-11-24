@@ -425,17 +425,17 @@ def main(argv: list[str] | None = None) -> dict:
     ap.add_argument("--run-id")
     ap.add_argument("--change", default="")
     ap.add_argument("--draw", action="store_true", help="redraw eval/screenshots/*.png (needs Pillow + Malgun Gothic)")
-    ap.add_argument("--set", choices=["v1", "v2"], default="v1",
-                    help="v2 = the 100-case sets from eval/feature_sets.py")
+    ap.add_argument("--set", choices=["v1", "v2", "v3"], default="v1",
+                    help="v2 = the 100-case sets from eval/feature_sets.py, v3 = the harder ones (feature_sets_v3.py)")
     args = ap.parse_args(argv)
-    if args.set == "v2":
+    if args.set != "v1":
         global SCREENSHOT_CASES, SHOTS, REPLY_CASES, IOS_PATH
         def _load(name):
             return [json.loads(x) for x in (EVAL / name).read_text(encoding="utf-8").splitlines() if x.strip()]
-        SCREENSHOT_CASES = _load("screenshot_cases_v2.jsonl")
-        SHOTS = EVAL / "screenshots_v2"
-        REPLY_CASES = _load("reply_cases_v2.jsonl")
-        IOS_PATH = EVAL / "dataset_ios_v2.jsonl"
+        SCREENSHOT_CASES = _load(f"screenshot_cases_{args.set}.jsonl")
+        SHOTS = EVAL / f"screenshots_{args.set}"
+        REPLY_CASES = _load(f"reply_cases_{args.set}.jsonl")
+        IOS_PATH = EVAL / f"dataset_ios_{args.set}.jsonl"
     if args.feature == "screenshots" and args.set == "v1" and (args.draw or not SHOTS.exists()):
         draw_all()
     run_id = args.run_id or {"suggest": "FE-SUGGEST-01", "screenshots": "FE-SHOT-01", "reply": "FE-REPLY-01",

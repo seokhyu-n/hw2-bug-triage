@@ -367,6 +367,8 @@ def main(argv: list[str] | None = None) -> dict:
                     help="v1 = frozen 100 cases, v2 = v1 + 20 hard classification cases")
     ap.add_argument("--prompts-dir", default=None, help="read the prompts from another folder (older prompt version)")
     args = ap.parse_args(argv)
+    if (RESULTS_DIR.parent / ".stop").exists():  # a queue of runs stops before its next (paid) run
+        raise SystemExit(f"eval/.stop exists: {args.run_id} not started")
     if args.prompts_dir:
         from app import prompts
         prompts.PROMPTS_DIR = Path(args.prompts_dir)

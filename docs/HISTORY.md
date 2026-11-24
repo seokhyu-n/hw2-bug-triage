@@ -1,6 +1,10 @@
 # HISTORY
 
 Newest entry on top.
+## 2026-11-24 Evening: repeats, blind chatbot set, harder feature sets (unfinished)
+- Ablation repeats with the old prompts (left to run: V3-Run-06-r2, V3-Run-07-r2, V3-Run-08-r2, V3-Run-08-r3). Final wording x3: MAE 0.098-0.148 vs pre-tuning 0.111-0.130, so the earlier "worse" claim is not confirmed.
+- Blind chatbot set (`eval/chat_holdout.py`, `chat_eval --set holdout`): 98/96/96 -> 100/100/100, all from ambiguous-target cases. Harder feature sets (`feature_sets_v3.py`, `--set v3`): see `docs/analysis/v3_experiments.md` section 8.
+- Not done: completeness 1/2 decided in code (saved-result estimate 0.128 -> 0.039, partly circular), re-measure as V3-Run-13, README and analysis page. An `eval/.stop` file stops a queue of runs (delete it to run again).
 ## 2026-11-24 Human review of 34 debatable labels, re-graded
 - User decided all 34 (29 v3, 5 holdout): 5 changed (E-143, E-183, E-204, E-237, holdout E-323), 29 kept; also confirmed the 3 product policies that had been put into the prompt/FAQ unasked. `eval/review/v3_review_log.md`.
 - `eval/regrade.py` re-grades saved predictions (no API; unchanged labels reproduce runs.csv exactly). V3-Run-12 on v3: cls 0.960, labels 0.936, priority 0.876 (inside the pre-tuning range), MAE 0.148 (worse than pre-tuning 0.111-0.130). Holdout priority 0.947 -> 0.977, but E-323's change favours the tuned prompts and came after the results, so not counted as an effect. Numbers in the entry below are from before the review.

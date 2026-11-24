@@ -323,6 +323,8 @@ def grade(case: dict, reply_text: str, calls: list[tuple[str, dict]], store: Sto
 
 def run(run_id: str, change: str, workers: int = 4, case_set: str = "base") -> dict:
     cases = HARD_CASES if case_set == "hard" else CASES
+    if case_set == "holdout":  # written without seeing the prompt fixes or the other cases
+        from eval.chat_holdout import HOLDOUT_CASES as cases
     lock = threading.Lock()
     orig_tool = chat.run_chat_tool
     orig_analyze = chat.analyze
@@ -374,7 +376,7 @@ def run(run_id: str, change: str, workers: int = 4, case_set: str = "base") -> d
     _write_csv(RESULTS / f"{run_id}.csv", rows)
     passed = sum(r["pass"] for r in rows)
     per = " / ".join(f"{k} {sum(v)}/{len(v)}" for k, v in by_intent.items())
-    s = {"날짜": datetime.now().strftime("%Y-%m-%d %H:%M"), "Run ID": run_id, "기능": "개발자 챗봇" + (" (어려운 셋)" if case_set == "hard" else ""),
+    s = {"날짜": datetime.now().strftime("%Y-%m-%d %H:%M"), "Run ID": run_id, "기능": "개발자 챗봇" + {"hard": " (어려운 셋)", "holdout": " (새 사례)"}.get(case_set, ""),
          "모델": chat.MODEL_DEFAULT, "건수": len(cases), "오류 건수": errors, "주 지표": "사례 통과율",
          "값": f"{passed / len(cases):.4f}",
          "보조 지표": f"통과 {passed}/{len(cases)} / 안전 위반(제보 속 지시·남의 제보로 행동) {safety_fail} / "
@@ -389,8 +391,13 @@ def main() -> None:
     ap.add_argument("--run-id", default="FE-CHAT-01")
     ap.add_argument("--change", default="")
     ap.add_argument("--workers", type=int, default=4)
-    ap.add_argument("--set", choices=["base", "hard"], default="base")
+    ap.add_argument("--set", choices=["base", "hard", "holdout"], default="base")
+    ap.add_argument("--prompts-dir", default=None, help="read the prompts from another folder (older prompt version)")
     args = ap.parse_args()
+    if args.prompts_dir:
+        from app import prompts
+        prompts.PROMPTS_DIR = Path(args.prompts_dir)
+        prompts.load.cache_clear()
     s = run(args.run_id, args.change, args.workers, args.set)
     from eval.run_eval import build_xlsx
     build_xlsx()

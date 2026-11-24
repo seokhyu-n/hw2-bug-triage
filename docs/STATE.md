@@ -1,7 +1,6 @@
 # STATE (2026-11-24)
 
 Branch: main (GitHub private repo `seokhyu-n/hw2-bug-triage`). Service setting = V3-Run-12 (V2-Run-12 + V3 tuning, final wording). Tests: `venv\Scripts\python.exe -m pytest`.
-
 ## Where things are
 - Reporter `/report`: optional fields, Galaxy/iPhone picker, screenshots + redaction, log, run record (`app/activity.py`), self-check guides (`app/self_help.py`), known issue/FAQ
   suggestions (`app/suggest.py`), public `/known-issues`, private status page `/status/<token>` with replies. Intake saves first, `app/intake.py`
@@ -14,15 +13,17 @@ Branch: main (GitHub private repo `seokhyu-n/hw2-bug-triage`). Service setting =
 - Analysis page (4 tabs, the ONLY one; the 4 single-tab pages were deleted 11-24):
   https://claude.ai/artifact/XzpwoBQTWzGYMtCFiRppnX . Source `docs/artifacts/*.html`, rebuild with
   `build_combined.py`, publish the body only. Keep lecture page numbers/wording OUT of these pages.
-
 ## Setting up on another computer
 - Clone, `python -m venv venv`, `venv\Scripts\python.exe -m pip install -r requirements.txt`.
 - The user creates `.env` with `CLAUDE_API_KEY=...` (not in git). Runtime data (`data/runtime/`) starts empty.
 - Server: `venv\Scripts\python.exe -m uvicorn app.main:app --port 8000`.
 - Also set up at `C:\Users\hi\부트캠프\hw2-bug-triage` (11-24); git author set repo-locally to match earlier commits.
+## In progress (11-24 evening; stopped at 17:50, unfinished)
+- Left to run (old prompts folder is the output of `git show e0e6b82:prompts/<file>`): V3-Run-06-r2, V3-Run-07-r2, V3-Run-08-r2, V3-Run-08-r3. Runs done and numbers: `docs/analysis/v3_experiments.md` section 8.
+- To do: completeness 1 vs 2 in code (required_fields; model keeps 0), then V3-Run-13 + holdout; publish the rebuilt analysis page (the live one still says MAE got worse), commit.
 
 ## Next (optional)
-- Human label review done (34, `eval/review/v3_review_log.md`); after a label fix run `eval.regrade V3- HO-`. Completeness MAE got worse on v3 (0.148). Harder holdout; held-out chatbot cases; iPhone / new-policy holdout cases.
+- Human label review done (34, `eval/review/v3_review_log.md`); after a label fix run `eval.regrade V3- HO-`. Harder holdout; iPhone / new-policy holdout cases.
 - Known: E-342 (rhetorical question gets a question label); unquoted pasted reporter text can still name a receiver in chat.
 - Eval runner must keep NOT importing `app.main` (registered issues stay out of eval).
 - `.env` holds the real key; never read it. `data/faq.json` and the classify "정상 동작" list must change together.
