@@ -42,8 +42,11 @@
   <details class="device" id="device" open>
     <summary>기기 정보 <span class="meta" id="device-note"></span></summary>
     <div class="three">
-      <div><label class="field" for="device_model">휴대폰 기종</label>
-        <input id="device_model" type="text" maxlength="60" placeholder="예: 갤럭시 S23"></div>
+      <div><label class="field" for="brand">휴대폰 기종</label>
+        <select id="brand" aria-label="제조사"><option value="">제조사 선택</option></select>
+        <select id="model" aria-label="기종" disabled><option value="">기종 선택</option></select>
+        <input id="model-other" type="text" maxlength="60" placeholder="기종 이름 (예: 갤럭시 S20)" aria-label="기종 직접 입력" hidden>
+        <input id="device_model" type="hidden"></div>
       <div><label class="field" for="android_version">안드로이드 버전</label>
         <input id="android_version" type="text" maxlength="20" placeholder="예: 14"></div>
       <div><label class="field" for="app_version">RunBuddy 앱 버전</label>
@@ -110,13 +113,66 @@ const category = () => document.querySelector("input[name=category]:checked").va
 function syncCategory() { $("bug-fields").hidden = category() !== "bug"; }
 for (const r of document.querySelectorAll("input[name=category]")) r.onchange = syncCategory;
 
+// ---- phone: maker -> model dropdowns (static/devices.json); "직접 입력" for anything not listed.
+// The chosen name goes into the hidden #device_model, which is what the form sends.
+const OTHER = "__other__";
+let brands = [];
+
+function setOptions(sel, first, items) {
+  sel.replaceChildren();
+  const f = document.createElement("option"); f.value = ""; f.textContent = first; sel.appendChild(f);
+  for (const [value, label] of items) {
+    const o = document.createElement("option"); o.value = value; o.textContent = label; sel.appendChild(o);
+  }
+}
+function syncDevice() {
+  const other = $("model").value === OTHER || $("brand").value === "other";
+  $("model-other").hidden = !other;
+  const name = other ? $("model-other").value.trim() : $("model").value;
+  const brand = brands.find(b => b.id === $("brand").value);
+  // a typed model keeps its maker when the name does not say it (e.g. "S20" under 삼성 갤럭시)
+  const family = brand ? brand.name.split(" ").pop() : "";  // 갤럭시, 픽셀, 샤오미, LG
+  $("device_model").value = other && name && brand && brand.id !== "other" && !name.includes(family)
+    ? family + " " + name : name;
+}
+function fillModels() {
+  const brand = brands.find(b => b.id === $("brand").value);
+  $("model").hidden = !!brand && brand.id === "other";  // other makers: only the text box
+  if (!brand) { setOptions($("model"), "기종 선택", []); $("model").disabled = true; }
+  else if (brand.id === "other") { setOptions($("model"), "직접 입력해 주세요", []); $("model").disabled = true; }
+  else {
+    setOptions($("model"), "기종 선택", [...brand.models.map(m => [m, m]), [OTHER, "목록에 없어요 (직접 입력)"]]);
+    $("model").disabled = false;
+  }
+  syncDevice();
+}
+function selectDevice(name) {
+  const brand = brands.find(b => b.models.includes(name));
+  if (brand) { $("brand").value = brand.id; fillModels(); $("model").value = name; }
+  else { $("brand").value = "other"; fillModels(); $("model-other").value = name; }
+  syncDevice();
+}
+$("brand").onchange = fillModels;
+$("model").onchange = () => { syncDevice(); if ($("model").value === OTHER) $("model-other").focus(); };
+$("model-other").oninput = syncDevice;
+
 // ---- device info: the app's "문제 신고" WebView passes it in the URL; Android version from the browser ----
-(function prefill() {
+(async function prefill() {
+  try {
+    const data = await (await fetch("/static/devices.json")).json();
+    brands = data.brands;
+    setOptions($("brand"), "제조사 선택", brands.map(b => [b.id, b.name]));
+  } catch (e) {  // no list: fall back to typing the model
+    $("brand").hidden = true; $("model").hidden = true; $("model-other").hidden = false;
+    $("model-other").oninput = () => { $("device_model").value = $("model-other").value.trim(); };
+  }
   const q = new URLSearchParams(location.search);
   let filled = 0;
-  for (const k of ["device_model", "android_version", "app_version"]) {
+  const dev = q.get("device_model");
+  if (dev) { if (brands.length) selectDevice(dev.slice(0, 60)); else { $("model-other").value = dev.slice(0, 60); $("device_model").value = dev.slice(0, 60); } filled++; }
+  for (const k of ["android_version", "app_version"]) {
     const v = q.get(k);
-    if (v) { $(k).value = v.slice(0, 60); filled++; }
+    if (v) { $(k).value = v.slice(0, 20); filled++; }
   }
   if (!$("android_version").value) {
     const m = navigator.userAgent.match(/Android (\d+)/);

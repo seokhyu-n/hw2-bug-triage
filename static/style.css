@@ -56,6 +56,8 @@ fieldset.types label { display: flex; gap: 4px; align-items: center; font-size: 
 details.device { margin-top: 12px; border: 1px solid #e5e7eb; border-radius: 6px; padding: 6px 10px 10px; }
 details.device summary { cursor: pointer; font-size: 14px; font-weight: 600; }
 details.device summary .meta { font-weight: normal; margin: 0; }
+details.device select, details.device input[type=text] { width: 100%; margin-bottom: 4px; }
+details.device .three > div:first-child { grid-column: span 1; }
 button.secondary { background: #fff; color: #1f2933; border: 1px solid #c4ccd4; }
 button.thumb { padding: 0; background: none; border: 0; border-radius: 6px; }
 button.thumb:focus-visible, button.secondary:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }

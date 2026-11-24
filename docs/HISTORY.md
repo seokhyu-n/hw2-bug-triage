@@ -1,6 +1,8 @@
 # HISTORY
 
 Newest entry on top.
+## 2026-11-24 Phone maker/model dropdowns on the report page
+- `static/devices.json` (Samsung/Google/Xiaomi/LG, ~45 models + "기타 제조사"); report page: maker -> model selects, "목록에 없어요" or other maker shows a text box; a typed name gets the family prefix (갤럭시/픽셀/...). Hidden `device_model` keeps the API unchanged. App URL prefill selects the model or falls back to other + text. Checked in the browser (no submission); test for the list.
 ## 2026-11-24 One analysis page only
 - Before deleting the 4 single-tab artifacts, compared them with the combined page: same content, but the Function calling tab still said 5 tools (no `assign_report`) and the chain tab lacked the V2-Run-08/10 prompt rules and screenshot/log input. Fixed both sources, rebuilt, republished the combined page (v8), then deleted the 4 pages at the user's request. README/STATE now point to the combined page only.
 ## 2026-11-24 Run-08..10 and feature evals

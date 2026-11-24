@@ -178,6 +178,15 @@ def test_chat_endpoint_returns_reply(client, monkeypatch):
     assert [h["role"] for h in hist] == ["user", "assistant"]
 
 
+def test_device_list_for_report_page(client):
+    data = client.get("/static/devices.json").json()
+    ids = [b["id"] for b in data["brands"]]
+    assert ids[-1] == "other" and len(ids) == len(set(ids))
+    names = [m for b in data["brands"] for m in b["models"]]
+    assert len(names) == len(set(names)) and all(len(m) <= 60 for m in names)  # fits the device_model limit
+    assert "갤럭시 S23" in names  # the eval set's spelling
+
+
 def test_static_pages(client):
     assert "로그인" in client.get("/").text
     assert "/report" in client.get("/").text
