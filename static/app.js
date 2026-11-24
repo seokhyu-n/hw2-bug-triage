@@ -41,12 +41,15 @@ async function loadList() {
       li.appendChild(el("span", r.result.score.priority, "badge " + r.result.score.priority));
       li.appendChild(el("span", r.request_id));
       li.appendChild(el("span", r.result.classification.category));
+      const wf = (r.workflow || {state: "new"}).state;
+      if (wf !== "new") li.appendChild(el("span", WF_LABEL[wf], "wf " + wf));
+      if ((r.replies || []).some(x => x.state !== "failed")) li.appendChild(el("span", "답변 옴", "wf in_progress"));
     } else {
       li.appendChild(el("span", STATUS_LABEL[r.status], "badge " + r.status));
       li.appendChild(el("span", r.request_id));
       li.appendChild(el("span", "미분석"));
     }
-    li.appendChild(el("span", (r.text || "").slice(0, 40) + ((r.attachments || []).length ? " 📎" + r.attachments.length : "")));
+    li.appendChild(el("span", (r.text || "").split("\n\n[신고 양식")[0].slice(0, 40) +((r.attachments || []).length ? " 📎" + r.attachments.length : "")));
     li.onclick = () => { selectedId = r.request_id; showDetail(r); loadList(); };
     ul.appendChild(li);
   }
@@ -55,8 +58,54 @@ async function loadList() {
 
 const STATUS_LABEL = {pending: "분석 중", failed: "분석 실패"};
 
+const WF_LABEL = {new: "접수됨", in_progress: "확인 중", resolved: "수정 완료", wont_fix: "처리 종료"};
+const REPLY_STATE = {pending: "재분석 중", applied: "재분석 반영", failed: "재분석 실패(내용은 저장됨)"};
+
+// Processing state + a message the reporter sees on their status page.
+function workflow(d, r) {
+  const wf = r.workflow || {state: "new", message: null};
+  d.appendChild(el("h3", "처리 상태 (제보자에게 보임)"));
+  const row = el("div", null, "workflow");
+  const sel = el("select");
+  sel.setAttribute("aria-label", "처리 상태");
+  for (const [k, v] of Object.entries(WF_LABEL)) {
+    const o = el("option", v); o.value = k; if (k === wf.state) o.selected = true; sel.appendChild(o);
+  }
+  const msg = el("input"); msg.type = "text"; msg.maxLength = 1000; msg.value = wf.message || "";
+  msg.placeholder = "제보자에게 남길 말 (예: 1.2.1에서 수정 예정입니다)";
+  msg.setAttribute("aria-label", "제보자에게 남길 말");
+  const save = el("button", "저장");
+  const note = el("span", "", "meta");
+  save.onclick = async () => {
+    save.disabled = true; note.textContent = "";
+    try {
+      const updated = await api("/api/reports/" + r.request_id + "/workflow", "POST", {state: sel.value, message: msg.value});
+      note.textContent = "저장했어요"; loadList(); Object.assign(r, updated);
+    } catch (e) { note.textContent = e.message; }
+    save.disabled = false;
+  };
+  row.append(sel, msg, save, note);
+  d.appendChild(row);
+}
+
+function replies(d, r) {
+  const list = r.replies || [];
+  if (!list.length) return;
+  d.appendChild(el("h3", "제보자 답변 (상태 확인 페이지에서 보냄)"));
+  for (const x of list) d.appendChild(el("div", x.text + "\n— " + x.at.replace("T", " ") + " · " + (REPLY_STATE[x.state] || x.state), "box raw"));
+}
+
+function logLink(d, r) {
+  if (!r.log) return;
+  const p = el("p");
+  const a = el("a", "첨부 로그 보기: " + r.log.name + " (" + Math.ceil(r.log.size / 1024) + "KB)");
+  a.href = "/api/reports/" + encodeURIComponent(r.request_id) + "/log"; a.target = "_blank"; a.rel = "noopener";
+  p.appendChild(a); d.appendChild(p);
+}
+
 // Screenshots the reporter attached; served only to the developer who can see the report.
 function shots(d, r) {
+  logLink(d, r);
   const list = r.attachments || [];
   if (!list.length) return;
   d.appendChild(el("h3", "첨부 스크린샷 (" + list.length + ")"));
@@ -112,10 +161,12 @@ function showDetail(r) {
   line(d, "분류:", c.category + (c.labels.length > 1 ? " (복합: " + c.labels.join(", ") + ")" : ""));
   line(d, "완성도:", s.completeness === null ? "해당 없음" : s.completeness + "/2");
   line(d, "답변 상태:", r.result.answer_status);
+  workflow(d, r);
 
   d.appendChild(el("h3", "제보 원문"));
   d.appendChild(el("div", r.text, "box raw"));
   shots(d, r);
+  replies(d, r);
   if (r.added_info && r.added_info.length) {
     d.appendChild(el("h3", "추가로 받은 정보"));
     d.appendChild(el("div", r.added_info.join("\n"), "box raw"));

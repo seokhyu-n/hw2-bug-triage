@@ -78,7 +78,7 @@ def post_report(text="지도가 안 열려요", files=()):
 
 def test_multipart_intake_stores_screenshots_and_passes_them_to_analysis(store):
     r = post_report(files=[("오류 화면.png", PNG, "image/png"), ("앱정보.jpg", JPG, "image/jpeg")])
-    assert r.status_code == 200 and set(r.json()) == {"request_id", "message"}
+    assert r.status_code == 200 and set(r.json()) == {"request_id", "message", "status_url"}
     rid = r.json()["request_id"]
     assert store.seen["images"] == [("image/png", PNG), ("image/jpeg", JPG)]
 

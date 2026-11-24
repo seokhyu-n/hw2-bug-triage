@@ -9,12 +9,16 @@ from fastapi.concurrency import run_in_threadpool
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, ValidationError, field_validator
+from typing import Literal
+
+from pydantic import BaseModel, Field, ValidationError, field_validator
 from starlette.datastructures import UploadFile as StarletteUpload
 
 from app import auth
 from app.attachments import MAX_BYTES, MAX_FILES, AttachmentError, Upload
 from app.attachments import validate as validate_attachments
+from app.report_form import LOG_MAX_BYTES, FormError, ReportForm, validate_log
+from app.suggest import suggest
 from app.auth import current_dev
 from app.chat import chat_turn
 from app.config import ROOT, RUNTIME_DIR
@@ -70,6 +74,32 @@ class ReportIn(BaseModel):
         return v
 
 
+class SuggestIn(BaseModel):
+    text: str = Field(max_length=MAX_REPORT_CHARS)
+    category: str | None = None
+    app_version: str | None = Field(default=None, max_length=20)
+    android_version: str | None = Field(default=None, max_length=20)
+
+
+class WorkflowIn(BaseModel):
+    state: Literal["new", "in_progress", "resolved", "wont_fix"]
+    message: str | None = Field(default=None, max_length=1000)
+
+    @field_validator("message")
+    @classmethod
+    def _strip(cls, v: str | None) -> str | None:
+        return v.strip() or None if v else None
+
+
+class ReplyIn(BaseModel):
+    text: str = Field(max_length=2000)
+
+    @field_validator("text")
+    @classmethod
+    def _check(cls, v: str) -> str:
+        return _nonblank(v).strip()
+
+
 class ReanalyzeIn(BaseModel):
     added_info: str
 
@@ -98,6 +128,7 @@ def _llm_http_error(exc: LLMError) -> HTTPException:
 
 def _view(record: dict) -> dict:
     out = dict(record)
+    out.pop("status_token", None)  # the reporter's link stays with the reporter
     out["status"] = "done"
     out.setdefault("logs_summary", {"latency_s": 0.0, "cost_usd": 0.0, "cache_read": 0})
     out["assigned_to"] = record["dev_id"]
@@ -142,52 +173,76 @@ def report_page():
     return FileResponse(STATIC_DIR / "report.html")
 
 
-async def _read_intake(request: Request) -> tuple[str, list[Upload]]:
-    """JSON {"text"} (API clients) or multipart form with `text` and up to 3 `files` (report page)."""
+FORM_KEYS = ("text", "category", "frequency", "device_model", "android_version", "app_version",
+             "steps", "expected", "actual")
+
+
+async def _read_intake(request: Request) -> tuple[dict, list[Upload], Upload | None]:
+    """JSON (app/API clients: the same keys, no files) or a multipart form (report page) with
+    up to 3 `files` screenshots and one `log` text file."""
     ctype = request.headers.get("content-type", "")
     if ctype.startswith(("multipart/form-data", "application/x-www-form-urlencoded")):
-        form = await request.form(max_files=MAX_FILES + 2, max_fields=10)
-        text = form.get("text")
+        form = await request.form(max_files=MAX_FILES + 3, max_fields=len(FORM_KEYS) + 2)
+        fields = {k: v for k in FORM_KEYS if isinstance(v := form.get(k), str)}
         uploads = []
         for f in form.getlist("files"):
             if isinstance(f, StarletteUpload):
                 data = await f.read(MAX_BYTES + 1)  # one byte over is enough to reject
                 uploads.append(Upload(f.filename or "", data))
-        return text if isinstance(text, str) else "", uploads
+        log_file = form.get("log")
+        log = None
+        if isinstance(log_file, StarletteUpload):
+            log = Upload(log_file.filename or "", await log_file.read(LOG_MAX_BYTES + 1))
+        return fields, uploads, log
     try:
         body = await request.json()
     except ValueError:
         raise HTTPException(422, "요청 형식이 올바르지 않습니다")
-    return (body.get("text") if isinstance(body, dict) else None) or "", []
+    if not isinstance(body, dict):
+        raise HTTPException(422, "요청 형식이 올바르지 않습니다")
+    return {k: v for k in FORM_KEYS if isinstance(v := body.get(k), str)}, [], None
 
 
 @app.post("/api/intake")
 async def intake(request: Request):
     """Public intake for reporters (app users, QA, support). No login.
 
-    The report (and any screenshots) is saved first and the receipt number returned at once; the
+    The report (screenshots, log) is saved first and the receipt number returned at once; the
     analysis and the assignment run in the background (`app/intake.py`), so an API failure never
-    loses a report. The reporter only gets a receipt number; the triage result and the assignee
-    stay on the developer side.
+    loses a report. The reporter gets the receipt number and a private status link; the triage
+    result and the assignee stay on the developer side.
     """
-    text, uploads = await _read_intake(request)
+    fields, uploads, log_upload = await _read_intake(request)
     try:
-        body = ReportIn(text=text)
+        body = ReportIn(text=fields.get("text", ""))
     except ValidationError as e:
         raise RequestValidationError(e.errors(include_url=False))
     try:
+        form = ReportForm.parse(fields)
         files = validate_attachments(uploads)
-    except AttachmentError as e:
+        log = validate_log(log_upload.filename, log_upload.data) if log_upload else None
+    except (AttachmentError, FormError) as e:
         raise HTTPException(422, str(e))
-    rid = await run_in_threadpool(_store(request).enqueue, body.text, files)
+    rid, token = await run_in_threadpool(_store(request).enqueue, form.compose(body.text), files,
+                                         form.as_dict(), log)
     _worker(request).submit(rid)
-    return {"request_id": rid, "message": f"제보가 접수되었습니다. 접수 번호는 {rid}입니다. 담당 개발자가 확인할 예정입니다."}
+    return {"request_id": rid, "status_url": f"/status/{token}",
+            "message": f"제보가 접수되었습니다. 접수 번호는 {rid}입니다. 담당 개발자가 확인할 예정입니다."}
+
+
+@app.post("/api/intake/suggest")
+def intake_suggest(body: SuggestIn):
+    """Before submitting: known issues and FAQ entries that look like this report (no LLM call)."""
+    return suggest(body.text, category=body.category, app_version=body.app_version,
+                   android_version=body.android_version)
 
 
 def _queue_view(entry: dict) -> dict:
     """A report still waiting for (or failed) analysis: no result yet."""
-    return {**entry, "result": None, "added_info": [], "assigned_to": None,
-            "logs_summary": {"latency_s": 0.0, "cost_usd": 0.0, "cache_read": 0}}
+    out = {**entry, "result": None, "added_info": [], "assigned_to": None,
+           "logs_summary": {"latency_s": 0.0, "cost_usd": 0.0, "cache_read": 0}}
+    out.pop("status_token", None)  # the reporter's link stays with the reporter
+    return out
 
 
 def _sees_queue(dev_id: str) -> bool:
@@ -235,6 +290,87 @@ def get_attachment(request_id: str, index: int, request: Request, dev_id: str = 
     return Response(store.attachment(request_id, meta), media_type=meta["media_type"],
                     headers={"X-Content-Type-Options": "nosniff", "Cache-Control": "private, max-age=3600",
                              "Content-Security-Policy": "default-src 'none'"})
+
+
+@app.get("/api/reports/{request_id}/log")
+def get_log(request_id: str, request: Request, dev_id: str = Depends(current_dev)):
+    """The attached log as plain text, only for the developer who can see the report."""
+    store = _store(request)
+    record = store.get_queued(request_id) if _sees_queue(dev_id) else None
+    if record is None:
+        record = _own_report(request, dev_id, request_id)
+    if not record.get("log"):
+        raise HTTPException(404, "첨부된 로그가 없습니다")
+    return Response(store.log_text(record), media_type="text/plain; charset=utf-8",
+                    headers={"X-Content-Type-Options": "nosniff", "Content-Security-Policy": "default-src 'none'"})
+
+
+@app.post("/api/reports/{request_id}/workflow")
+def set_workflow(request_id: str, body: WorkflowIn, request: Request, dev_id: str = Depends(current_dev)):
+    """Processing state (new / in progress / resolved / won't fix) and a message for the reporter."""
+    _own_report(request, dev_id, request_id)
+    return _view(_store(request).set_workflow(dev_id, request_id, body.state, body.message))
+
+
+# ---------- reporter status page (private link, no login) ----------
+
+WORKFLOW_LABEL = {"new": "접수됨", "in_progress": "개발자 확인 중", "resolved": "수정 완료", "wont_fix": "처리 종료"}
+MAX_REPLIES = 5
+
+
+def _status_view(dev_id: str | None, record: dict) -> dict:
+    """What the reporter may see: never priority, classification, assignee or internal notes."""
+    out = {"request_id": record["request_id"], "created_at": record["created_at"],
+           "text": record["text"], "screenshots": len(record.get("attachments", [])),
+           "questions": [], "replies": [{"text": r["text"], "at": r["at"], "state": r["state"]}
+                                        for r in record.get("replies", [])],
+           "developer_message": None, "can_reply": False}
+    if dev_id is None:  # still in the intake queue
+        out["stage"] = "analyzing" if record["status"] == "pending" else "checking"
+        out["stage_label"] = "접수 확인 중" if record["status"] == "pending" else "담당자 확인 중"
+        return out
+    wf = record.get("workflow") or {"state": "new", "message": None}
+    out["stage"] = wf["state"]
+    out["stage_label"] = WORKFLOW_LABEL[wf["state"]]
+    out["developer_message"] = wf.get("message")
+    open_ = wf["state"] in ("new", "in_progress")
+    result = record["result"]
+    if open_ and result["answer_status"] == "need_info":
+        out["questions"] = result["score"]["questions_to_reporter"]
+    out["can_reply"] = open_ and len(out["replies"]) < MAX_REPLIES
+    return out
+
+
+def _by_token(request: Request, token: str) -> tuple[str | None, dict]:
+    found = _store(request).find_by_token(token)
+    if found is None:
+        raise HTTPException(404, "신고를 찾을 수 없습니다. 링크를 다시 확인해 주세요.")
+    return found
+
+
+@app.get("/status/{token}")
+def status_page(token: str):
+    return FileResponse(STATIC_DIR / "status.html", headers={"Referrer-Policy": "no-referrer"})
+
+
+@app.get("/api/status/{token}")
+def get_status(token: str, request: Request):
+    return _status_view(*_by_token(request, token))
+
+
+@app.post("/api/status/{token}/reply")
+def reporter_reply(token: str, body: ReplyIn, request: Request):
+    """The reporter answers the questions; saved first, then the report is re-analyzed with it."""
+    dev_id, record = _by_token(request, token)
+    view = _status_view(dev_id, record)
+    if dev_id is None:
+        raise HTTPException(409, "아직 접수를 확인하고 있어요. 잠시 후 다시 시도해 주세요.")
+    if not view["can_reply"]:
+        raise HTTPException(409, "이 신고에는 더 답변할 수 없어요.")
+    index = _store(request).add_reply(dev_id, record["request_id"], body.text)
+    _worker(request).submit_reply(dev_id, record["request_id"], index)
+    dev_id, record = _by_token(request, token)
+    return _status_view(dev_id, record)
 
 
 @app.post("/api/reports/{request_id}/retry")

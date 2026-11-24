@@ -13,6 +13,8 @@ import time
 from app.auth import DEFAULT_DEV, assign_developer
 from app.llm import LLMError, LLMRefusal, LLMTruncated
 from app.pipeline import analyze
+from app.report_form import log_tail
+from app.schemas import TriageResult
 from app.store import Store
 
 log = logging.getLogger(__name__)
@@ -56,21 +58,52 @@ class IntakeWorker:
         self._thread = threading.Thread(target=self._run, name="intake-worker", daemon=True)
         self._thread.start()
         for r in self.store.queued(status="pending"):
-            self._jobs.put(r["request_id"])
+            self._jobs.put(("intake", r["request_id"]))
+        for dev_id, rid, index in self.store.pending_replies():
+            self._jobs.put(("reply", dev_id, rid, index))
 
     def submit(self, request_id: str) -> None:
+        self._enqueue(("intake", request_id))
+
+    def submit_reply(self, dev_id: str, request_id: str, index: int) -> None:
+        """Re-analyze an assigned report with the reporter's answer (reply `index`)."""
+        self._enqueue(("reply", dev_id, request_id, index))
+
+    def _enqueue(self, job: tuple) -> None:
         if self.sync:
-            self.process(request_id)
+            self._dispatch(job)
         else:
-            self._jobs.put(request_id)
+            self._jobs.put(job)
+
+    def _dispatch(self, job: tuple) -> bool:
+        if job[0] == "reply":
+            return self.process_reply(*job[1:])
+        return self.process(job[1])
 
     def _run(self) -> None:
         while True:
-            rid = self._jobs.get()
+            job = self._jobs.get()
             try:
-                self.process(rid)
+                self._dispatch(job)
             except Exception:  # noqa: BLE001 - keep the worker alive for the next report
-                log.exception("intake worker crashed on %s", rid)
+                log.exception("intake worker crashed on %s", job[:3])
+
+    def _with_retries(self, request_id: str, run, on_error) -> tuple | None:
+        """Call run() up to len(retry_delays)+1 times; on_error(exc, is_last) after each failure."""
+        attempts = len(self.retry_delays) + 1
+        for attempt in range(attempts):
+            try:
+                return run()
+            except Exception as exc:  # noqa: BLE001 - every failure is recorded on the report
+                last = attempt == attempts - 1 or not _retryable(exc)
+                on_error(exc, last)
+                log.warning("analysis failed for %s (attempt %d): %s", request_id, attempt + 1,
+                            type(exc).__name__)
+                if last:
+                    return None
+                if not self.sync:
+                    time.sleep(self.retry_delays[attempt])
+        return None
 
     def process(self, request_id: str) -> bool:
         """Analyze one queued report. Returns True when it reached a developer's list."""
@@ -78,21 +111,32 @@ class IntakeWorker:
         if entry is None:  # already processed
             return True
         self.store.set_queue_status(request_id, "pending")
-        attempts = len(self.retry_delays) + 1
-        for attempt in range(attempts):
-            try:
-                result, logs = analyze(entry["text"], images=self.store.images(entry))
-            except Exception as exc:  # noqa: BLE001 - every failure is recorded on the report
-                last = attempt == attempts - 1 or not _retryable(exc)
-                self.store.set_queue_status(request_id, "failed" if last else "pending",
-                                            _error_message(exc), count_attempt=True)
-                log.warning("analysis failed for %s (attempt %d): %s", request_id, attempt + 1,
-                            type(exc).__name__)
-                if last:
-                    return False
-                if not self.sync:
-                    time.sleep(self.retry_delays[attempt])
-                continue
-            self.store.complete(request_id, assign_developer(result.extraction.feature_area), result, logs)
-            return True
-        return False
+        out = self._with_retries(
+            request_id,
+            lambda: analyze(entry["text"], images=self.store.images(entry),
+                            log=log_tail(self.store.log_text(entry))),
+            lambda exc, last: self.store.set_queue_status(request_id, "failed" if last else "pending",
+                                                          _error_message(exc), count_attempt=True))
+        if out is None:
+            return False
+        result, logs = out
+        self.store.complete(request_id, assign_developer(result.extraction.feature_area), result, logs)
+        return True
+
+    def process_reply(self, dev_id: str, request_id: str, index: int) -> bool:
+        """Re-analysis with the reporter's answer: confirmed fields + only the new text (like a
+        developer's re-analysis). The answer itself is already saved, so a failure loses nothing."""
+        record = self.store.get_report(dev_id, request_id)
+        if record is None:
+            return False
+        reply = record["replies"][index]["text"]
+        out = self._with_retries(
+            request_id,
+            lambda: analyze(record["text"], prior=TriageResult.model_validate(record["result"]),
+                            added_info=reply),
+            lambda exc, last: last and self.store.set_reply_state(dev_id, request_id, index, "failed"))
+        if out is None:
+            return False
+        result, logs = out
+        self.store.apply_reply(dev_id, request_id, index, result, logs)
+        return True

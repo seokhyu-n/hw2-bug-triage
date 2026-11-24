@@ -71,7 +71,7 @@ def test_intake_works_without_login_and_returns_receipt_only(reporter, monkeypat
     r = reporter.post("/api/intake", json={"text": "지도가 안 열려요"})
     assert r.status_code == 200
     body = r.json()
-    assert set(body) == {"request_id", "message"}  # no triage result, no assignee
+    assert set(body) == {"request_id", "message", "status_url"}  # no triage result, no assignee
     assert body["request_id"] == "R-0001"
     assert "R-0001" in body["message"]
 
@@ -141,7 +141,7 @@ def test_failed_report_visible_to_fallback_dev_and_retry_assigns_it(reporter, st
 
 
 def test_retry_rejects_report_still_pending(reporter, store):
-    rid = store.enqueue("분석 대기")
+    rid = store.enqueue("분석 대기")[0]
     assert login_as(intake.FAILED_OWNER).post(f"/api/reports/{rid}/retry").status_code == 409
 
 

@@ -1,6 +1,12 @@
 # HISTORY
 
 Newest entry on top.
+## 2026-11-24 Report form like real services (7 items)
+- Researched real report screens (Discord bug form, Samsung Members, Google feedback, Instabug, GitHub issue forms, Kakao, Strava) and added: category choice, steps/expected/actual/frequency, device/Android/app version (prefilled from the app's URL), pre-submit known issue + FAQ suggestions, screenshot redaction (+ JPEG EXIF strip), log file, reporter status page with replies, developer processing state + message.
+- Design: fields are optional and folded into the report text (`app/report_form.py`), so the same 4-step analysis and the eval set are unchanged; category is passed "for reference" only. Log tail (4,000 chars) and screenshots go to extract only, as data.
+- `app/suggest.py`: char-bigram TF-IDF + version rules (no LLM). On dataset_v2: 24/26 linked reports get the right issue, 0 wrong; FAQ never shows on pure bugs. `data/faq.json` is dummy data grounded in the eval questions.
+- Status link `/status/<token>` (unguessable; token hidden from dev APIs). Replies saved first, re-analyzed in the worker (resumed on restart), 5 per report. Workflow states new/in_progress/resolved/wont_fix; closed reports take no replies.
+- Live check found a race: submitting right after saving a redaction uploaded the original. Fixed (submit waits for the save); verified the stored image is blacked out. Full loop checked live: vague report -> 3 questions -> reporter answer -> re-analysis filled app/device/Android, questions cleared -> dev status + message shown to the reporter. 211 tests pass.
 ## 2026-11-24 Screenshot attachments on reports
 - Reporter page: attach up to 3 images (5 MB each, PNG/JPG/WEBP/GIF) or paste a capture with Ctrl+V; thumbnails with remove. `POST /api/intake` accepts multipart (`text` + `files`) as well as JSON.
 - `app/attachments.py`: type by magic bytes (renamed HTML rejected), safe display names, limits. Store saves files under server-made names in `data/runtime/_attachments/<id>/`; the record keeps name/type/size.

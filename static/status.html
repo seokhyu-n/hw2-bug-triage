@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex">
+<title>RunBuddy 신고 처리 상황</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div class="intake status">
+  <h2>신고 처리 상황</h2>
+  <div class="error" id="err"></div>
+  <div id="view" hidden>
+    <p><b id="rid"></b> · <span id="created" class="meta"></span></p>
+    <p>현재 상태: <span class="stage" id="stage"></span></p>
+    <p class="meta" id="stage-help"></p>
+
+    <div id="dev-msg-box" hidden>
+      <h3>개발팀 답변</h3>
+      <div class="card"><p id="dev-msg"></p></div>
+    </div>
+
+    <div id="questions-box" hidden>
+      <h3>확인이 필요한 내용</h3>
+      <p class="meta">아래 질문에 답해 주시면 더 빨리 확인할 수 있어요.</p>
+      <ul id="questions"></ul>
+    </div>
+
+    <div id="reply-box" hidden>
+      <label class="field" for="reply">추가로 알려 주실 내용</label>
+      <textarea id="reply" maxlength="2000" placeholder="예: 앱 버전은 1.1.1이고 갤럭시 S23, 안드로이드 14예요."></textarea>
+      <p class="actions"><button id="reply-btn">보내기</button></p>
+    </div>
+
+    <div id="replies-box" hidden>
+      <h3>보내 주신 답변</h3>
+      <div id="replies"></div>
+    </div>
+
+    <h3>신고 내용</h3>
+    <div class="box raw" id="text"></div>
+    <p class="meta" id="shots"></p>
+  </div>
+  <p class="meta"><a href="/report">새로 신고하기</a></p>
+</div>
+<script>
+// Reporter's private status page. Shows only what the reporter may see (no priority, no assignee).
+const $ = id => document.getElementById(id);
+const token = location.pathname.split("/").pop();
+const HELP = {
+  analyzing: "신고를 확인하고 담당 개발자를 정하는 중이에요.",
+  checking: "자동 확인이 늦어져 담당자가 직접 보고 있어요.",
+  new: "담당 개발자에게 전달됐어요.",
+  in_progress: "담당 개발자가 확인하고 있어요.",
+  resolved: "문제가 수정됐어요. 앱을 최신 버전으로 업데이트해 주세요.",
+  wont_fix: "이 신고는 처리가 끝났어요. 개발팀 답변을 확인해 주세요.",
+};
+const REPLY_STATE = {pending: "반영 중", applied: "반영됨", failed: "전달됨(개발자가 직접 확인)"};
+
+function render(s) {
+  $("view").hidden = false;
+  $("rid").textContent = "접수 번호 " + s.request_id;
+  $("created").textContent = s.created_at.replace("T", " ");
+  $("stage").textContent = s.stage_label;
+  $("stage").className = "stage " + s.stage;
+  $("stage-help").textContent = HELP[s.stage] || "";
+  $("dev-msg-box").hidden = !s.developer_message;
+  $("dev-msg").textContent = s.developer_message || "";
+  $("questions-box").hidden = !s.questions.length;
+  $("questions").replaceChildren(...s.questions.map(q => { const li = document.createElement("li"); li.textContent = q; return li; }));
+  $("reply-box").hidden = !s.can_reply;
+  $("replies-box").hidden = !s.replies.length;
+  $("replies").replaceChildren(...s.replies.map(r => {
+    const d = document.createElement("div"); d.className = "card";
+    const p = document.createElement("p"); p.textContent = r.text;
+    const m = document.createElement("p"); m.className = "meta"; m.textContent = r.at.replace("T", " ") + " · " + (REPLY_STATE[r.state] || r.state);
+    d.append(p, m); return d;
+  }));
+  $("text").textContent = s.text;
+  $("shots").textContent = s.screenshots ? "첨부한 사진 " + s.screenshots + "장" : "";
+}
+
+async function load() {
+  const r = await fetch("/api/status/" + encodeURIComponent(token));
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) { $("err").textContent = data.detail || "불러오지 못했어요."; return null; }
+  render(data);
+  return data;
+}
+
+$("reply-btn").onclick = async () => {
+  const btn = $("reply-btn"); $("err").textContent = "";
+  if (!$("reply").value.trim()) { $("err").textContent = "내용을 입력해 주세요."; return; }
+  btn.disabled = true;
+  try {
+    const r = await fetch("/api/status/" + encodeURIComponent(token) + "/reply", {method: "POST",
+      headers: {"Content-Type": "application/json"}, body: JSON.stringify({text: $("reply").value})});
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      let d = data.detail;
+      if (Array.isArray(d)) d = d.map(x => (x.msg || "").replace(/^Value error, /, "")).join("; ");
+      throw new Error(d || "보내지 못했어요.");
+    }
+    $("reply").value = "";
+    render(data);
+    setTimeout(load, 15000);  // the re-analysis takes ~10 s; then the questions update
+  } catch (e) { $("err").textContent = e.message; }
+  btn.disabled = false;
+};
+load();
+</script>
+</body>
+</html>

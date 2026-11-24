@@ -15,7 +15,7 @@ def ok(text, **kw):
 def test_enqueue_saves_pending_and_shares_id_sequence(tmp_path):
     store = Store(tmp_path)
     assert store.create_report("dev1", "a", make_result(), []) == "R-0001"
-    assert store.enqueue("b") == "R-0002"
+    assert store.enqueue("b")[0] == "R-0002"
     assert store.create_report("dev1", "c", make_result(), []) == "R-0003"
     entry = store.get_queued("R-0002")
     assert entry["status"] == "pending" and entry["attempts"] == 0 and entry["text"] == "b"
@@ -25,7 +25,7 @@ def test_enqueue_saves_pending_and_shares_id_sequence(tmp_path):
 
 def test_complete_moves_report_keeping_id_and_created_at(tmp_path):
     store = Store(tmp_path)
-    rid = store.enqueue("지도 오류")
+    rid = store.enqueue("지도 오류")[0]
     created = store.get_queued(rid)["created_at"]
     store.complete(rid, "dev2", make_result(), [make_log()])
     assert store.queued() == []
@@ -38,7 +38,7 @@ def test_complete_moves_report_keeping_id_and_created_at(tmp_path):
 def test_worker_assigns_by_feature_area(tmp_path, monkeypatch):
     store = Store(tmp_path)
     monkeypatch.setattr(intake, "analyze", ok)
-    rid = store.enqueue("지도가 안 열려요")
+    rid = store.enqueue("지도가 안 열려요")[0]
     assert IntakeWorker(store, sync=True).process(rid) is True
     # make_result() has feature_area "map" -> dev2 in data/developers.json
     assert store.get_report("dev2", rid) is not None
@@ -54,7 +54,7 @@ def test_worker_retries_transient_error_then_succeeds(tmp_path, monkeypatch):
             raise item
         return item
     monkeypatch.setattr(intake, "analyze", flaky)
-    rid = store.enqueue("제보")
+    rid = store.enqueue("제보")[0]
     assert IntakeWorker(store, sync=True).process(rid) is True
     assert store.queued() == [] and results == []
 
@@ -67,7 +67,7 @@ def test_worker_does_not_retry_truncation(tmp_path, monkeypatch):
         calls.append(1)
         raise LLMTruncated("x")
     monkeypatch.setattr(intake, "analyze", truncated)
-    rid = store.enqueue("제보")
+    rid = store.enqueue("제보")[0]
     assert IntakeWorker(store, sync=True).process(rid) is False
     assert len(calls) == 1 and store.get_queued(rid)["status"] == "failed"
 
@@ -78,7 +78,7 @@ def test_unexpected_exception_is_recorded_not_raised(tmp_path, monkeypatch):
     def bug(text, **kw):
         raise ValueError("secret detail")
     monkeypatch.setattr(intake, "analyze", bug)
-    rid = store.enqueue("제보")
+    rid = store.enqueue("제보")[0]
     assert IntakeWorker(store, sync=True, retry_delays=()).process(rid) is False
     entry = store.get_queued(rid)
     assert entry["status"] == "failed" and "secret" not in entry["last_error"]
@@ -86,8 +86,8 @@ def test_unexpected_exception_is_recorded_not_raised(tmp_path, monkeypatch):
 
 def test_background_worker_resumes_pending_on_start(tmp_path, monkeypatch):
     store = Store(tmp_path)
-    pending = store.enqueue("서버가 멈춘 사이 남은 제보")
-    failed = store.enqueue("이미 실패한 제보")
+    pending = store.enqueue("서버가 멈춘 사이 남은 제보")[0]
+    failed = store.enqueue("이미 실패한 제보")[0]
     store.set_queue_status(failed, "failed", "x", count_attempt=True)
     done = threading.Event()
 

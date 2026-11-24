@@ -9,39 +9,130 @@
 <body>
 <div class="intake">
   <h2>RunBuddy 문제 신고</h2>
-  <p>앱을 쓰다가 생긴 문제나 궁금한 점, 바라는 기능을 적어 주세요. 아래 내용을 함께 적어 주시면 더 빨리 확인할 수 있어요.</p>
-  <ul class="hint">
-    <li>휴대폰 기종과 안드로이드 버전 (예: 갤럭시 S23, 안드로이드 14)</li>
-    <li>RunBuddy 앱 버전 (설정 &gt; 앱 정보)</li>
-    <li>어떤 순서로 했을 때 문제가 생겼는지</li>
-  </ul>
-  <textarea id="report-text" maxlength="5000" placeholder="예: 갤럭시 S23 / 안드로이드 14 / 앱 1.1.1. 러닝 시작 버튼을 누르면 바로 앱이 꺼져요."></textarea>
+  <p>앱을 쓰다가 생긴 문제나 궁금한 점, 바라는 기능을 알려 주세요. <b>내용만 적어도 접수돼요.</b> 아래 항목은 아는 것만 채워 주세요.</p>
+
+  <fieldset class="types">
+    <legend>어떤 내용인가요?</legend>
+    <label><input type="radio" name="category" value="bug" checked> 오류/버그</label>
+    <label><input type="radio" name="category" value="question"> 사용 문의</label>
+    <label><input type="radio" name="category" value="feature_request"> 기능 제안</label>
+  </fieldset>
+
+  <label class="field" for="report-text">내용 <span class="req">필수</span></label>
+  <textarea id="report-text" maxlength="5000" placeholder="예: 러닝 시작 버튼을 누르면 바로 앱이 꺼져요."></textarea>
+
+  <div id="bug-fields">
+    <label class="field" for="steps">어떤 순서로 했을 때 생겼나요?</label>
+    <textarea id="steps" maxlength="1000" placeholder="1. 앱 실행&#10;2. 러닝 탭에서 시작 버튼 누르기&#10;3. 앱이 꺼짐"></textarea>
+    <div class="two">
+      <div><label class="field" for="expected">원래 기대한 결과</label>
+        <input id="expected" type="text" maxlength="500" placeholder="예: 러닝 기록이 시작됨"></div>
+      <div><label class="field" for="actual">실제로 일어난 일</label>
+        <input id="actual" type="text" maxlength="500" placeholder="예: '앱이 중지되었습니다' 뜨고 꺼짐"></div>
+    </div>
+    <label class="field" for="frequency">얼마나 자주 생기나요?</label>
+    <select id="frequency">
+      <option value="">선택 안 함</option>
+      <option value="always">매번</option>
+      <option value="sometimes">가끔</option>
+      <option value="once">한 번</option>
+    </select>
+  </div>
+
+  <details class="device" id="device" open>
+    <summary>기기 정보 <span class="meta" id="device-note"></span></summary>
+    <div class="three">
+      <div><label class="field" for="device_model">휴대폰 기종</label>
+        <input id="device_model" type="text" maxlength="60" placeholder="예: 갤럭시 S23"></div>
+      <div><label class="field" for="android_version">안드로이드 버전</label>
+        <input id="android_version" type="text" maxlength="20" placeholder="예: 14"></div>
+      <div><label class="field" for="app_version">RunBuddy 앱 버전</label>
+        <input id="app_version" type="text" maxlength="20" placeholder="설정 &gt; 앱 정보"></div>
+    </div>
+  </details>
+
   <div class="attach">
     <label class="attach-btn" for="files">사진 첨부</label>
     <input id="files" type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple hidden>
-    <span class="meta">오류 화면이나 앱 정보 화면을 캡처해서 올려 주세요. 최대 3장, 한 장에 5MB까지. 캡처한 화면은 입력란에 붙여넣기(Ctrl+V)해도 돼요.</span>
+    <span class="meta">오류 화면이나 앱 정보 화면 캡처, 최대 3장·한 장 5MB. 붙여넣기(Ctrl+V)도 돼요. <b>사진을 누르면 이름·지도처럼 가리고 싶은 부분을 가릴 수 있어요.</b></span>
   </div>
   <ul class="thumbs" id="thumbs"></ul>
+
+  <div class="attach">
+    <label class="attach-btn" for="log">로그 파일 첨부</label>
+    <input id="log" type="file" accept=".txt,.log,text/plain" hidden>
+    <span class="meta" id="log-name">개발팀이 요청한 경우에만. .txt/.log, 1MB까지.</span>
+  </div>
+
+  <div class="suggest" id="suggest" hidden>
+    <h3>혹시 이 내용인가요?</h3>
+    <div id="suggest-list"></div>
+    <p class="actions">
+      <button type="button" id="solved-btn" class="secondary">해결됐어요, 신고 안 할게요</button>
+      <button type="button" id="still-btn">그래도 신고할게요</button>
+    </p>
+  </div>
+
   <p><button id="submit-btn">신고하기</button></p>
   <div class="error" id="err"></div>
-  <div class="receipt" id="receipt" hidden></div>
+  <div class="receipt" id="receipt" hidden>
+    <div id="receipt-msg"></div>
+    <p>처리 상황 확인과 추가 질문 답변은 아래 링크에서 할 수 있어요. <b>이 링크는 다시 보여 드리지 않으니 저장해 두세요.</b></p>
+    <p><a id="status-link" href="#" target="_blank" rel="noopener"></a> <button type="button" class="link" id="copy-btn">링크 복사</button></p>
+  </div>
   <p class="meta"><a href="/">개발자 로그인</a></p>
 </div>
+
+<div class="modal" id="editor" hidden role="dialog" aria-modal="true" aria-labelledby="editor-title">
+  <div class="modal-box">
+    <h3 id="editor-title">가릴 부분을 드래그하세요</h3>
+    <p class="meta">드래그한 영역은 검게 칠해져서 개발팀에도 보이지 않아요. 저장하면 사진 속 위치 정보 같은 숨은 정보도 함께 지워져요.</p>
+    <div class="canvas-wrap"><canvas id="editor-canvas"></canvas></div>
+    <p class="actions">
+      <button type="button" class="secondary" id="undo-btn">되돌리기</button>
+      <button type="button" class="secondary" id="cancel-btn">취소</button>
+      <button type="button" id="apply-btn">저장</button>
+    </p>
+  </div>
+</div>
+
 <script>
-// Reporter page: shows only the receipt number, never the triage result.
+// Reporter page: shows only the receipt number and a private status link, never the triage result.
 // Text is only ever inserted with textContent.
 const $ = id => document.getElementById(id);
-const MAX_FILES = 3, MAX_BYTES = 5 * 1024 * 1024;
+const MAX_FILES = 3, MAX_BYTES = 5 * 1024 * 1024, LOG_MAX = 1024 * 1024;
 const TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif"];
-let files = [];
+const FIELDS = ["steps", "expected", "actual", "frequency", "device_model", "android_version", "app_version"];
+let files = [], logFile = null, checkedFor = null;
 
-function addFiles(list) {
+// ---- category: the step/expected/actual block is for bugs ----
+const category = () => document.querySelector("input[name=category]:checked").value;
+function syncCategory() { $("bug-fields").hidden = category() !== "bug"; }
+for (const r of document.querySelectorAll("input[name=category]")) r.onchange = syncCategory;
+
+// ---- device info: the app's "문제 신고" WebView passes it in the URL; Android version from the browser ----
+(function prefill() {
+  const q = new URLSearchParams(location.search);
+  let filled = 0;
+  for (const k of ["device_model", "android_version", "app_version"]) {
+    const v = q.get(k);
+    if (v) { $(k).value = v.slice(0, 60); filled++; }
+  }
+  if (!$("android_version").value) {
+    const m = navigator.userAgent.match(/Android (\d+)/);
+    if (m) { $("android_version").value = m[1]; filled++; }
+  }
+  if (filled) $("device-note").textContent = "(앱에서 자동으로 채웠어요. 다르면 고쳐 주세요)";
+})();
+
+// ---- screenshots ----
+async function addFiles(list) {
   $("err").textContent = "";
   for (const f of list) {
     if (files.length >= MAX_FILES) { $("err").textContent = "사진은 " + MAX_FILES + "장까지 첨부할 수 있어요."; break; }
     if (!TYPES.includes(f.type)) { $("err").textContent = f.name + ": 이미지 파일(PNG, JPG, WEBP, GIF)만 첨부할 수 있어요."; continue; }
     if (f.size > MAX_BYTES) { $("err").textContent = f.name + ": 사진 한 장은 5MB 이하여야 해요."; continue; }
-    files.push(f);
+    files.push(f.type === "image/jpeg" ? await stripJpeg(f) : f);
   }
   renderThumbs();
 }
@@ -52,20 +143,24 @@ function renderThumbs() {
   ul.replaceChildren();
   files.forEach((f, i) => {
     const li = document.createElement("li");
+    const btn = document.createElement("button");
+    btn.type = "button"; btn.className = "thumb"; btn.title = "눌러서 가릴 부분 편집";
+    btn.setAttribute("aria-label", f.name + " 편집(가리기)");
     const img = document.createElement("img");
-    img.src = URL.createObjectURL(f); img.alt = f.name;
-    const name = document.createElement("span"); name.textContent = f.name;
+    img.src = URL.createObjectURL(f); img.alt = "";
+    btn.appendChild(img);
+    btn.onclick = () => openEditor(i);
+    const name = document.createElement("span"); name.textContent = (f.redacted ? "가림 · " : "") + f.name;
     const del = document.createElement("button");
     del.type = "button"; del.className = "link"; del.textContent = "삭제";
     del.setAttribute("aria-label", f.name + " 삭제");
     del.onclick = () => { files.splice(i, 1); renderThumbs(); };
-    li.append(img, name, del);
+    li.append(btn, name, del);
     ul.appendChild(li);
   });
 }
 
-$("files").onchange = e => { addFiles(e.target.files); e.target.value = ""; };
-// Ctrl+V of a captured screen anywhere on the page
+$("files").onchange = e => { addFiles([...e.target.files]); e.target.value = ""; };  // copy: clearing the input empties its FileList
 document.addEventListener("paste", e => {
   const imgs = [...(e.clipboardData?.files || [])].filter(f => f.type.startsWith("image/"));
   if (!imgs.length) return;
@@ -74,15 +169,163 @@ document.addEventListener("paste", e => {
     : "캡처-" + new Date().toTimeString().slice(0, 8).replaceAll(":", "") + (i ? "-" + i : "") + ".png", {type: f.type})));
 });
 
-$("submit-btn").onclick = async () => {
-  const btn = $("submit-btn"), err = $("err"), receipt = $("receipt");
-  err.textContent = ""; receipt.hidden = true;
+// ---- redaction editor: black boxes drawn on a canvas, saved as a new PNG ----
+let edit = null;  // {index, img, boxes: [[x,y,w,h]], drag}
+function drawEditor() {
+  const c = $("editor-canvas"), g = c.getContext("2d");
+  g.drawImage(edit.img, 0, 0);
+  g.fillStyle = "#000";
+  for (const [x, y, w, h] of edit.boxes) g.fillRect(x, y, w, h);
+  if (edit.drag) {
+    const {x0, y0, x1, y1} = edit.drag;
+    g.strokeStyle = "#e11d48"; g.lineWidth = Math.max(2, c.width / 300);
+    g.strokeRect(Math.min(x0, x1), Math.min(y0, y1), Math.abs(x1 - x0), Math.abs(y1 - y0));
+  }
+}
+function openEditor(index) {
+  const img = new Image();
+  img.onload = () => {
+    const c = $("editor-canvas");
+    c.width = img.naturalWidth; c.height = img.naturalHeight;
+    edit = {index, img, boxes: [], drag: null};
+    drawEditor();
+    $("editor").hidden = false;
+    $("apply-btn").focus();
+  };
+  img.src = URL.createObjectURL(files[index]);
+}
+function closeEditor() { if (edit) URL.revokeObjectURL(edit.img.src); edit = null; $("editor").hidden = true; }
+function canvasPoint(e) {
+  const c = $("editor-canvas"), r = c.getBoundingClientRect();
+  return [(e.clientX - r.left) * c.width / r.width, (e.clientY - r.top) * c.height / r.height];
+}
+$("editor-canvas").addEventListener("pointerdown", e => {
+  if (!edit) return;
+  const [x, y] = canvasPoint(e);
+  edit.drag = {x0: x, y0: y, x1: x, y1: y};
+  e.target.setPointerCapture(e.pointerId);
+});
+$("editor-canvas").addEventListener("pointermove", e => {
+  if (!edit || !edit.drag) return;
+  [edit.drag.x1, edit.drag.y1] = canvasPoint(e);
+  drawEditor();
+});
+$("editor-canvas").addEventListener("pointerup", () => {
+  if (!edit || !edit.drag) return;
+  const {x0, y0, x1, y1} = edit.drag;
+  if (Math.abs(x1 - x0) > 3 && Math.abs(y1 - y0) > 3)
+    edit.boxes.push([Math.min(x0, x1), Math.min(y0, y1), Math.abs(x1 - x0), Math.abs(y1 - y0)]);
+  edit.drag = null;
+  drawEditor();
+});
+$("undo-btn").onclick = () => { if (edit) { edit.boxes.pop(); drawEditor(); } };
+$("cancel-btn").onclick = closeEditor;
+document.addEventListener("keydown", e => { if (e.key === "Escape" && edit) closeEditor(); });
+// Encoding the edited image is asynchronous; submitting waits for it so the original never goes out.
+let saving = null;
+$("apply-btn").onclick = () => {
+  if (!edit || saving) return;
+  const {index} = edit;
+  $("apply-btn").disabled = true; $("apply-btn").textContent = "저장 중...";
+  saving = new Promise(resolve => $("editor-canvas").toBlob(resolve, "image/png")).then(blob => {
+    if (!blob) { $("err").textContent = "편집한 사진을 저장하지 못했어요. 다시 시도해 주세요."; return; }
+    if (blob.size > MAX_BYTES) { $("err").textContent = "편집한 사진이 5MB를 넘어요. 더 작은 캡처를 올려 주세요."; return; }
+    const old = files[index];
+    const f = new File([blob], old.name.replace(/\.\w+$/, "") + ".png", {type: "image/png"});
+    f.redacted = true;
+    files[index] = f;
+  }).finally(() => {
+    saving = null;
+    $("apply-btn").disabled = false; $("apply-btn").textContent = "저장";
+    closeEditor();
+    renderThumbs();
+  });
+};
+
+// JPEG photos can carry the location where they were taken (EXIF GPS): re-encode them, which keeps
+// only the pixels. Screenshots (PNG) have no such data.
+async function stripJpeg(f) {
+  try {
+    const bmp = await createImageBitmap(f);
+    const c = document.createElement("canvas");
+    c.width = bmp.width; c.height = bmp.height;
+    c.getContext("2d").drawImage(bmp, 0, 0);
+    const blob = await new Promise(r => c.toBlob(r, "image/jpeg", 0.92));
+    return blob && blob.size <= MAX_BYTES ? new File([blob], f.name, {type: "image/jpeg"}) : f;
+  } catch (e) { return f; }
+}
+
+// ---- log file ----
+$("log").onchange = e => {
+  $("err").textContent = "";
+  const f = e.target.files[0];
+  e.target.value = "";
+  if (!f) return;
+  if (!/\.(txt|log)$/i.test(f.name)) { $("err").textContent = f.name + ": 로그는 .txt 또는 .log 파일만 첨부할 수 있어요."; return; }
+  if (f.size > LOG_MAX) { $("err").textContent = f.name + ": 로그 파일은 1MB 이하여야 해요."; return; }
+  logFile = f;
+  $("log-name").textContent = f.name + " (" + Math.ceil(f.size / 1024) + "KB) ";
+  const del = document.createElement("button");
+  del.type = "button"; del.className = "link"; del.textContent = "삭제";
+  del.onclick = () => { logFile = null; $("log-name").textContent = "개발팀이 요청한 경우에만. .txt/.log, 1MB까지."; };
+  $("log-name").appendChild(del);
+};
+
+// ---- known issues / FAQ before submitting ----
+function suggestionKey() { return [category(), $("report-text").value, $("app_version").value, $("android_version").value].join("|"); }
+async function checkSuggestions() {
+  const r = await fetch("/api/intake/suggest", {method: "POST", headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({text: $("report-text").value + "\n" + $("actual").value, category: category(),
+      app_version: $("app_version").value || null, android_version: $("android_version").value || null})});
+  if (!r.ok) return false;  // suggestions are a convenience: never block the report
+  const data = await r.json();
+  const list = $("suggest-list");
+  list.replaceChildren();
+  for (const i of data.issues) {
+    const card = document.createElement("div"); card.className = "card";
+    const t = document.createElement("b"); t.textContent = "알려진 문제: " + i.title;
+    const a = document.createElement("p"); a.textContent = i.advice;
+    card.append(t, a);
+    if (i.workaround) { const w = document.createElement("p"); w.className = "meta"; w.textContent = "임시 해결: " + i.workaround; card.appendChild(w); }
+    list.appendChild(card);
+  }
+  for (const f of data.faq) {
+    const card = document.createElement("div"); card.className = "card";
+    const t = document.createElement("b"); t.textContent = "자주 묻는 질문: " + f.question;
+    const a = document.createElement("p"); a.textContent = f.answer;
+    card.append(t, a);
+    list.appendChild(card);
+  }
+  const any = data.issues.length + data.faq.length > 0;
+  $("suggest").hidden = !any;
+  if (any) $("suggest").scrollIntoView({behavior: "smooth", block: "nearest"});
+  return any;
+}
+$("solved-btn").onclick = () => {
+  $("suggest").hidden = true; checkedFor = null;
+  $("report-text").value = ""; files = []; renderThumbs(); logFile = null;
+  const r = $("receipt"); r.hidden = false;
+  $("receipt-msg").textContent = "도움이 되어 다행이에요. 신고는 보내지 않았어요.";
+  $("status-link").parentElement.hidden = true; r.querySelector("p").hidden = true;
+};
+$("still-btn").onclick = () => { $("suggest").hidden = true; submitReport(); };
+
+// ---- submit ----
+async function submitReport() {
+  const btn = $("submit-btn"), err = $("err");
   btn.disabled = true; btn.textContent = "접수 중...";
   try {
+    if (saving) await saving;  // an edited (redacted) screenshot is still being encoded
     const form = new FormData();
     form.append("text", $("report-text").value);
+    form.append("category", category());
+    for (const k of FIELDS) {
+      if (category() !== "bug" && ["steps", "expected", "actual", "frequency"].includes(k)) continue;
+      if ($(k).value.trim()) form.append(k, $(k).value);
+    }
     for (const f of files) form.append("files", f, f.name);
-    // the "/api/intake" endpoint also accepts JSON {"text"} from apps without screenshots
+    if (logFile) form.append("log", logFile, logFile.name);
+    // "/api/intake" also accepts the same fields as JSON from the app (without files)
     const r = await fetch("/api/intake", {method: "POST", body: form});
     const data = await r.json().catch(() => ({}));
     if (!r.ok) {
@@ -90,13 +333,34 @@ $("submit-btn").onclick = async () => {
       if (Array.isArray(d)) d = d.map(x => (x.msg || "").replace(/^Value error, /, "")).join("; ");
       throw new Error(d || "접수에 실패했습니다. 잠시 후 다시 시도해 주세요.");
     }
-    receipt.textContent = data.message;
-    receipt.hidden = false;
-    $("report-text").value = "";
-    files = []; renderThumbs();
+    $("receipt-msg").textContent = data.message;
+    const link = new URL(data.status_url, location.origin).href;
+    $("status-link").href = link; $("status-link").textContent = link;
+    $("status-link").parentElement.hidden = false; $("receipt").querySelector("p").hidden = false;
+    $("receipt").hidden = false;
+    for (const k of ["report-text", "steps", "expected", "actual"]) $(k).value = "";
+    $("frequency").value = "";
+    files = []; renderThumbs(); logFile = null; $("log-name").textContent = "개발팀이 요청한 경우에만. .txt/.log, 1MB까지.";
+    checkedFor = null;
   } catch (e) { err.textContent = e.message; }
   btn.disabled = false; btn.textContent = "신고하기";
+}
+
+$("submit-btn").onclick = async () => {
+  $("err").textContent = ""; $("receipt").hidden = true;
+  if (!$("report-text").value.trim()) { $("err").textContent = "내용을 입력해 주세요."; $("report-text").focus(); return; }
+  const key = suggestionKey();
+  if (checkedFor !== key) {  // show matches once per text; "그래도 신고할게요" submits
+    checkedFor = key;
+    try { if (await checkSuggestions()) return; } catch (e) { /* never block the report */ }
+  }
+  submitReport();
 };
+$("copy-btn").onclick = async () => {
+  try { await navigator.clipboard.writeText($("status-link").href); $("copy-btn").textContent = "복사됨"; }
+  catch (e) { $("copy-btn").textContent = "직접 복사해 주세요"; }
+};
+syncCategory();
 </script>
 </body>
 </html>

@@ -1,8 +1,10 @@
 """Per-developer JSONL store: reports (rewritten atomically), chat history, shared step log."""
 import dataclasses
+import hmac
 import json
 import os
 import re
+import secrets
 import threading
 from datetime import datetime
 from pathlib import Path
@@ -87,22 +89,57 @@ class Store:
                 }))
 
     # ---- intake queue (saved before analysis, so a failed analysis never loses a report) ----
-    def enqueue(self, text: str, files: list[tuple[str, str, bytes]] | None = None) -> str:
-        """Save a new report (and its screenshots) as `pending` in the intake queue; return its ID.
+    def enqueue(self, text: str, files: list[tuple[str, str, bytes]] | None = None,
+                form: dict | None = None, log: tuple[str, bytes] | None = None) -> tuple[str, str]:
+        """Save a new report as `pending` in the intake queue. Returns (request_id, status token).
 
-        `files` are already validated (display name, media type, bytes); they are stored under
-        server-made names in `_attachments/<request_id>/`.
+        `files` are validated screenshots (display name, media type, bytes) and `log` a validated
+        log file (display name, bytes); both are stored under server-made names in
+        `_attachments/<request_id>/`. `form` keeps the structured fields the reporter filled in.
+        The status token is the reporter's private link to the report (unguessable, unlike the ID).
         """
         with _LOCK:
             request_id = self._next_id()
+            token = secrets.token_urlsafe(18)
             now = _now()
             attachments = self._save_files(request_id, files or [])
+            entry = {"request_id": request_id, "text": text, "status": "pending",
+                     "attempts": 0, "last_error": None, "attachments": attachments,
+                     "form": form or {}, "log": self._save_log(request_id, log),
+                     "status_token": token, "created_at": now, "updated_at": now}
             queued = self._load(INTAKE_DIR)
-            queued.append({"request_id": request_id, "text": text, "status": "pending",
-                           "attempts": 0, "last_error": None, "attachments": attachments,
-                           "created_at": now, "updated_at": now})
+            queued.append(entry)
             self._save(INTAKE_DIR, queued)
-        return request_id
+        return request_id, token
+
+    def _save_log(self, request_id: str, log: tuple[str, bytes] | None) -> dict | None:
+        if not log:
+            return None
+        name, data = log
+        folder = self.base / ATTACH_DIR / request_id
+        folder.mkdir(parents=True, exist_ok=True)
+        (folder / "log.txt").write_bytes(data)
+        return {"name": name, "size": len(data), "file": "log.txt"}
+
+    def log_text(self, record: dict) -> str | None:
+        meta = record.get("log")
+        if not meta:
+            return None
+        return self.attachment(record["request_id"], meta).decode("utf-8", errors="replace")
+
+    def find_by_token(self, token: str) -> tuple[str | None, dict] | None:
+        """(dev_id or None when still queued, record) for a reporter's status token."""
+        if not token:
+            return None
+        for r in self._load(INTAKE_DIR):
+            if hmac.compare_digest(r.get("status_token", ""), token):
+                return None, r
+        for sub in self.base.iterdir():
+            if sub.is_dir() and not sub.name.startswith("_"):
+                for r in _read_jsonl(sub / "reports.jsonl"):
+                    if hmac.compare_digest(r.get("status_token", ""), token):
+                        return sub.name, r
+        return None
 
     # ---- attachments ----
     def _save_files(self, request_id: str, files: list[tuple[str, str, bytes]]) -> list[dict]:
@@ -155,23 +192,82 @@ class Store:
             entry = next((r for r in queued if r["request_id"] == request_id), None)
             if entry is None:
                 raise KeyError(request_id)
-            self._append_report(dev_id, request_id, entry["text"], result, logs, entry["created_at"],
-                                entry.get("attachments", []))
+            carried = {k: entry[k] for k in ("attachments", "form", "log", "status_token") if k in entry}
+            self._append_report(dev_id, request_id, entry["text"], result, logs, entry["created_at"], carried)
             self._save(INTAKE_DIR, [r for r in queued if r["request_id"] != request_id])
 
     # ---- reports ----
     def _append_report(self, dev_id: str, request_id: str, text: str, result: TriageResult,
-                       logs: list[StepLog], created_at: str, attachments: list[dict] | None = None) -> None:
+                       logs: list[StepLog], created_at: str, extra: dict | None = None) -> None:
         reports = self._load(dev_id)
+        now = _now()
         reports.append({
             "request_id": request_id, "dev_id": dev_id, "text": text,
-            "attachments": attachments or [],
+            "attachments": [], "form": {}, "log": None,
+            **(extra or {}),
             "result": result.model_dump(mode="json"), "added_info": [],
+            "workflow": {"state": "new", "message": None, "updated_at": now},
             "logs_summary": _summary(logs),
-            "created_at": created_at, "updated_at": _now(),
+            "created_at": created_at, "updated_at": now,
         })
         self._save(dev_id, reports)
         self._log(request_id, dev_id, logs)
+
+    def set_workflow(self, dev_id: str, request_id: str, state: str, message: str | None) -> dict:
+        """Developer-side processing state and an optional message shown to the reporter."""
+        with _LOCK:
+            reports = self._load(dev_id)
+            for r in reports:
+                if r["request_id"] == request_id:
+                    r["workflow"] = {"state": state, "message": message, "updated_at": _now()}
+                    r["updated_at"] = _now()
+                    break
+            else:
+                raise KeyError(request_id)
+            self._save(dev_id, reports)
+            return r
+
+    # ---- reporter replies (answers to the questions shown on the status page) ----
+    def _edit(self, dev_id: str, request_id: str, change) -> dict:
+        with _LOCK:
+            reports = self._load(dev_id)
+            for r in reports:
+                if r["request_id"] == request_id:
+                    out = change(r)
+                    r["updated_at"] = _now()
+                    self._save(dev_id, reports)
+                    return out
+            raise KeyError(request_id)
+
+    def add_reply(self, dev_id: str, request_id: str, text: str) -> int:
+        """Save the reporter's answer first (state `pending` until the re-analysis is done)."""
+        def change(r):
+            r.setdefault("replies", []).append({"text": text, "at": _now(), "state": "pending"})
+            return len(r["replies"]) - 1
+        return self._edit(dev_id, request_id, change)
+
+    def set_reply_state(self, dev_id: str, request_id: str, index: int, state: str) -> None:
+        self._edit(dev_id, request_id, lambda r: r["replies"][index].update(state=state))
+
+    def apply_reply(self, dev_id: str, request_id: str, index: int, result: TriageResult,
+                    logs: list[StepLog]) -> None:
+        def change(r):
+            r["result"] = result.model_dump(mode="json")
+            r["logs_summary"] = _summary(logs)
+            r["replies"][index]["state"] = "applied"
+        self._edit(dev_id, request_id, change)
+        with _LOCK:
+            self._log(request_id, dev_id, logs)
+
+    def pending_replies(self) -> list[tuple[str, str, int]]:
+        out = []
+        for sub in self.base.iterdir():
+            if sub.is_dir() and not sub.name.startswith("_"):
+                for r in _read_jsonl(sub / "reports.jsonl"):
+                    for i, reply in enumerate(r.get("replies", [])):
+                        if reply["state"] == "pending":
+                            out.append((sub.name, r["request_id"], i))
+        return out
 
     def create_report(self, dev_id: str, text: str, result: TriageResult,
                       logs: list[StepLog]) -> str:
