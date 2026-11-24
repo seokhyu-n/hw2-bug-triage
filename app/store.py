@@ -7,6 +7,7 @@ import threading
 from datetime import datetime
 from pathlib import Path
 
+from app.attachments import extension
 from app.config import RUNTIME_DIR
 from app.pipeline import StepLog
 from app.schemas import TriageResult
@@ -15,6 +16,8 @@ from app.schemas import TriageResult
 _LOCK = threading.RLock()
 # Reports waiting for (or failed) analysis. Not a developer ID, so nobody can log in as it.
 INTAKE_DIR = "_intake"
+# Screenshots: _attachments/<request_id>/<n>.<ext> (the ID never changes, so files never move).
+ATTACH_DIR = "_attachments"
 
 
 def _now() -> str:
@@ -84,16 +87,43 @@ class Store:
                 }))
 
     # ---- intake queue (saved before analysis, so a failed analysis never loses a report) ----
-    def enqueue(self, text: str) -> str:
-        """Save a new report as `pending` in the shared intake queue and return its ID."""
+    def enqueue(self, text: str, files: list[tuple[str, str, bytes]] | None = None) -> str:
+        """Save a new report (and its screenshots) as `pending` in the intake queue; return its ID.
+
+        `files` are already validated (display name, media type, bytes); they are stored under
+        server-made names in `_attachments/<request_id>/`.
+        """
         with _LOCK:
             request_id = self._next_id()
             now = _now()
+            attachments = self._save_files(request_id, files or [])
             queued = self._load(INTAKE_DIR)
             queued.append({"request_id": request_id, "text": text, "status": "pending",
-                           "attempts": 0, "last_error": None, "created_at": now, "updated_at": now})
+                           "attempts": 0, "last_error": None, "attachments": attachments,
+                           "created_at": now, "updated_at": now})
             self._save(INTAKE_DIR, queued)
         return request_id
+
+    # ---- attachments ----
+    def _save_files(self, request_id: str, files: list[tuple[str, str, bytes]]) -> list[dict]:
+        if not files:
+            return []
+        folder = self.base / ATTACH_DIR / request_id
+        folder.mkdir(parents=True, exist_ok=True)
+        meta = []
+        for i, (name, media_type, data) in enumerate(files, start=1):
+            stored = f"{i}.{extension(media_type)}"
+            (folder / stored).write_bytes(data)
+            meta.append({"name": name, "media_type": media_type, "size": len(data), "file": stored})
+        return meta
+
+    def attachment(self, request_id: str, meta: dict) -> bytes:
+        return (self.base / ATTACH_DIR / request_id / meta["file"]).read_bytes()
+
+    def images(self, record: dict) -> list[tuple[str, bytes]]:
+        """(media type, bytes) of a report's screenshots, in upload order, for the analysis."""
+        return [(m["media_type"], self.attachment(record["request_id"], m))
+                for m in record.get("attachments", [])]
 
     def queued(self, status: str | None = None) -> list[dict]:
         rows = self._load(INTAKE_DIR)
@@ -125,15 +155,17 @@ class Store:
             entry = next((r for r in queued if r["request_id"] == request_id), None)
             if entry is None:
                 raise KeyError(request_id)
-            self._append_report(dev_id, request_id, entry["text"], result, logs, entry["created_at"])
+            self._append_report(dev_id, request_id, entry["text"], result, logs, entry["created_at"],
+                                entry.get("attachments", []))
             self._save(INTAKE_DIR, [r for r in queued if r["request_id"] != request_id])
 
     # ---- reports ----
     def _append_report(self, dev_id: str, request_id: str, text: str, result: TriageResult,
-                       logs: list[StepLog], created_at: str) -> None:
+                       logs: list[StepLog], created_at: str, attachments: list[dict] | None = None) -> None:
         reports = self._load(dev_id)
         reports.append({
             "request_id": request_id, "dev_id": dev_id, "text": text,
+            "attachments": attachments or [],
             "result": result.model_dump(mode="json"), "added_info": [],
             "logs_summary": _summary(logs),
             "created_at": created_at, "updated_at": _now(),

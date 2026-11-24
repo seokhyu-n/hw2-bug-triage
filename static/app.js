@@ -46,7 +46,7 @@ async function loadList() {
       li.appendChild(el("span", r.request_id));
       li.appendChild(el("span", "미분석"));
     }
-    li.appendChild(el("span", (r.text || "").slice(0, 40)));
+    li.appendChild(el("span", (r.text || "").slice(0, 40) + ((r.attachments || []).length ? " 📎" + r.attachments.length : "")));
     li.onclick = () => { selectedId = r.request_id; showDetail(r); loadList(); };
     ul.appendChild(li);
   }
@@ -54,6 +54,22 @@ async function loadList() {
 }
 
 const STATUS_LABEL = {pending: "분석 중", failed: "분석 실패"};
+
+// Screenshots the reporter attached; served only to the developer who can see the report.
+function shots(d, r) {
+  const list = r.attachments || [];
+  if (!list.length) return;
+  d.appendChild(el("h3", "첨부 스크린샷 (" + list.length + ")"));
+  const box = el("div", null, "shots");
+  list.forEach((m, i) => {
+    const url = "/api/reports/" + encodeURIComponent(r.request_id) + "/attachments/" + (i + 1);
+    const a = el("a"); a.href = url; a.target = "_blank"; a.rel = "noopener"; a.title = m.name;
+    const img = el("img"); img.src = url; img.alt = m.name; img.loading = "lazy";
+    a.appendChild(img);
+    box.appendChild(a);
+  });
+  d.appendChild(box);
+}
 
 // A report saved by the intake whose background analysis is running or failed.
 function showQueued(r) {
@@ -70,6 +86,7 @@ function showQueued(r) {
   }
   d.appendChild(el("h3", "제보 원문"));
   d.appendChild(el("div", r.text, "box raw"));
+  shots(d, r);
   if (r.status !== "failed") return;
   const btn = el("button", "다시 분석 시도");
   const err = el("div", "", "error");
@@ -98,6 +115,7 @@ function showDetail(r) {
 
   d.appendChild(el("h3", "제보 원문"));
   d.appendChild(el("div", r.text, "box raw"));
+  shots(d, r);
   if (r.added_info && r.added_info.length) {
     d.appendChild(el("h3", "추가로 받은 정보"));
     d.appendChild(el("div", r.added_info.join("\n"), "box raw"));

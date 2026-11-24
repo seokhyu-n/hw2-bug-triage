@@ -16,6 +16,12 @@
     <li>어떤 순서로 했을 때 문제가 생겼는지</li>
   </ul>
   <textarea id="report-text" maxlength="5000" placeholder="예: 갤럭시 S23 / 안드로이드 14 / 앱 1.1.1. 러닝 시작 버튼을 누르면 바로 앱이 꺼져요."></textarea>
+  <div class="attach">
+    <label class="attach-btn" for="files">사진 첨부</label>
+    <input id="files" type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple hidden>
+    <span class="meta">오류 화면이나 앱 정보 화면을 캡처해서 올려 주세요. 최대 3장, 한 장에 5MB까지. 캡처한 화면은 입력란에 붙여넣기(Ctrl+V)해도 돼요.</span>
+  </div>
+  <ul class="thumbs" id="thumbs"></ul>
   <p><button id="submit-btn">신고하기</button></p>
   <div class="error" id="err"></div>
   <div class="receipt" id="receipt" hidden></div>
@@ -23,14 +29,61 @@
 </div>
 <script>
 // Reporter page: shows only the receipt number, never the triage result.
+// Text is only ever inserted with textContent.
 const $ = id => document.getElementById(id);
+const MAX_FILES = 3, MAX_BYTES = 5 * 1024 * 1024;
+const TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif"];
+let files = [];
+
+function addFiles(list) {
+  $("err").textContent = "";
+  for (const f of list) {
+    if (files.length >= MAX_FILES) { $("err").textContent = "사진은 " + MAX_FILES + "장까지 첨부할 수 있어요."; break; }
+    if (!TYPES.includes(f.type)) { $("err").textContent = f.name + ": 이미지 파일(PNG, JPG, WEBP, GIF)만 첨부할 수 있어요."; continue; }
+    if (f.size > MAX_BYTES) { $("err").textContent = f.name + ": 사진 한 장은 5MB 이하여야 해요."; continue; }
+    files.push(f);
+  }
+  renderThumbs();
+}
+
+function renderThumbs() {
+  const ul = $("thumbs");
+  for (const img of ul.querySelectorAll("img")) URL.revokeObjectURL(img.src);
+  ul.replaceChildren();
+  files.forEach((f, i) => {
+    const li = document.createElement("li");
+    const img = document.createElement("img");
+    img.src = URL.createObjectURL(f); img.alt = f.name;
+    const name = document.createElement("span"); name.textContent = f.name;
+    const del = document.createElement("button");
+    del.type = "button"; del.className = "link"; del.textContent = "삭제";
+    del.setAttribute("aria-label", f.name + " 삭제");
+    del.onclick = () => { files.splice(i, 1); renderThumbs(); };
+    li.append(img, name, del);
+    ul.appendChild(li);
+  });
+}
+
+$("files").onchange = e => { addFiles(e.target.files); e.target.value = ""; };
+// Ctrl+V of a captured screen anywhere on the page
+document.addEventListener("paste", e => {
+  const imgs = [...(e.clipboardData?.files || [])].filter(f => f.type.startsWith("image/"));
+  if (!imgs.length) return;
+  e.preventDefault();
+  addFiles(imgs.map((f, i) => new File([f], f.name && f.name !== "image.png" ? f.name
+    : "캡처-" + new Date().toTimeString().slice(0, 8).replaceAll(":", "") + (i ? "-" + i : "") + ".png", {type: f.type})));
+});
+
 $("submit-btn").onclick = async () => {
   const btn = $("submit-btn"), err = $("err"), receipt = $("receipt");
   err.textContent = ""; receipt.hidden = true;
   btn.disabled = true; btn.textContent = "접수 중...";
   try {
-    const r = await fetch("/api/intake", {method: "POST", headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({text: $("report-text").value})});
+    const form = new FormData();
+    form.append("text", $("report-text").value);
+    for (const f of files) form.append("files", f, f.name);
+    // the "/api/intake" endpoint also accepts JSON {"text"} from apps without screenshots
+    const r = await fetch("/api/intake", {method: "POST", body: form});
     const data = await r.json().catch(() => ({}));
     if (!r.ok) {
       let d = data.detail;
@@ -40,6 +93,7 @@ $("submit-btn").onclick = async () => {
     receipt.textContent = data.message;
     receipt.hidden = false;
     $("report-text").value = "";
+    files = []; renderThumbs();
   } catch (e) { err.textContent = e.message; }
   btn.disabled = false; btn.textContent = "신고하기";
 };

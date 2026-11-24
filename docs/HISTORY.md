@@ -1,6 +1,12 @@
 # HISTORY
 
 Newest entry on top.
+## 2026-11-24 Screenshot attachments on reports
+- Reporter page: attach up to 3 images (5 MB each, PNG/JPG/WEBP/GIF) or paste a capture with Ctrl+V; thumbnails with remove. `POST /api/intake` accepts multipart (`text` + `files`) as well as JSON.
+- `app/attachments.py`: type by magic bytes (renamed HTML rejected), safe display names, limits. Store saves files under server-made names in `data/runtime/_attachments/<id>/`; the record keeps name/type/size.
+- `app/pipeline.py`: images go to the extract step only, before the text; screenshot rules are in the user message, so system prompt, cache and text-only eval runs are unchanged. Re-analysis does not resend images.
+- Developer screen: thumbnails (click for full size) via `GET /api/reports/{id}/attachments/{n}` for the assignee only (dev3 for queued); nosniff + CSP headers. Chat `get_report` reports the screenshot count.
+- Live check: text without a version + drawn screenshot (app info "버전 1.1.1" + crash dialog) -> app_version 1.1.1 and the dialog text extracted, device/Android left null; dev1, P1, $0.0029, 14.8 s. 191 tests pass.
 ## 2026-11-24 Intake saves first, analysis runs in the background
 - Problem: `POST /api/intake` analyzed before saving, so an API failure dropped the report and the reporter waited ~12 s.
 - `app/store.py`: intake queue in `data/runtime/_intake/` (`enqueue`, `queued`, `get_queued`, `set_queue_status`, `complete` moves a report to its developer keeping its ID). `app/intake.py:IntakeWorker`: one background thread, retries transient errors after 5 s / 30 s (3 tries), refusal/truncation fail at once; failed reports stay in the queue; pending ones resume on server start.

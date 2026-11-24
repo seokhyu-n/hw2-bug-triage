@@ -50,7 +50,8 @@ python -m pip install -r requirements.txt     # 재현용 고정 버전은 requi
    ```powershell
    python -m uvicorn app.main:app --port 8000
    ```
-   - **제보자**: http://127.0.0.1:8000/report 에서 로그인 없이 제보를 남깁니다. 화면에는 접수 번호(예: `R-0012`)만 나오고 분석 결과·담당자는 보이지 않습니다. 실제 앱의 "문제 신고" 버튼은 같은 API(`POST /api/intake`)를 부르면 됩니다.
+   - **제보자**: http://127.0.0.1:8000/report 에서 로그인 없이 제보를 남깁니다. 화면에는 접수 번호(예: `R-0012`)만 나오고 분석 결과·담당자는 보이지 않습니다. 실제 앱의 "문제 신고" 버튼은 같은 API(`POST /api/intake`)를 부르면 됩니다(JSON `{"text"}` 또는 multipart `text` + `files`).
+   - **스크린샷 첨부**: 오류 화면·앱 정보 화면을 최대 3장(한 장 5MB, PNG·JPG·WEBP·GIF) 올릴 수 있고, 캡처한 화면을 붙여넣기(Ctrl+V)해도 됩니다. 파일 종류는 파일 앞부분 바이트로 판별하고(이름·브라우저 정보는 믿지 않음) 서버가 정한 이름으로 `data/runtime/_attachments/<접수번호>/`에 저장합니다(`app/attachments.py`). 스크린샷은 **추출 단계에만** 이미지로 전달되어, 화면에 분명히 보이는 값(앱 버전, 오류 문구)만 필드에 쓰고 흐린 값은 `null`로 둡니다. 개발자 화면에는 썸네일로 보이며, 그 제보를 볼 수 있는 개발자만 받을 수 있습니다(`GET /api/reports/{id}/attachments/{n}`).
    - **개발자**: http://127.0.0.1:8000 에서 로그인 ID `dev1`, `dev2`, `dev3` 중 하나로 들어갑니다.
    (담당 영역: dev1 = tracking·voice·login, dev2 = map·record·card_image, dev3 = ai_chat·other, 배정 불가 시 기본)
 3. 화면 사용법
@@ -86,6 +87,7 @@ python -m pip install -r requirements.txt     # 재현용 고정 버전은 requi
 | Function calling | `app/tools.py`: `ISSUE_TOOL_DEFS`, `search_known_issues`, `get_release_info`, `run_tool`. 링크 단계 루프는 `app/pipeline.py:_run_link`(tool_use → 실행 → tool_result, 최대 4라운드). 챗봇 도구 5종은 `app/chat.py:CHAT_TOOL_DEFS`, `run_chat_tool` |
 | Context 선별·위치·상태 관리 | 선별: `PipelineConfig.context_select`, `app/pipeline.py:analyze`(링크·스코어에는 원문 대신 추출 결과). 재분석: `_source_block`(확정 필드 + 새 정보만). 챗봇: `app/chat.py:build_messages`(최근 6턴), `summarize_state`(코드로 만든 상태 요약). 원본 이력은 `app/store.py:Store`가 서버에 보관 |
 | Prefix cache 고려 배치 | `app/prompts.py:build_system`: 규칙 → Few-shot → Rubric 순으로 system에 두고 마지막 블록에만 `cache_control`. 제보 원문·조회 결과는 user 메시지(`app/pipeline.py:_user`). 확인은 `app/llm.py:call_llm`이 기록하는 `cache_read` |
+| 이미지 입력(스크린샷) | `app/pipeline.py:_with_images`: 추출 단계 user 메시지에 이미지 블록을 텍스트 앞에 넣고, 스크린샷 규칙(`SCREENSHOT_RULES`)도 user 메시지에만 둔다. 그래서 system 프롬프트·캐시와 텍스트만 있는 평가 실행은 그대로다 |
 | 여러 LLM 태스크 조합 | 추출·분류·이슈 연결·스코어링 + 챗봇이 한 서비스(`app/main.py`)로 동작 |
 | 평가셋·지표 | `eval/dataset_v1.jsonl`(100건, 어려운 사례 25건 `hard: true`; Claude Code가 루브릭·알려진 이슈를 근거로 초안을 쓰고, 판단이 애매한 6건은 사람이 검토해 정답을 확정한 뒤 고정), 채점 함수 `eval/grade.py` (`classification_metrics`, `extraction_metrics`, `completeness_mae`, `priority_metrics`, `link_accuracy`) |
 | Python 자동 채점, CSV·Excel | `eval/run_eval.py:run` → `eval/results/*.csv`, `eval/runs.csv`, `eval/runs.xlsx`(`build_xlsx`): **전체 Run 시트 + 태스크별 시트(분류·추출·스코어링·이슈 연결·속도·비용)**. 태스크별 시트는 Run마다 지표, 같은 모델 이전 Run 대비 변화, 변경사항(개선 히스토리)과 막대 차트를 담는다. Confusion matrix는 Run별 `혼동행렬` 시트와 `eval/results/<Run>_confusion.csv` |
@@ -146,6 +148,7 @@ python -m pip install -r requirements.txt     # 재현용 고정 버전은 requi
 - 파이프라인에서도 제보는 `<report>` 태그 안의 데이터로만 전달하고, 이슈 ID는 도구가 실제로 돌려준 것만 연결한다(`app/pipeline.py:_finalize_link`). 평가셋에는 주입 시도 4건(E-018, E-024, E-072, E-077)이 포함되어 있다.
 - **개발자별 격리**: 챗봇의 제보 도구는 `dev_id`가 코드에서 고정되어 모델이 다른 개발자를 고를 수 없고, API도 로그인한 개발자의 제보만 반환한다(남의 제보는 404/`not_found`).
 - **화면 렌더링은 `textContent`만** 사용해 제보·챗봇 응답 속 HTML이 실행되지 않는다(`static/app.js`).
+- **첨부 파일**: 파일 앞부분 바이트로 이미지인지 확인해 이름만 바꾼 HTML·스크립트는 거부하고, 저장 파일명은 서버가 정한다(경로 조작 불가). 응답에는 `X-Content-Type-Options: nosniff`와 `Content-Security-Policy: default-src 'none'`을 붙인다. 이미지 속 글자의 지시문도 제보 내용으로만 다루도록 추출 지시에 명시했다.
 - **API 키는 `.env`에만** 있고(`.gitignore`), 코드에서는 `app/config.py:get_api_key`로만 읽는다. 로그·문서·커밋에 키를 넣지 않는다.
 
 ## 알려진 한계

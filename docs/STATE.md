@@ -1,6 +1,6 @@
 # STATE (2026-11-24)
 
-Branch: main (GitHub private repo `seokhyu-n/hw2-bug-triage`). All planned work is done; 174 tests pass.
+Branch: main (GitHub private repo `seokhyu-n/hw2-bug-triage`). 191 tests pass. Reports carry up to 3 screenshots (`app/attachments.py`), read by the extract step.
 
 ## Where things are
 - Reporter page `/report` (no login) -> `POST /api/intake` saves to `data/runtime/_intake/`, returns receipt at once ->

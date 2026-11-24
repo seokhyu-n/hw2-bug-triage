@@ -5,11 +5,16 @@ import threading
 from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, HTTPException, Request, Response
+from fastapi.concurrency import run_in_threadpool
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, ValidationError, field_validator
+from starlette.datastructures import UploadFile as StarletteUpload
 
 from app import auth
+from app.attachments import MAX_BYTES, MAX_FILES, AttachmentError, Upload
+from app.attachments import validate as validate_attachments
 from app.auth import current_dev
 from app.chat import chat_turn
 from app.config import ROOT, RUNTIME_DIR
@@ -137,16 +142,44 @@ def report_page():
     return FileResponse(STATIC_DIR / "report.html")
 
 
+async def _read_intake(request: Request) -> tuple[str, list[Upload]]:
+    """JSON {"text"} (API clients) or multipart form with `text` and up to 3 `files` (report page)."""
+    ctype = request.headers.get("content-type", "")
+    if ctype.startswith(("multipart/form-data", "application/x-www-form-urlencoded")):
+        form = await request.form(max_files=MAX_FILES + 2, max_fields=10)
+        text = form.get("text")
+        uploads = []
+        for f in form.getlist("files"):
+            if isinstance(f, StarletteUpload):
+                data = await f.read(MAX_BYTES + 1)  # one byte over is enough to reject
+                uploads.append(Upload(f.filename or "", data))
+        return text if isinstance(text, str) else "", uploads
+    try:
+        body = await request.json()
+    except ValueError:
+        raise HTTPException(422, "요청 형식이 올바르지 않습니다")
+    return (body.get("text") if isinstance(body, dict) else None) or "", []
+
+
 @app.post("/api/intake")
-def intake(body: ReportIn, request: Request):
+async def intake(request: Request):
     """Public intake for reporters (app users, QA, support). No login.
 
-    The report is saved first and the receipt number returned at once; the analysis and the
-    assignment run in the background (`app/intake.py`), so an API failure never loses a report.
-    The reporter only gets a receipt number; the triage result and the assignee stay on the
-    developer side.
+    The report (and any screenshots) is saved first and the receipt number returned at once; the
+    analysis and the assignment run in the background (`app/intake.py`), so an API failure never
+    loses a report. The reporter only gets a receipt number; the triage result and the assignee
+    stay on the developer side.
     """
-    rid = _store(request).enqueue(body.text)
+    text, uploads = await _read_intake(request)
+    try:
+        body = ReportIn(text=text)
+    except ValidationError as e:
+        raise RequestValidationError(e.errors(include_url=False))
+    try:
+        files = validate_attachments(uploads)
+    except AttachmentError as e:
+        raise HTTPException(422, str(e))
+    rid = await run_in_threadpool(_store(request).enqueue, body.text, files)
     _worker(request).submit(rid)
     return {"request_id": rid, "message": f"제보가 접수되었습니다. 접수 번호는 {rid}입니다. 담당 개발자가 확인할 예정입니다."}
 
@@ -186,6 +219,22 @@ def get_report(request_id: str, request: Request, dev_id: str = Depends(current_
     if _sees_queue(dev_id) and (entry := _store(request).get_queued(request_id)) is not None:
         return _queue_view(entry)
     return _view(_own_report(request, dev_id, request_id))
+
+
+@app.get("/api/reports/{request_id}/attachments/{index}")
+def get_attachment(request_id: str, index: int, request: Request, dev_id: str = Depends(current_dev)):
+    """A report's screenshot, only for the developer who can see that report."""
+    store = _store(request)
+    record = store.get_queued(request_id) if _sees_queue(dev_id) else None
+    if record is None:
+        record = _own_report(request, dev_id, request_id)
+    files = record.get("attachments", [])
+    if not 1 <= index <= len(files):
+        raise HTTPException(404, "첨부 파일을 찾을 수 없습니다")
+    meta = files[index - 1]
+    return Response(store.attachment(request_id, meta), media_type=meta["media_type"],
+                    headers={"X-Content-Type-Options": "nosniff", "Cache-Control": "private, max-age=3600",
+                             "Content-Security-Policy": "default-src 'none'"})
 
 
 @app.post("/api/reports/{request_id}/retry")

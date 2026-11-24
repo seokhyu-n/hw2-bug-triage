@@ -92,7 +92,7 @@ def _detail(rec: dict) -> dict:
             "device_model": ex["device_model"], "feature_area": ex["feature_area"],
             "missing_fields": ex["missing_fields"], "fixed_in": link.get("fixed_in"),
             "questions_to_reporter": r["score"]["questions_to_reporter"],
-            "added_info": rec["added_info"]}
+            "added_info": rec["added_info"], "screenshots": len(rec.get("attachments", []))}
 
 
 def _list_my_reports(dev_id: str, store: Store, priority=None, category=None) -> dict:

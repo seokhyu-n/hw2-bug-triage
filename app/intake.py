@@ -81,7 +81,7 @@ class IntakeWorker:
         attempts = len(self.retry_delays) + 1
         for attempt in range(attempts):
             try:
-                result, logs = analyze(entry["text"])
+                result, logs = analyze(entry["text"], images=self.store.images(entry))
             except Exception as exc:  # noqa: BLE001 - every failure is recorded on the report
                 last = attempt == attempts - 1 or not _retryable(exc)
                 self.store.set_queue_status(request_id, "failed" if last else "pending",
