@@ -12,7 +12,7 @@ from collections import Counter
 from functools import lru_cache
 
 from app.config import DATA_DIR
-from app.tools import _android_major, _load, parse_version
+from app.tools import _android_major, known_issues, parse_version
 
 # Tuned on eval/dataset_v2.jsonl (120 reports): at 0.16 the expected known issue is suggested for
 # 24 of 26 linked reports and never a wrong one; 30 of the 94 unlinked reports see a similar issue
@@ -39,9 +39,14 @@ def _bigrams(text: str) -> Counter:
     return grams
 
 
-@lru_cache(maxsize=1)
 def _corpus():
-    issues = _load("known_issues.json")
+    issues = known_issues()  # includes issues the team registered (same list the link step searches)
+    return _build_corpus(json.dumps(issues, ensure_ascii=False, sort_keys=True))
+
+
+@lru_cache(maxsize=4)
+def _build_corpus(issues_json: str):
+    issues = json.loads(issues_json)
     faq = json.loads((DATA_DIR / "faq.json").read_text(encoding="utf-8"))
     docs = [("issue", i, _bigrams(i["title"] + " " + " ".join(i["symptoms"]))) for i in issues]
     docs += [("faq", f, _bigrams(f["question"] + " " + " ".join(f["keywords"]))) for f in faq]

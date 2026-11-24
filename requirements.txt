@@ -4,3 +4,4 @@ python-dotenv
 pydantic
 pytest
 openpyxl
+pillow  # eval/feature_evals.py: draws the screenshot test cases

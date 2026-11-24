@@ -1,6 +1,16 @@
 # HISTORY
 
 Newest entry on top.
+## 2026-11-24 Run-08..10 and feature evals
+- V2-Run-08 (rubric core/aux feature scope): new-20 priority 0.55 -> 0.80, all 0.825 -> 0.892. V2-Run-09 (classify: current normal behaviours) fixed E-101/107/108 but turned 3 real v1 bugs into question/request (E-016, E-020, E-093) -> rejected. V2-Run-10 (exception limited to listed behaviours, "if possibly broken -> bug"): cls 0.975, priority 0.925, v1 missed bugs 0, new-20 cls 0.90 / priority 1.00. MAE 0.141 (noise range). Final service setting. ~$0.33. `docs/analysis/run_08_10.md`.
+- `eval/feature_evals.py`: suggest 24/26, 0 wrong; screenshots 9/9 visible, 0/21 invented, injection ignored; reply 16/16, 0/8 invented, class kept 8/8. Excel sheet "추가 기능 평가". Pillow added (draws test screenshots).
+- Mistakes on the way: a dry-run command accidentally ran 3 screenshot cases (~$0.01); the first "cropped" test image was not cropped (fixed the image, not the model); a CSV writer bug lost one screenshot run (~$0.01) - fixed + test.
+## 2026-11-24 Team triage features
+- Same-symptom groups (`app/similar.py`: same tracked issue, or same feature area + char-bigram cosine >= 0.2 with fixed corpus weights; 16/20 same-issue pairs, 4/67 wrong in-area pairs on dataset_v2). Own IDs shown, other developers' only as a count; 3+ at P3/P4 shows a "review priority" hint.
+- Team-registered known issues (`app/issues.py`, `data/runtime/_issues.json`) feed the link tool and pre-submit suggestions via `tools.set_extra_issues`; the eval runner never sets it. Resolve an issue -> every open report under it becomes resolved with an update message on the reporter's page (dummy issues get an override, the data file is untouched).
+- Reassign (`POST /api/reports/{id}/assign`, history kept, status link kept) + chat tool `assign_report` guarded like reanalyze (receiver must be named in the developer's current message).
+- Rate limits on public endpoints (`app/ratelimit.py`), 20 s auto refresh + new-P1 banner/title/notification on the developer page.
+- Live: ISSUE-02 group of 3 resolved as 1.2.0 -> R-0006's reporter page shows 수정 완료 + message; new P1 R-0009 raised the alert within 20 s.
 ## 2026-11-24 Report form like real services (7 items)
 - Researched real report screens (Discord bug form, Samsung Members, Google feedback, Instabug, GitHub issue forms, Kakao, Strava) and added: category choice, steps/expected/actual/frequency, device/Android/app version (prefilled from the app's URL), pre-submit known issue + FAQ suggestions, screenshot redaction (+ JPEG EXIF strip), log file, reporter status page with replies, developer processing state + message.
 - Design: fields are optional and folded into the report text (`app/report_form.py`), so the same 4-step analysis and the eval set are unchanged; category is passed "for reference" only. Log tail (4,000 chars) and screenshots go to extract only, as data.

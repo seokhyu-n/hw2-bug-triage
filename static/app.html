@@ -13,7 +13,8 @@
 <main>
   <section class="panel" id="triage">
     <h2>내 담당 제보 <button id="refresh-btn" class="small">새로 고침</button></h2>
-    <p class="meta">제보는 <a href="/report" target="_blank" rel="noopener">문제 신고 페이지</a>로 들어오고, 기능 영역에 따라 담당자에게 자동 배정됩니다.</p>
+    <p class="meta">제보는 <a href="/report" target="_blank" rel="noopener">문제 신고 페이지</a>로 들어오고, 기능 영역에 따라 담당자에게 자동 배정됩니다. 목록은 20초마다 새로 고칩니다.</p>
+    <div class="alert" id="p1-alert" role="alert" hidden></div>
     <div class="error" id="list-err"></div>
     <ul class="report-list" id="report-list"></ul>
     <div id="detail"></div>

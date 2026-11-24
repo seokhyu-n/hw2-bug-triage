@@ -18,7 +18,12 @@ from app import auth
 from app.attachments import MAX_BYTES, MAX_FILES, AttachmentError, Upload
 from app.attachments import validate as validate_attachments
 from app.report_form import LOG_MAX_BYTES, FormError, ReportForm, validate_log
+from app.issues import IssueRegistry
+from app.ratelimit import RateLimiter
+from app.similar import groups as similar_groups
+from app.store import tracked_issue
 from app.suggest import suggest
+from app.tools import set_extra_issues
 from app.auth import current_dev
 from app.chat import chat_turn
 from app.config import ROOT, RUNTIME_DIR
@@ -41,11 +46,22 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="RunBuddy Bug Triage", lifespan=lifespan)
 app.state.store = Store(RUNTIME_DIR)
 app.state.worker = IntakeWorker(app.state.store)
+app.state.limiter = RateLimiter()
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+# issues the team registers join the issue search of the live service (never the evaluation)
+set_extra_issues(lambda: IssueRegistry(app.state.store.base).extra())
 
 
 def _store(request: Request) -> Store:
     return request.app.state.store
+
+
+def _issues(request: Request) -> IssueRegistry:
+    return IssueRegistry(_store(request).base)
+
+
+def _limit(request: Request, endpoint: str) -> None:
+    request.app.state.limiter.check(request, endpoint)
 
 
 def _worker(request: Request) -> IntakeWorker:
@@ -212,6 +228,7 @@ async def intake(request: Request):
     loses a report. The reporter gets the receipt number and a private status link; the triage
     result and the assignee stay on the developer side.
     """
+    _limit(request, "intake")
     fields, uploads, log_upload = await _read_intake(request)
     try:
         body = ReportIn(text=fields.get("text", ""))
@@ -231,8 +248,9 @@ async def intake(request: Request):
 
 
 @app.post("/api/intake/suggest")
-def intake_suggest(body: SuggestIn):
+def intake_suggest(body: SuggestIn, request: Request):
     """Before submitting: known issues and FAQ entries that look like this report (no LLM call)."""
+    _limit(request, "suggest")
     return suggest(body.text, category=body.category, app_version=body.app_version,
                    android_version=body.android_version)
 
@@ -253,7 +271,8 @@ def _sees_queue(dev_id: str) -> bool:
 def list_reports(request: Request, priority: str | None = None, category: str | None = None,
                  dev_id: str = Depends(current_dev)):
     store = _store(request)
-    rows = [_view(r) for r in store.list_reports(dev_id, priority, category)]
+    sim = _similar(store)
+    rows = [_with_team_info(_view(r), dev_id, sim, store) for r in store.list_reports(dev_id, priority, category)]
     if _sees_queue(dev_id) and not (priority or category):
         # failed first (they need action), then reports still being analyzed; newest first
         queued = sorted(store.queued(), key=lambda r: r["request_id"], reverse=True)
@@ -271,9 +290,124 @@ def _own_report(request: Request, dev_id: str, request_id: str) -> dict:
 
 @app.get("/api/reports/{request_id}")
 def get_report(request_id: str, request: Request, dev_id: str = Depends(current_dev)):
-    if _sees_queue(dev_id) and (entry := _store(request).get_queued(request_id)) is not None:
+    store = _store(request)
+    if _sees_queue(dev_id) and (entry := store.get_queued(request_id)) is not None:
         return _queue_view(entry)
-    return _view(_own_report(request, dev_id, request_id))
+    return _with_team_info(_view(_own_report(request, dev_id, request_id)), dev_id, _similar(store), store)
+
+
+# ---------- same-symptom groups, known issues, reassignment ----------
+
+def _similar(store: Store) -> tuple[dict[str, list[str]], dict[str, str]]:
+    """(request_id -> similar report IDs, request_id -> owner) across the whole team."""
+    reports = store.all_reports()
+    return similar_groups(reports), {r["request_id"]: r["dev_id"] for r in reports}
+
+
+def _with_team_info(view: dict, dev_id: str, sim: tuple, store: Store) -> dict:
+    """Similar reports: own ones by ID, other developers' only as a count (each sees their own list)."""
+    groups, owner = sim
+    others = groups.get(view["request_id"], [])
+    view["similar"] = sorted(r for r in others if owner.get(r) == dev_id)
+    view["similar_elsewhere"] = sum(owner.get(r) != dev_id for r in others)
+    view["issue_id"] = tracked_issue(view)
+    return view
+
+
+class IssueIn(BaseModel):
+    title: str = Field(min_length=2, max_length=120)
+    symptoms: list[str] = Field(default_factory=list, max_length=10)
+    workaround: str | None = Field(default=None, max_length=500)
+    report_ids: list[str] = Field(min_length=1, max_length=50)
+
+
+class ResolveIn(BaseModel):
+    fixed_in: str = Field(max_length=20)
+    message: str | None = Field(default=None, max_length=1000)
+
+
+class TrackIn(BaseModel):
+    issue_id: str | None = Field(default=None, max_length=20)
+
+
+class AssignIn(BaseModel):
+    dev_id: str
+    note: str | None = Field(default=None, max_length=300)
+
+
+@app.get("/api/developers")
+def developers(dev_id: str = Depends(current_dev)):
+    return [{"dev_id": d, "areas": areas} for d, areas in auth.load_developers().items()]
+
+
+@app.get("/api/issues")
+def list_issues(request: Request, dev_id: str = Depends(current_dev)):
+    """Known issues (dummy data + registered by the team) with how many open reports track each."""
+    reports = _store(request).all_reports()
+    out = []
+    for issue in _issues(request).all():
+        tracked = [r for r in reports if tracked_issue(r) == issue["id"]]
+        out.append({**issue, "reports": len(tracked),
+                    "open_reports": sum((r.get("workflow") or {"state": "new"})["state"] in ("new", "in_progress")
+                                        for r in tracked),
+                    "my_reports": sorted(r["request_id"] for r in tracked if r["dev_id"] == dev_id)})
+    return out
+
+
+@app.post("/api/issues")
+def register_issue(body: IssueIn, request: Request, dev_id: str = Depends(current_dev)):
+    """Register a new known issue from own reports; they are filed under it, and later reporters
+    with the same symptom see it before submitting."""
+    store = _store(request)
+    reports = [_own_report(request, dev_id, rid) for rid in dict.fromkeys(body.report_ids)]
+    ex = [r["result"]["extraction"] for r in reports if r.get("result")]
+    issue = _issues(request).add(
+        title=body.title.strip(),
+        feature_area=next((e["feature_area"] for e in ex if e.get("feature_area")), None),
+        symptoms=[s.strip() for s in body.symptoms if s.strip()]
+        or list(dict.fromkeys(e["symptom"] for e in ex if e.get("symptom")))[:5],
+        affected_android=sorted({e["android_version"] for e in ex if e.get("android_version")}),
+        affected_app_versions=sorted({e["app_version"] for e in ex if e.get("app_version")}),
+        workaround=(body.workaround or "").strip() or None, created_by=dev_id)
+    for r in reports:
+        store.set_issue(dev_id, r["request_id"], issue["id"])
+    return issue
+
+
+@app.post("/api/issues/{issue_id}/resolve")
+def resolve_issue(issue_id: str, body: ResolveIn, request: Request, dev_id: str = Depends(current_dev)):
+    """Mark an issue fixed in a version and tell every open report's reporter at once."""
+    try:
+        issue = _issues(request).mark_fixed(issue_id, body.fixed_in.strip())
+    except KeyError:
+        raise HTTPException(404, "이슈를 찾을 수 없습니다")
+    except ValueError as e:
+        raise HTTPException(422, str(e))
+    message = (body.message or "").strip() or (
+        f"{issue['fixed_in']} 버전에서 수정됐어요. 앱을 {issue['fixed_in']} 이상으로 업데이트해 주세요. 알려 주셔서 감사합니다.")
+    resolved = _store(request).resolve_issue_reports(issue_id, message)
+    return {"issue": issue, "resolved_reports": resolved, "message": message}
+
+
+@app.post("/api/reports/{request_id}/issue")
+def track_issue(request_id: str, body: TrackIn, request: Request, dev_id: str = Depends(current_dev)):
+    """File a report under an existing issue (or clear it with null)."""
+    _own_report(request, dev_id, request_id)
+    if body.issue_id is not None and _issues(request).get(body.issue_id) is None:
+        raise HTTPException(404, "이슈를 찾을 수 없습니다")
+    store = _store(request)
+    store.set_issue(dev_id, request_id, body.issue_id)
+    return _with_team_info(_view(store.get_report(dev_id, request_id)), dev_id, _similar(store), store)
+
+
+@app.post("/api/reports/{request_id}/assign")
+def assign_report(request_id: str, body: AssignIn, request: Request, dev_id: str = Depends(current_dev)):
+    """Hand a report to another developer (e.g. the AI picked the wrong feature area)."""
+    _own_report(request, dev_id, request_id)
+    if body.dev_id not in auth.load_developers() or body.dev_id == dev_id:
+        raise HTTPException(422, "넘길 수 없는 개발자 ID입니다")
+    _store(request).move_report(dev_id, body.dev_id, request_id, (body.note or "").strip())
+    return {"request_id": request_id, "assigned_to": body.dev_id}
 
 
 @app.get("/api/reports/{request_id}/attachments/{index}")
@@ -355,12 +489,14 @@ def status_page(token: str):
 
 @app.get("/api/status/{token}")
 def get_status(token: str, request: Request):
+    _limit(request, "status")
     return _status_view(*_by_token(request, token))
 
 
 @app.post("/api/status/{token}/reply")
 def reporter_reply(token: str, body: ReplyIn, request: Request):
     """The reporter answers the questions; saved first, then the report is re-analyzed with it."""
+    _limit(request, "reply")
     dev_id, record = _by_token(request, token)
     view = _status_view(dev_id, record)
     if dev_id is None:

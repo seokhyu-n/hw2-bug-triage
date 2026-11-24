@@ -31,8 +31,28 @@ function line(parent, label, value) {
   parent.appendChild(p);
 }
 
+let knownIds = null;  // report IDs seen so far (null until the first load): new P1s raise an alert
+const baseTitle = document.title;
+
+function alertNewP1(rows) {
+  const ids = new Set(rows.map(r => r.request_id));
+  if (knownIds !== null) {
+    const fresh = rows.filter(r => !knownIds.has(r.request_id) && r.result && r.result.score.priority === "P1");
+    if (fresh.length) {
+      const text = "새 P1 제보 " + fresh.length + "건: " + fresh.map(r => r.request_id).join(", ");
+      $("p1-alert").textContent = text; $("p1-alert").hidden = false;
+      document.title = "(" + fresh.length + ") " + baseTitle;
+      if ("Notification" in window && Notification.permission === "granted")
+        new Notification("RunBuddy 트리아지", {body: text});
+    }
+  }
+  knownIds = ids;
+}
+$("p1-alert").onclick = () => { $("p1-alert").hidden = true; document.title = baseTitle; };
+
 async function loadList() {
   const rows = await api("/api/reports");
+  alertNewP1(rows);
   const ul = $("report-list");
   ul.replaceChildren();
   for (const r of rows) {
@@ -44,6 +64,9 @@ async function loadList() {
       const wf = (r.workflow || {state: "new"}).state;
       if (wf !== "new") li.appendChild(el("span", WF_LABEL[wf], "wf " + wf));
       if ((r.replies || []).some(x => x.state !== "failed")) li.appendChild(el("span", "답변 옴", "wf in_progress"));
+      const same = (r.similar || []).length + (r.similar_elsewhere || 0);
+      if (same) li.appendChild(el("span", "같은 증상 " + (same + 1) + "건", "wf group"));
+      if (r.issue_id) li.appendChild(el("span", r.issue_id, "wf issue"));
     } else {
       li.appendChild(el("span", STATUS_LABEL[r.status], "badge " + r.status));
       li.appendChild(el("span", r.request_id));
@@ -59,6 +82,126 @@ async function loadList() {
 const STATUS_LABEL = {pending: "분석 중", failed: "분석 실패"};
 
 const WF_LABEL = {new: "접수됨", in_progress: "확인 중", resolved: "수정 완료", wont_fix: "처리 종료"};
+
+// ---- same-symptom group, known issue (register / link / resolve), reassignment ----
+let issuesCache = null, devsCache = null;
+async function issues(force) { if (force || !issuesCache) issuesCache = await api("/api/issues"); return issuesCache; }
+
+async function teamPanel(d, r) {
+  const box = el("div", null, "team");
+  d.appendChild(el("h3", "같은 증상 · 이슈"));
+  d.appendChild(box);
+  const isBug = r.result.classification.labels.includes("bug");
+  const same = r.similar || [], elsewhere = r.similar_elsewhere || 0;
+  if (same.length || elsewhere) {
+    const p = el("p");
+    p.appendChild(document.createTextNode("같은 증상 신고 " + (same.length + elsewhere + 1) + "건: 이 신고"));
+    for (const id of same) {
+      p.appendChild(document.createTextNode(", "));
+      const a = el("a", id); a.href = "#"; a.onclick = async e => { e.preventDefault(); selectedId = id; showDetail(await api("/api/reports/" + id)); loadList(); };
+      p.appendChild(a);
+    }
+    if (elsewhere) p.appendChild(document.createTextNode(" + 다른 담당자 목록에 " + elsewhere + "건"));
+    box.appendChild(p);
+    const total = same.length + elsewhere + 1;
+    if (total >= 3 && ["P3", "P4"].includes(r.result.score.priority))
+      box.appendChild(el("p", "같은 증상이 " + total + "건 들어왔어요. 영향 사용자가 많을 수 있으니 우선순위를 올릴지 검토하세요.", "hint-warn"));
+  } else if (isBug) {
+    box.appendChild(el("p", "같은 증상으로 들어온 다른 신고는 아직 없어요.", "meta"));
+  }
+
+  const err = el("div", "", "error");
+  if (r.issue_id) {
+    const all = await issues();
+    const issue = all.find(i => i.id === r.issue_id);
+    const line1 = el("p");
+    line1.appendChild(el("b", r.issue_id + " "));
+    line1.appendChild(document.createTextNode(issue ? issue.title : ""));
+    box.appendChild(line1);
+    if (issue) {
+      box.appendChild(el("p", (issue.status === "fixed" ? "수정됨 (" + issue.fixed_in + ")" : "수정 전") +
+        " · 이 이슈로 묶인 신고 " + issue.reports + "건, 처리 중 " + issue.open_reports + "건" +
+        (issue.source === "team" ? " · 팀에서 등록" : ""), "meta"));
+      if (issue.status !== "fixed" || issue.open_reports) {
+        const row = el("div", null, "workflow");
+        const ver = el("input"); ver.type = "text"; ver.placeholder = "수정 버전 (예: 1.2.1)"; ver.maxLength = 20;
+        ver.setAttribute("aria-label", "수정 버전");
+        const btn = el("button", "수정 완료 → 신고자 " + issue.open_reports + "명에게 안내");
+        btn.onclick = async () => {
+          err.textContent = ""; btn.disabled = true;
+          try {
+            const out = await api("/api/issues/" + r.issue_id + "/resolve", "POST", {fixed_in: ver.value});
+            box.appendChild(el("p", "안내 완료: " + out.resolved_reports.length + "건을 수정 완료로 바꾸고 신고자에게 '" + out.message + "'를 보냈어요.", "meta"));
+            await issues(true); loadList();
+          } catch (e) { err.textContent = e.message; }
+          btn.disabled = false;
+        };
+        row.append(ver, btn);
+        box.appendChild(row);
+      }
+    }
+  } else if (isBug) {
+    // link to an existing issue
+    const all = await issues();
+    const row = el("div", null, "workflow");
+    const sel = el("select"); sel.setAttribute("aria-label", "기존 이슈");
+    sel.appendChild(Object.assign(el("option", "기존 이슈에 묶기…"), {value: ""}));
+    for (const i of all.filter(i => i.status !== "fixed")) sel.appendChild(Object.assign(el("option", i.id + " " + i.title), {value: i.id}));
+    const link = el("button", "묶기", "secondary");
+    link.onclick = async () => {
+      if (!sel.value) return;
+      try { showDetail(await api("/api/reports/" + r.request_id + "/issue", "POST", {issue_id: sel.value})); loadList(); }
+      catch (e) { err.textContent = e.message; }
+    };
+    row.append(sel, link);
+    box.appendChild(row);
+    // register a new issue from this report (+ its same-symptom group)
+    const reg = el("details");
+    reg.appendChild(el("summary", "새 알려진 이슈로 등록" + (same.length ? " (같은 증상 " + (same.length + 1) + "건 함께)" : "")));
+    const title = el("input"); title.type = "text"; title.maxLength = 120; title.value = r.result.extraction.symptom || "";
+    title.setAttribute("aria-label", "이슈 제목");
+    const work = el("input"); work.type = "text"; work.maxLength = 500; work.placeholder = "임시 해결 방법 (선택)";
+    work.setAttribute("aria-label", "임시 해결 방법");
+    const go = el("button", "등록");
+    go.onclick = async () => {
+      err.textContent = ""; go.disabled = true;
+      try {
+        const issue = await api("/api/issues", "POST", {title: title.value, workaround: work.value || null,
+          report_ids: [r.request_id, ...same]});
+        await issues(true);
+        showDetail(await api("/api/reports/" + r.request_id)); loadList();
+        $("list-err").textContent = issue.id + " 등록: 같은 증상으로 신고하는 사람에게 신고 전에 안내돼요.";
+      } catch (e) { err.textContent = e.message; go.disabled = false; }
+    };
+    reg.append(el("p", "같은 증상 신고들의 기기·버전으로 영향 범위를 채워요. 등록하면 이후 신고자에게 신고 전 안내로 보여요.", "meta"), title, work, go);
+    box.appendChild(reg);
+  }
+  box.appendChild(err);
+}
+
+async function assignPanel(d, r) {
+  if (!devsCache) devsCache = await api("/api/developers");
+  const me = $("who").dataset.dev;
+  const row = el("div", null, "workflow");
+  const sel = el("select"); sel.setAttribute("aria-label", "넘길 개발자");
+  for (const x of devsCache.filter(x => x.dev_id !== me))
+    sel.appendChild(Object.assign(el("option", x.dev_id + " (" + x.areas.join(", ") + ")"), {value: x.dev_id}));
+  const note = el("input"); note.type = "text"; note.maxLength = 300; note.placeholder = "넘기는 이유 (선택)";
+  note.setAttribute("aria-label", "넘기는 이유");
+  const btn = el("button", "담당자 변경", "secondary");
+  const msg = el("span", "", "meta");
+  btn.onclick = async () => {
+    btn.disabled = true;
+    try {
+      await api("/api/reports/" + r.request_id + "/assign", "POST", {dev_id: sel.value, note: note.value || null});
+      selectedId = null; $("detail").replaceChildren(el("p", r.request_id + "을(를) " + sel.value + "에게 넘겼어요.", "meta"));
+      loadList();
+    } catch (e) { msg.textContent = e.message; btn.disabled = false; }
+  };
+  row.append(sel, note, btn, msg);
+  d.appendChild(el("h3", "담당자 변경"));
+  d.appendChild(row);
+}
 const REPLY_STATE = {pending: "재분석 중", applied: "재분석 반영", failed: "재분석 실패(내용은 저장됨)"};
 
 // Processing state + a message the reporter sees on their status page.
@@ -162,6 +305,8 @@ function showDetail(r) {
   line(d, "완성도:", s.completeness === null ? "해당 없음" : s.completeness + "/2");
   line(d, "답변 상태:", r.result.answer_status);
   workflow(d, r);
+  const teamSlot = el("div"); d.appendChild(teamSlot);
+  teamPanel(teamSlot, r).catch(e => teamSlot.appendChild(el("div", e.message, "error")));
 
   d.appendChild(el("h3", "제보 원문"));
   d.appendChild(el("div", r.text, "box raw"));
@@ -214,6 +359,9 @@ function showDetail(r) {
   const p = el("p"); p.appendChild(btn); d.appendChild(p);
   d.appendChild(err);
 
+  const assignSlot = el("div"); d.appendChild(assignSlot);
+  assignPanel(assignSlot, r).catch(e => assignSlot.appendChild(el("div", e.message, "error")));
+
   const ls = r.logs_summary;
   d.appendChild(el("div", "처리 시간 " + ls.latency_s.toFixed(1) + "s · 비용 $" + ls.cost_usd.toFixed(4) +
     " · 캐시 적중 " + ls.cache_read.toLocaleString() + " 토큰", "meta"));
@@ -221,8 +369,12 @@ function showDetail(r) {
 
 $("refresh-btn").onclick = async () => {
   $("list-err").textContent = "";
+  // browsers only allow the permission prompt after a click: ask once, for P1 desktop notifications
+  if ("Notification" in window && Notification.permission === "default") Notification.requestPermission();
   try { await loadList(); } catch (e) { $("list-err").textContent = e.message; }
 };
+// background refresh; a failure here is silent (the next tick or the button shows errors)
+setInterval(() => { if (!document.hidden || "Notification" in window) loadList().catch(() => {}); }, 20000);
 
 function addMsg(role, text, tools) {
   const m = el("div", null, "msg " + role);

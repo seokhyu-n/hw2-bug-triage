@@ -1,30 +1,27 @@
 # STATE (2026-11-24)
 
-Branch: main (GitHub private repo `seokhyu-n/hw2-bug-triage`). 211 tests pass. Report form: optional fields, screenshots (redaction), log, pre-submit suggestions (`app/suggest.py`), reporter status page `/status/<token>` with replies, dev workflow state.
+Branch: main (GitHub private repo `seokhyu-n/hw2-bug-triage`). Service setting = V2-Run-10 prompts. Tests: `venv\Scripts\python.exe -m pytest`.
 
 ## Where things are
-- Reporter page `/report` (no login) -> `POST /api/intake` saves to `data/runtime/_intake/`, returns receipt at once ->
-  `app/intake.py` worker: 4-step analysis (retry 5s/30s) -> auto-assigned by feature_area; failures stay as
-  "분석 실패" for dev3 with retry button (dev1 tracking/voice/login, dev2 map/record/card_image, dev3 ai_chat/other + fallback)
-- Developer page `/` login (dev1~3) -> `/app`: own reports, detail, reanalyze, chatbot (streamed via `POST /api/chat/stream`)
-- Eval: `eval/dataset_v1.jsonl` (100, frozen), Run-01..07 in `eval/runs.csv`, `eval/runs.xlsx` (per-task sheets).
-  Final setting = Run-07 (Haiku 5.5, few-shot + rubric + context select + 2 prompt fixes)
-- Analysis page (one page, 4 tabs): https://claude.ai/artifact/XzpwoBQTWzGYMtCFiRppnX
-  source `docs/artifacts/assignment2.html`, rebuilt from the 4 tab pages by `docs/artifacts/build_combined.py`.
-  Keep lecture page numbers / lecture wording OUT of the analysis pages (user request).
+- Reporter `/report`: optional fields (`app/report_form.py`), screenshots + redaction, log, pre-submit known issue/FAQ
+  suggestions (`app/suggest.py`), private status page `/status/<token>` with replies. Intake saves first, `app/intake.py`
+  worker analyzes (retries; failures go to dev3).
+- Developer `/` (dev1~3) -> `/app`: workflow state + message to reporter, same-symptom groups (`app/similar.py`),
+  issue register/link/resolve-and-notify (`app/issues.py`, runtime `_issues.json`), reassign, 20 s refresh + P1 alert,
+  chatbot (tools incl. guarded `assign_report`). Public endpoints rate-limited (`app/ratelimit.py`).
+- Eval: v1 Run-01..07, repeats, dataset_v2 V2-Run-01/07/08/09/10 (`docs/analysis/run_08_10.md`),
+  feature evals `eval/feature_evals.py` -> `eval/feature_evals.csv` + Excel "추가 기능 평가".
+- Analysis page (4 tabs): https://claude.ai/artifact/XzpwoBQTWzGYMtCFiRppnX ; service tab alone
+  https://claude.ai/artifact/NhZ2Ag4B3WoGGaHh6ZTLdr . Source `docs/artifacts/*.html`, rebuild with
+  `build_combined.py`, publish the body only. Keep lecture page numbers/wording OUT of these pages.
 
-## Eval strengthening (done, see docs/analysis/eval_strengthening.md)
-- Repeats: Run-04/Run-07 x3 (priority/extraction gains beyond noise; completeness MAE noisy). 56 labels human-checked, 0 fixes (`eval/review/review_log.md`)
-- dataset_v2 (120 = v1 + E-101..E-120, `--dataset v2`): final setting is worse than baseline on the new boundary cases
-  (question->bug, P3->P2 over-rating). Next: rubric core/auxiliary feature scope; classify few-shot + feature list
-
-## Setting up on another computer (e.g. academy PC; also done at `C:\Users\hi\부트캠프\hw2-bug-triage` on 11-24)
-- `gh repo clone seokhyu-n/hw2-bug-triage` into `C:\dev\fde`, then `python -m venv venv`
-- `venv\Scripts\python.exe -m pip install -r requirements.txt`
-- The user creates `.env` with `CLAUDE_API_KEY=...` themselves (not in git). Runtime data (`data/runtime/`) starts empty.
-- Server: `venv\Scripts\python.exe -m uvicorn app.main:app --port 8000` -> http://127.0.0.1:8000
+## Setting up on another computer
+- Clone, `python -m venv venv`, `venv\Scripts\python.exe -m pip install -r requirements.txt`.
+- The user creates `.env` with `CLAUDE_API_KEY=...` (not in git). Runtime data (`data/runtime/`) starts empty.
+- Server: `venv\Scripts\python.exe -m uvicorn app.main:app --port 8000`.
+- Also set up at `C:\Users\hi\부트캠프\hw2-bug-triage` (11-24); git author set repo-locally to match earlier commits.
 
 ## Next (optional)
-- Improvement candidates: see Eval strengthening above; link rule "app_version >= fixed_in -> no link"
-- Sync between home and academy: `git pull` before work, commit + `git push` after
-- `.env` holds the real key; never read it. Dataset labels: versions digits only, non-bugs P4 + completeness null.
+- Remaining class errors E-053/E-113/E-116; link rule "app_version >= fixed_in -> no link"; repeat V2-Run-10 for MAE noise.
+- Eval runner must keep NOT importing `app.main` (registered issues stay out of eval).
+- `.env` holds the real key; never read it. `data/faq.json` and the classify "정상 동작" list must change together.

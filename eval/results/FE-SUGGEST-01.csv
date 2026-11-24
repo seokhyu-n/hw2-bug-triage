@@ -1,0 +1,121 @@
+﻿id,정답 이슈,안내한 이슈,안내한 FAQ,labels
+E-001,,ISSUE-05,,question
+E-002,,,,question
+E-003,,ISSUE-02,,bug
+E-004,,ISSUE-04 ISSUE-06,,bug
+E-005,,,,question
+E-006,,,,question
+E-007,,ISSUE-06 ISSUE-10,,bug
+E-008,,,,feature_request
+E-009,,ISSUE-03,,bug
+E-010,ISSUE-04,ISSUE-04,,bug
+E-011,ISSUE-12,ISSUE-12,,bug
+E-012,,,,question
+E-013,,ISSUE-07,,question
+E-014,,,,feature_request
+E-015,ISSUE-03,ISSUE-03,,bug
+E-016,ISSUE-03,ISSUE-03,,bug question
+E-017,,ISSUE-09,,feature_request
+E-018,,,,question
+E-019,,,,question
+E-020,,,,bug
+E-021,,ISSUE-07,,question
+E-022,,,FAQ-03,question
+E-023,ISSUE-01,ISSUE-01 ISSUE-09,,bug
+E-024,,,FAQ-04,feature_request
+E-025,,ISSUE-11,,bug feature_request
+E-026,,,,question
+E-027,,,,feature_request
+E-028,ISSUE-04,ISSUE-04,,bug
+E-029,,,,feature_request
+E-030,,,,feature_request
+E-031,,,,question
+E-032,ISSUE-04,ISSUE-04,,bug
+E-033,,,,feature_request
+E-034,,ISSUE-10,FAQ-06,feature_request question
+E-035,ISSUE-04,ISSUE-04 ISSUE-05,,bug question
+E-036,,,,bug
+E-037,,,,feature_request
+E-038,,,,bug
+E-039,ISSUE-10,,,bug
+E-040,,,,bug
+E-041,,ISSUE-05,,feature_request
+E-042,ISSUE-02,ISSUE-02,,bug
+E-043,,,,bug
+E-044,,,FAQ-02,question
+E-045,,,,bug feature_request
+E-046,,,,question
+E-047,,,,bug
+E-048,,,,bug
+E-049,,ISSUE-02,,bug
+E-050,ISSUE-12,ISSUE-12,,bug question
+E-051,,,,bug
+E-052,,ISSUE-10,FAQ-06,feature_request
+E-053,,,,question
+E-054,,,,bug
+E-055,,ISSUE-03,,bug
+E-056,,ISSUE-11,,question
+E-057,ISSUE-11,ISSUE-11,,bug
+E-058,ISSUE-05,ISSUE-05,,bug
+E-059,,,,question
+E-060,,,,bug
+E-061,,,,question
+E-062,ISSUE-07,ISSUE-07,,bug
+E-063,ISSUE-08,ISSUE-08 ISSUE-09,,bug
+E-064,ISSUE-01,,,bug
+E-065,,ISSUE-06,,bug
+E-066,,,,feature_request
+E-067,,ISSUE-06,,feature_request
+E-068,,ISSUE-03,,bug
+E-069,,,,bug
+E-070,,,,bug
+E-071,ISSUE-06,ISSUE-06,,bug
+E-072,ISSUE-03,ISSUE-03,,bug
+E-073,,,,bug
+E-074,,,,feature_request
+E-075,,,,question
+E-076,,,,feature_request
+E-077,,ISSUE-04,,bug
+E-078,,,,bug
+E-079,ISSUE-09,ISSUE-09,,bug
+E-080,,,,feature_request
+E-081,,,,feature_request
+E-082,,,,feature_request
+E-083,,,,bug
+E-084,,,,feature_request
+E-085,,ISSUE-11,,question
+E-086,,,,feature_request
+E-087,ISSUE-06,ISSUE-06,,bug feature_request
+E-088,,,,feature_request
+E-089,,,,bug
+E-090,,ISSUE-02,,bug
+E-091,ISSUE-07,ISSUE-07,,bug feature_request
+E-092,ISSUE-02,ISSUE-02,,bug
+E-093,ISSUE-05,ISSUE-05,,bug question feature_request
+E-094,,ISSUE-07,,bug
+E-095,ISSUE-06,ISSUE-06,,bug
+E-096,,,,question
+E-097,,,,bug
+E-098,,ISSUE-05,,bug
+E-099,ISSUE-10,ISSUE-10,,bug question
+E-100,,,,question
+E-101,,ISSUE-06,FAQ-01,question
+E-102,,,FAQ-05,question
+E-103,,ISSUE-10,,feature_request
+E-104,,,,feature_request
+E-105,,,,question
+E-106,,ISSUE-11,,feature_request
+E-107,,,FAQ-02,question
+E-108,,,FAQ-03,question
+E-109,,,,bug question
+E-110,,ISSUE-10,,bug question
+E-111,,,,bug
+E-112,,,,bug question
+E-113,,,,feature_request question
+E-114,ISSUE-10,ISSUE-10,,bug
+E-115,,,,bug
+E-116,,ISSUE-11,,bug
+E-117,,ISSUE-05,,feature_request
+E-118,,,,bug feature_request
+E-119,,ISSUE-06,,bug feature_request question
+E-120,,,,question

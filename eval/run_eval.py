@@ -205,6 +205,30 @@ def _v2_sheet(wb, runs: list[dict]) -> None:
     ws.freeze_panes = "C2"
 
 
+def _feature_sheet(wb) -> None:
+    """Features added after the main series (eval/feature_evals.py): summary rows, then each run's cases."""
+    path = RESULTS_DIR.parent / "feature_evals.csv"
+    if not path.exists():
+        return
+    rows = _read_csv(path)
+    ws = wb.create_sheet("추가 기능 평가")
+    if not rows:
+        return
+    ws.append(list(rows[0]))
+    for r in rows:
+        ws.append([_xl_value(c, v) if c == "값" else v for c, v in r.items()])
+    for r in rows:
+        cases = RESULTS_DIR / f"{r['Run ID']}.csv"
+        if not cases.exists():
+            continue
+        ws.append([])
+        ws.append([f"{r['Run ID']} ({r['기능']}) 사례별 결과"])
+        with open(cases, encoding="utf-8-sig", newline="") as f:
+            for row in csv.reader(f):
+                ws.append(row)
+    ws.freeze_panes = "C2"
+
+
 def _task_sheet(wb, title: str, metrics: list[str], primary: str, runs: list[dict]) -> None:
     ws = wb.create_sheet(title)
     # compare with the previous run of the SAME model (a Sonnet comparison run must not become the
@@ -246,6 +270,7 @@ def build_xlsx() -> None:
         _task_sheet(wb, title, metrics, primary, main)
     _repeat_sheet(wb, runs)
     _v2_sheet(wb, runs)
+    _feature_sheet(wb)
     used = set(wb.sheetnames)
     for r in runs:
         name = re.sub(r"[\[\]:*?/\\]", "_", f"혼동행렬 {r['Run ID']}")[:31]

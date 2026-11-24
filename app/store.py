@@ -37,6 +37,14 @@ def _dump(obj: dict) -> str:
     return json.dumps(obj, ensure_ascii=False) + "\n"
 
 
+def tracked_issue(record: dict) -> str | None:
+    """A developer's explicit choice wins; otherwise the issue the AI linked (verified by tools)."""
+    if "issue_id" in record:
+        return record["issue_id"]
+    link = (record.get("result") or {}).get("link") or {}
+    return link.get("linked_issue_id")
+
+
 def _summary(logs: list[StepLog]) -> dict:
     return {"latency_s": round(sum(l.latency_s for l in logs), 3),
             "cost_usd": round(sum(l.cost_usd for l in logs), 6),
@@ -226,6 +234,56 @@ class Store:
                 raise KeyError(request_id)
             self._save(dev_id, reports)
             return r
+
+    # ---- team-level operations (issues, reassignment) ----
+    def dev_ids(self) -> list[str]:
+        return sorted(sub.name for sub in self.base.iterdir() if sub.is_dir() and not sub.name.startswith("_"))
+
+    def all_reports(self) -> list[dict]:
+        """Every assigned report of every developer (each record carries its dev_id)."""
+        return [r for dev in self.dev_ids() for r in self._load(dev)]
+
+    def move_report(self, from_dev: str, to_dev: str, request_id: str, note: str) -> dict:
+        """Reassign a report to another developer, keeping its ID, history and status link."""
+        with _LOCK:
+            src = self._load(from_dev)
+            rec = next((r for r in src if r["request_id"] == request_id), None)
+            if rec is None:
+                raise KeyError(request_id)
+            rec["dev_id"] = to_dev
+            rec.setdefault("history", []).append({"at": _now(), "event": "reassigned",
+                                                  "from": from_dev, "to": to_dev, "note": note})
+            rec["updated_at"] = _now()
+            dst = self._load(to_dev)
+            dst.append(rec)
+            self._save(to_dev, dst)  # write the copy first: a crash in between never loses the report
+            self._save(from_dev, [r for r in src if r["request_id"] != request_id])
+            return rec
+
+    def set_issue(self, dev_id: str, request_id: str, issue_id: str | None) -> dict:
+        """The known issue a developer filed this report under (overrides the AI link for tracking)."""
+        def change(r):
+            r["issue_id"] = issue_id
+            return r
+        return self._edit(dev_id, request_id, change)
+
+    def resolve_issue_reports(self, issue_id: str, message: str) -> list[str]:
+        """Mark every open report tracked under issue_id as resolved, with a message for its reporter."""
+        done = []
+        with _LOCK:
+            for dev in self.dev_ids():
+                reports = self._load(dev)
+                changed = False
+                for r in reports:
+                    wf = r.get("workflow") or {"state": "new"}
+                    if tracked_issue(r) == issue_id and wf["state"] in ("new", "in_progress"):
+                        r["workflow"] = {"state": "resolved", "message": message, "updated_at": _now()}
+                        r["updated_at"] = _now()
+                        done.append(r["request_id"])
+                        changed = True
+                if changed:
+                    self._save(dev, reports)
+        return done
 
     # ---- reporter replies (answers to the questions shown on the status page) ----
     def _edit(self, dev_id: str, request_id: str, change) -> dict:

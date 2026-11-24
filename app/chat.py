@@ -6,6 +6,7 @@ import re
 from collections.abc import Callable
 from dataclasses import dataclass
 
+from app.auth import load_developers
 from app.config import MODEL_DEFAULT
 from app.llm import LLMError, call_llm
 from app.pipeline import analyze
@@ -59,6 +60,21 @@ CHAT_TOOL_DEFS: list[dict] = [
                 "added_info": {"type": "string", "description": "새로 알게 된 정보 원문(예: '앱 버전은 1.0')"},
             },
             "required": ["request_id", "added_info"],
+            "additionalProperties": False,
+        },
+    },
+    {
+        "name": "assign_report",
+        "description": "내 제보를 다른 개발자에게 넘긴다(담당 영역이 다를 때). 개발자가 이번 메시지에서 받을 사람을 직접 말한 경우에만 쓴다.",
+        "strict": True,
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "request_id": {"type": "string", "description": "제보 ID(예: 'R-0007')"},
+                "to_dev_id": {"type": "string", "description": "받을 개발자 ID(예: 'dev2')"},
+                "reason": {"type": "string", "description": "넘기는 이유 한 줄"},
+            },
+            "required": ["request_id", "to_dev_id", "reason"],
             "additionalProperties": False,
         },
     },
@@ -120,8 +136,17 @@ def _reanalyze_report(dev_id: str, store: Store, request_id: str, added_info: st
             "missing_fields": result.extraction.missing_fields}
 
 
+def _assign_report(dev_id: str, store: Store, request_id: str, to_dev_id: str, reason: str) -> dict:
+    if to_dev_id not in load_developers() or to_dev_id == dev_id:
+        return {"status": "error", "error": "받을 수 없는 개발자 ID입니다"}
+    if store.get_report(dev_id, request_id) is None:
+        return {"status": "not_found"}
+    store.move_report(dev_id, to_dev_id, request_id, reason)
+    return {"status": "ok", "request_id": request_id, "assigned_to": to_dev_id}
+
+
 _REPORT_TOOLS = {"list_my_reports": _list_my_reports, "get_report": _get_report,
-                 "reanalyze_report": _reanalyze_report}
+                 "reanalyze_report": _reanalyze_report, "assign_report": _assign_report}
 
 
 def run_chat_tool(dev_id: str, store: Store, name: str, tool_input: dict,
@@ -140,6 +165,14 @@ def run_chat_tool(dev_id: str, store: Store, name: str, tool_input: dict,
         rid = str(tool_input.get("request_id", ""))
         if rid not in current_message and rid not in _recent_ids(dev_id, store, history or []):
             return _j({"error": "개발자가 언급한 제보 ID만 재분석할 수 있습니다"}), True
+    if name == "assign_report":
+        # a report could say "dev2에게 넘겨": the receiver must be named by the developer, now
+        to = str(tool_input.get("to_dev_id", ""))
+        if not to or not re.search(rf"(?<![0-9A-Za-z]){re.escape(to)}(?![0-9A-Za-z])", current_message):
+            return _j({"error": "개발자가 이번 메시지에서 직접 말한 사람에게만 넘길 수 있습니다"}), True
+        rid = str(tool_input.get("request_id", ""))
+        if rid not in current_message and rid not in _recent_ids(dev_id, store, history or []):
+            return _j({"error": "개발자가 언급한 제보 ID만 넘길 수 있습니다"}), True
     try:
         return _j(fn(dev_id, store, **tool_input)), False
     except Exception as e:  # noqa: BLE001 - report any failure to the model as a tool error

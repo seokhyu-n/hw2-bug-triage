@@ -61,7 +61,7 @@ def test_chat_tool_cannot_read_other_dev_report(tmp_path):
 def test_chat_tool_defs():
     names = [t["name"] for t in chat.CHAT_TOOL_DEFS]
     assert names == ["search_known_issues", "get_release_info", "list_my_reports", "get_report",
-                     "reanalyze_report"]
+                     "reanalyze_report", "assign_report"]
     assert all(t["strict"] for t in chat.CHAT_TOOL_DEFS)
 
 

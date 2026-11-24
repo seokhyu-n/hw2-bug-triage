@@ -72,6 +72,15 @@ class _FakeStream:
         return self._resp
 
 
+@pytest.fixture(autouse=True)
+def fresh_rate_limits():
+    """Each test starts with empty request counters (the limiter is process-wide)."""
+    import app.main as main
+    from app.ratelimit import RateLimiter
+    main.app.state.limiter = RateLimiter()
+    yield
+
+
 @pytest.fixture
 def fake_llm(monkeypatch):
     client = FakeClient()

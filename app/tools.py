@@ -41,6 +41,25 @@ def _norm_version(text: str | None) -> tuple[int, int, int] | None:
     return parse_version(text)
 
 
+# The running service plugs in issues registered by the team (app/issues.py). Nothing else does,
+# so the evaluation always searches the fixed dummy data only.
+_extra_issues = None  # callable returning a list of issues (registered + status overrides)
+
+
+def set_extra_issues(provider) -> None:
+    global _extra_issues
+    _extra_issues = provider
+
+
+def known_issues() -> list[dict]:
+    base = _load("known_issues.json")
+    if _extra_issues is None:
+        return base
+    extra = _extra_issues()
+    override = {i["id"]: i for i in extra}
+    return [override.get(i["id"], i) for i in base] + [i for i in extra if i["id"] not in {b["id"] for b in base}]
+
+
 def search_known_issues(keywords: list[str], feature_area: str | None = None,
                         android_version: str | None = None,
                         app_version: str | None = None) -> dict:
@@ -48,7 +67,7 @@ def search_known_issues(keywords: list[str], feature_area: str | None = None,
     want_major = _android_major(android_version)
     want_app = _norm_version(app_version)
     scored = []
-    for issue in _load("known_issues.json"):
+    for issue in known_issues():
         haystack = (issue["title"] + " " + " ".join(issue["symptoms"])).lower()
         hits = sum(1 for k in kws if k in haystack)
         if kws and hits == 0:
