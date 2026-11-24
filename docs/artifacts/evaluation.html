@@ -73,11 +73,11 @@ li{margin:3px 0}
 <body>
 <main>
 <h1>평가 결과 분석</h1>
-<p class="lead">Run-01~07 비교, 분류 혼동 행렬, 어려운 사례, 최종 Run의 틀린 사례 분석.</p>
+<p class="lead">Run-01~07 비교, 분류 혼동 행렬, 어려운 사례, 틀린 사례 분석, 그리고 경계 사례 120건에서 이어간 개선(Run-08~12, 9번)과 추가 기능 평가(10번). <b>현재 서비스 설정은 V2-Run-12</b>다.</p>
 
 <h2>1. Run-01 ~ Run-07 지표</h2>
 <p>평가셋 100건(bug 56 / question 22 / feature_request 22, 어려운 사례 25건), 모든 Run 오류 0건. Run-05만 Sonnet 5.5이고 나머지는 Haiku 5.5. 한 번에 한 변수만 바꿨다. 원본은 <code>eval/runs.csv</code>.</p>
-<div class="scroll"><table><tr><th>Run</th><th>모델</th><th>변경</th><th class="n">분류 정확도</th><th class="n">macro-F1</th><th class="n">labels</th><th class="n">추출 정확도</th><th class="n">환각률</th><th class="n">누락률</th><th class="n">완성도 MAE</th><th class="n">우선순위 exact</th><th class="n">±1</th><th class="n">링크</th><th class="n">응답(s)</th><th class="n">비용(USD)</th><th class="n">캐시 적중 토큰</th></tr><tr><td>Run-01</td><td>Haiku</td><td>기준선</td><td class="n">1.00</td><td class="n">1.000</td><td class="n">0.98</td><td class="n">0.952</td><td class="n">0.014</td><td class="n">0.072</td><td class="n">0.411</td><td class="n">0.76</td><td class="n">1.00</td><td class="n">0.97</td><td class="n">9.28</td><td class="n">0.0967</td><td class="n">885,810</td></tr><tr><td>Run-02</td><td>Haiku</td><td>+Few-shot</td><td class="n">0.98</td><td class="n">0.979</td><td class="n">0.95</td><td class="n">0.948</td><td class="n">0.018</td><td class="n">0.077</td><td class="n">0.339</td><td class="n">0.79</td><td class="n">1.00</td><td class="n">0.97</td><td class="n">7.98</td><td class="n">0.0898</td><td class="n">1,213,552</td></tr><tr><td>Run-03</td><td>Haiku</td><td>+Rubric</td><td class="n">0.98</td><td class="n">0.979</td><td class="n">0.94</td><td class="n">0.948</td><td class="n">0.014</td><td class="n">0.077</td><td class="n">0.179</td><td class="n">0.82</td><td class="n">0.98</td><td class="n">0.96</td><td class="n">8.05</td><td class="n">0.0910</td><td class="n">1,308,698</td></tr><tr><td>Run-04</td><td>Haiku</td><td>+Context 선별</td><td class="n">0.98</td><td class="n">0.979</td><td class="n">0.94</td><td class="n">0.950</td><td class="n">0.018</td><td class="n">0.068</td><td class="n">0.107</td><td class="n">0.84</td><td class="n">0.98</td><td class="n">0.96</td><td class="n">8.26</td><td class="n">0.0887</td><td class="n">1,323,316</td></tr><tr><td>Run-05</td><td>Sonnet</td><td>Sonnet</td><td class="n">0.98</td><td class="n">0.975</td><td class="n">0.98</td><td class="n">0.962</td><td class="n">0.021</td><td class="n">0.050</td><td class="n">0.036</td><td class="n">0.93</td><td class="n">0.99</td><td class="n">0.97</td><td class="n">10.93</td><td class="n">1.5677</td><td class="n">1,245,044</td></tr><tr><td>Run-06</td><td>Haiku</td><td>개선1 추출</td><td class="n">0.98</td><td class="n">0.979</td><td class="n">0.95</td><td class="n">0.972</td><td class="n">0.025</td><td class="n">0.005</td><td class="n">0.143</td><td class="n">0.84</td><td class="n">0.97</td><td class="n">0.97</td><td class="n">8.23</td><td class="n">0.0914</td><td class="n">1,326,110</td></tr><tr class="final"><td>Run-07</td><td>Haiku</td><td>개선2 Rubric (최종)</td><td class="n">0.98</td><td class="n">0.979</td><td class="n">0.95</td><td class="n">0.972</td><td class="n">0.025</td><td class="n">0.005</td><td class="n">0.109</td><td class="n">0.88</td><td class="n">0.99</td><td class="n">0.96</td><td class="n">8.06</td><td class="n">0.0868</td><td class="n">1,351,670</td></tr></table></div>
+<div class="scroll"><table><tr><th>Run</th><th>모델</th><th>변경</th><th class="n">분류 정확도</th><th class="n">macro-F1</th><th class="n">labels</th><th class="n">추출 정확도</th><th class="n">환각률</th><th class="n">누락률</th><th class="n">완성도 MAE</th><th class="n">우선순위 exact</th><th class="n">±1</th><th class="n">링크</th><th class="n">응답(s)</th><th class="n">비용(USD)</th><th class="n">캐시 적중 토큰</th></tr><tr><td>Run-01</td><td>Haiku</td><td>기준선</td><td class="n">1.00</td><td class="n">1.000</td><td class="n">0.98</td><td class="n">0.952</td><td class="n">0.014</td><td class="n">0.072</td><td class="n">0.411</td><td class="n">0.76</td><td class="n">1.00</td><td class="n">0.97</td><td class="n">9.28</td><td class="n">0.0967</td><td class="n">885,810</td></tr><tr><td>Run-02</td><td>Haiku</td><td>+Few-shot</td><td class="n">0.98</td><td class="n">0.979</td><td class="n">0.95</td><td class="n">0.948</td><td class="n">0.018</td><td class="n">0.077</td><td class="n">0.339</td><td class="n">0.79</td><td class="n">1.00</td><td class="n">0.97</td><td class="n">7.98</td><td class="n">0.0898</td><td class="n">1,213,552</td></tr><tr><td>Run-03</td><td>Haiku</td><td>+Rubric</td><td class="n">0.98</td><td class="n">0.979</td><td class="n">0.94</td><td class="n">0.948</td><td class="n">0.014</td><td class="n">0.077</td><td class="n">0.179</td><td class="n">0.82</td><td class="n">0.98</td><td class="n">0.96</td><td class="n">8.05</td><td class="n">0.0910</td><td class="n">1,308,698</td></tr><tr><td>Run-04</td><td>Haiku</td><td>+Context 선별</td><td class="n">0.98</td><td class="n">0.979</td><td class="n">0.94</td><td class="n">0.950</td><td class="n">0.018</td><td class="n">0.068</td><td class="n">0.107</td><td class="n">0.84</td><td class="n">0.98</td><td class="n">0.96</td><td class="n">8.26</td><td class="n">0.0887</td><td class="n">1,323,316</td></tr><tr><td>Run-05</td><td>Sonnet</td><td>Sonnet</td><td class="n">0.98</td><td class="n">0.975</td><td class="n">0.98</td><td class="n">0.962</td><td class="n">0.021</td><td class="n">0.050</td><td class="n">0.036</td><td class="n">0.93</td><td class="n">0.99</td><td class="n">0.97</td><td class="n">10.93</td><td class="n">1.5677</td><td class="n">1,245,044</td></tr><tr><td>Run-06</td><td>Haiku</td><td>개선1 추출</td><td class="n">0.98</td><td class="n">0.979</td><td class="n">0.95</td><td class="n">0.972</td><td class="n">0.025</td><td class="n">0.005</td><td class="n">0.143</td><td class="n">0.84</td><td class="n">0.97</td><td class="n">0.97</td><td class="n">8.23</td><td class="n">0.0914</td><td class="n">1,326,110</td></tr><tr class="final"><td>Run-07</td><td>Haiku</td><td>개선2 Rubric (1차 최종)</td><td class="n">0.98</td><td class="n">0.979</td><td class="n">0.95</td><td class="n">0.972</td><td class="n">0.025</td><td class="n">0.005</td><td class="n">0.109</td><td class="n">0.88</td><td class="n">0.99</td><td class="n">0.96</td><td class="n">8.06</td><td class="n">0.0868</td><td class="n">1,351,670</td></tr></table></div>
 <ul>
 <li><b>Rubric</b>이 점수 단계에 가장 컸다: 완성도 MAE 0.339 &rarr; 0.179. <b>Context 선별</b>이 0.179 &rarr; 0.107로 더 줄이고 비용도 소폭 감소.</li>
 <li><b>Few-shot</b>은 우선순위를 0.76 &rarr; 0.79로 올렸지만 hard 2건(E-021, E-052)을 bug로 오분류하게 했다(분류 1.00 &rarr; 0.98).</li>
@@ -90,7 +90,7 @@ li{margin:3px 0}
 <h2>2. 지표별 막대 비교</h2>
 <div class="grid"><div class="chart"><h3>우선순위 exact (높을수록 좋음)</h3><div class="br"><span>Run-01</span><div class="t"><i style="width:76.0%"></i></div><span>0.76</span></div><div class="br"><span>Run-02</span><div class="t"><i style="width:79.0%"></i></div><span>0.79</span></div><div class="br"><span>Run-03</span><div class="t"><i style="width:82.0%"></i></div><span>0.82</span></div><div class="br"><span>Run-04</span><div class="t"><i style="width:84.0%"></i></div><span>0.84</span></div><div class="br s"><span>Run-05</span><div class="t"><i style="width:93.0%"></i></div><span>0.93</span></div><div class="br"><span>Run-06</span><div class="t"><i style="width:84.0%"></i></div><span>0.84</span></div><div class="br"><span>Run-07</span><div class="t"><i style="width:88.0%"></i></div><span>0.88</span></div><div class="legend">주황 = Sonnet</div></div><div class="chart"><h3>완성도 MAE (낮을수록 좋음)</h3><div class="br"><span>Run-01</span><div class="t"><i style="width:100.0%"></i></div><span>0.411</span></div><div class="br"><span>Run-02</span><div class="t"><i style="width:82.6%"></i></div><span>0.339</span></div><div class="br"><span>Run-03</span><div class="t"><i style="width:43.5%"></i></div><span>0.179</span></div><div class="br"><span>Run-04</span><div class="t"><i style="width:26.1%"></i></div><span>0.107</span></div><div class="br s"><span>Run-05</span><div class="t"><i style="width:8.9%"></i></div><span>0.036</span></div><div class="br"><span>Run-06</span><div class="t"><i style="width:34.8%"></i></div><span>0.143</span></div><div class="br"><span>Run-07</span><div class="t"><i style="width:26.6%"></i></div><span>0.109</span></div><div class="legend">주황 = Sonnet</div></div><div class="chart"><h3>추출 정확도</h3><div class="br"><span>Run-01</span><div class="t"><i style="width:95.2%"></i></div><span>0.952</span></div><div class="br"><span>Run-02</span><div class="t"><i style="width:94.8%"></i></div><span>0.948</span></div><div class="br"><span>Run-03</span><div class="t"><i style="width:94.8%"></i></div><span>0.948</span></div><div class="br"><span>Run-04</span><div class="t"><i style="width:95.0%"></i></div><span>0.950</span></div><div class="br s"><span>Run-05</span><div class="t"><i style="width:96.2%"></i></div><span>0.962</span></div><div class="br"><span>Run-06</span><div class="t"><i style="width:97.2%"></i></div><span>0.972</span></div><div class="br"><span>Run-07</span><div class="t"><i style="width:97.2%"></i></div><span>0.972</span></div></div><div class="chart"><h3>평균 응답시간 (s)</h3><div class="br"><span>Run-01</span><div class="t"><i style="width:85.0%"></i></div><span>9.28</span></div><div class="br"><span>Run-02</span><div class="t"><i style="width:73.1%"></i></div><span>7.98</span></div><div class="br"><span>Run-03</span><div class="t"><i style="width:73.6%"></i></div><span>8.05</span></div><div class="br"><span>Run-04</span><div class="t"><i style="width:75.6%"></i></div><span>8.26</span></div><div class="br s"><span>Run-05</span><div class="t"><i style="width:100.0%"></i></div><span>10.93</span></div><div class="br"><span>Run-06</span><div class="t"><i style="width:75.3%"></i></div><span>8.23</span></div><div class="br"><span>Run-07</span><div class="t"><i style="width:73.8%"></i></div><span>8.06</span></div></div><div class="chart"><h3>총비용 (USD, 100건)</h3><div class="br"><span>Run-01</span><div class="t"><i style="width:6.2%"></i></div><span>0.0967</span></div><div class="br"><span>Run-02</span><div class="t"><i style="width:5.7%"></i></div><span>0.0898</span></div><div class="br"><span>Run-03</span><div class="t"><i style="width:5.8%"></i></div><span>0.0910</span></div><div class="br"><span>Run-04</span><div class="t"><i style="width:5.7%"></i></div><span>0.0887</span></div><div class="br s"><span>Run-05</span><div class="t"><i style="width:100.0%"></i></div><span>1.5677</span></div><div class="br"><span>Run-06</span><div class="t"><i style="width:5.8%"></i></div><span>0.0914</span></div><div class="br"><span>Run-07</span><div class="t"><i style="width:5.5%"></i></div><span>0.0868</span></div><div class="legend">Sonnet은 Haiku의 약 18배</div></div><div class="chart"><h3>캐시 적중 토큰</h3><div class="br"><span>Run-01</span><div class="t"><i style="width:65.5%"></i></div><span>885,810</span></div><div class="br"><span>Run-02</span><div class="t"><i style="width:89.8%"></i></div><span>1,213,552</span></div><div class="br"><span>Run-03</span><div class="t"><i style="width:96.8%"></i></div><span>1,308,698</span></div><div class="br"><span>Run-04</span><div class="t"><i style="width:97.9%"></i></div><span>1,323,316</span></div><div class="br s"><span>Run-05</span><div class="t"><i style="width:92.1%"></i></div><span>1,245,044</span></div><div class="br"><span>Run-06</span><div class="t"><i style="width:98.1%"></i></div><span>1,326,110</span></div><div class="br"><span>Run-07</span><div class="t"><i style="width:100.0%"></i></div><span>1,351,670</span></div></div></div>
 
-<h2>3. 최종 선택: Run-07 (Haiku)</h2>
+<h2>3. 1차 최종 선택: Run-07 (Haiku, 9번에서 V2-Run-12로 갱신)</h2>
 <div class="note ok">Sonnet이 앞선 것: 우선순위 exact(0.93 vs 0.88), 완성도 MAE(0.036 vs 0.109), labels(0.98 vs 0.95), 링크(0.97 vs 0.96). 같은 것: 분류 정확도 0.98. Haiku가 앞선 것: 추출 정확도(0.972 vs 0.962), 비용(약 18배 저렴, $0.0868 vs $1.5677), 응답시간(8.06s vs 10.93s). 남은 격차가 18배 비용과 36% 느린 응답을 감수할 만큼은 아니라고 판단했다. Sonnet은 개선된 프롬프트로 다시 돌리지 않았다.</div>
 <p>Run-01~07 총비용 약 $2.11 (Haiku 6회 $0.544 + Sonnet 1회 $1.568).</p>
 
@@ -98,7 +98,7 @@ li{margin:3px 0}
 <p>행 = 정답, 열 = 예측.</p>
 <div class="grid">
 <div><h3>Run-04 (Haiku 기본)</h3><div class="scroll"><table class="cm"><tr><th>정답 \ 예측</th><th>bug</th><th>question</th><th>feature_request</th></tr><tr><th>bug</th><td class="h">56</td><td class="z">0</td><td class="z">0</td></tr><tr><th>question</th><td class="e">1</td><td class="h">21</td><td class="z">0</td></tr><tr><th>feature_request</th><td class="e">1</td><td class="z">0</td><td class="h">21</td></tr></table></div></div>
-<div><h3>Run-07 (최종)</h3><div class="scroll"><table class="cm"><tr><th>정답 \ 예측</th><th>bug</th><th>question</th><th>feature_request</th></tr><tr><th>bug</th><td class="h">55</td><td class="z">0</td><td class="e">1</td></tr><tr><th>question</th><td class="z">0</td><td class="h">22</td><td class="z">0</td></tr><tr><th>feature_request</th><td class="e">1</td><td class="z">0</td><td class="h">21</td></tr></table></div></div>
+<div><h3>Run-07 (1차 최종)</h3><div class="scroll"><table class="cm"><tr><th>정답 \ 예측</th><th>bug</th><th>question</th><th>feature_request</th></tr><tr><th>bug</th><td class="h">55</td><td class="z">0</td><td class="e">1</td></tr><tr><th>question</th><td class="z">0</td><td class="h">22</td><td class="z">0</td></tr><tr><th>feature_request</th><td class="e">1</td><td class="z">0</td><td class="h">21</td></tr></table></div></div>
 </div>
 <p>Run-04의 오류는 모두 "버그가 아닌 것을 버그로"(E-021, E-052)였고 버그 재현율은 100%였다. Run-07에서는 E-093(정답 bug + question + feature_request)이 feature_request로 바뀌었다. 분류 프롬프트를 건드리지 않았는데 생긴 변동이라, 복합 제보는 Run마다 흔들린다고 본다.</p>
 
@@ -113,9 +113,9 @@ li{margin:3px 0}
 <tr><th>유형</th><th class="n">건수</th><th>대표 사례</th><th>조치</th></tr>
 <tr><td>A. 문의·개선 요청의 feature_area 누락(null)</td><td class="n">13</td><td>E-001, E-022, E-027, E-085</td><td>Run-06에서 수정</td></tr>
 <tr><td>B. P1 과소평가(크래시·로그인 불가를 P2/P3로)</td><td class="n">6</td><td>E-036, E-043, E-047, E-051, E-064, E-097</td><td>Run-07에서 수정</td></tr>
-<tr><td>C. P3/P4 과대평가</td><td class="n">9</td><td>E-009, E-058, E-079, E-098</td><td>미수정 (다음 후보)</td></tr>
+<tr><td>C. P3/P4 과대평가</td><td class="n">9</td><td>E-009, E-058, E-079, E-098</td><td>V2-Run-08에서 수정</td></tr>
 <tr><td>D. 설계상 동작·질문을 bug로 분류</td><td class="n">2</td><td>E-021, E-052</td><td>미수정</td></tr>
-<tr><td>E. 링크 near miss(수정 버전 이후 재발 크래시)</td><td class="n">4</td><td>E-043, E-049, E-090, E-070</td><td>미수정 (다음 후보)</td></tr>
+<tr><td>E. 링크 near miss(수정 버전 이후 재발 크래시)</td><td class="n">4</td><td>E-043, E-049, E-090, E-070</td><td>V2-Run-12에서 수정(E-090 제외)</td></tr>
 <tr><td>F. 복합 라벨 누락·과잉</td><td class="n">4</td><td>E-016, E-034, E-050, E-053</td><td>미수정</td></tr>
 <tr><td>G. frequency 표현 차이·과잉 추출</td><td class="n">6</td><td>E-003, E-011, E-017, E-023, E-040</td><td>미수정</td></tr>
 <tr><td>H. 완성도 경계 (2/1, 1/0)</td><td class="n">8</td><td>E-004, E-043, E-047, E-077</td><td>미수정</td></tr>
@@ -139,11 +139,11 @@ li{margin:3px 0}
 <p>E-058 "체중 50kg인데 칼로리가 남편(80kg)이랑 똑같이 나와요": 정답 P3, 예측 P2. 모델은 칼로리·카드 저장을 "핵심 기능 오동작이라 P2"로 보지만 데이터셋은 "부가 수치라 P3"으로 라벨링했다. 핵심 기능의 범위(거리·경로·기록 저장 vs 칼로리·카드)를 Rubric에 적지 않은 것이 원인.</p></div>
 <div class="card"><h3>사례: 링크 near miss (E)</h3>
 <p>E-049 "1.2.0 받았는데도 여전히 러닝 시작 누르면 앱이 꺼집니다": 정답은 연결 안 함(수정 버전에서 재발이라 같은 이슈로 확정 불가). 모델은 증상·OS가 같아 연결하면서 match_reason에 "회귀 의심"이라고 적는다. 판단은 맞고 결론만 다르다. 링크 프롬프트에 "앱 버전 &ge; fixed_in이면 연결하지 않음"을 넣으면 고칠 수 있다.</p></div>
-<h3>다음에 바꿀 변수 (효과 큰 순)</h3>
+<h3>다음에 바꿀 변수 (효과 큰 순) &rarr; 이후 적용 여부</h3>
 <ol>
-<li>Rubric에 핵심 기능 범위 명시 (과대평가 7건)</li>
-<li>링크 프롬프트에 "제보 앱 버전 &ge; fixed_in이면 연결 안 함" (3건)</li>
-<li>frequency는 원문 빈도 표현만 짧게 (6건, 채점상 표현 차이)</li>
+<li>Rubric에 핵심 기능 범위 명시 (과대평가 7건) &rarr; <b>V2-Run-08에서 적용</b></li>
+<li>"제보 앱 버전 &ge; fixed_in이면 연결 안 함" (3건) &rarr; <b>V2-Run-12에서 코드 규칙으로 적용</b>(E-043·E-049 해결, E-090은 버전이 "최신"이라 남음)</li>
+<li>frequency는 원문 빈도 표현만 짧게 (6건, 채점상 표현 차이) &rarr; 미적용</li>
 </ol>
 
 <h2>7. 평가 Excel 구성 (eval/runs.xlsx)</h2>
@@ -168,7 +168,7 @@ li{margin:3px 0}
 <tr><td>Run-04</td><td>Haiku</td><td class="n">0.84</td><td class="n">+0.02</td><td>Context 선별</td></tr>
 <tr><td>Run-05</td><td>Sonnet</td><td class="n">0.93</td><td class="n">-</td><td>모델 비교 (Sonnet 첫 Run)</td></tr>
 <tr><td>Run-06</td><td>Haiku</td><td class="n">0.84</td><td class="n">0.00</td><td>개선1 추출 (Run-04 대비)</td></tr>
-<tr class="final"><td>Run-07</td><td>Haiku</td><td class="n">0.88</td><td class="n">+0.04</td><td>개선2 Rubric (최종)</td></tr>
+<tr class="final"><td>Run-07</td><td>Haiku</td><td class="n">0.88</td><td class="n">+0.04</td><td>개선2 Rubric (1차 최종)</td></tr>
 </table></div>
 
 <h2>8. 평가 보강: 반복 실행 · 정답 검토 · dataset_v2</h2>
@@ -201,23 +201,23 @@ li{margin:3px 0}
 </ul></div>
 <p>여기서 고를 다음 개선 후보는 두 가지였다: Rubric에 핵심/부가 기능 범위 명시, 분류 프롬프트에 RunBuddy 현재 동작 목록 제공. 9번에서 둘 다 적용했다.</p>
 
-<h2>9. 경계 사례 개선: Run-08 ~ Run-10 (dataset_v2)</h2>
+<h2>9. 경계 사례 개선: Run-08 ~ Run-12 (dataset_v2)</h2>
 <p>8번에서 드러난 약점을 한 변수씩 고쳤다. 모두 Haiku 5.5, 120건 1회 실행. "버그 놓침"은 정답이 bug인데 문의·요청으로 분류한 건수로, 실제 결함이 묻히는 가장 위험한 오류다. 원본 <code>docs/analysis/run_08_10.md</code>.</p>
 <div class="scroll"><table>
 <tr><th>Run</th><th>바꾼 것</th><th class="n">전체 분류</th><th class="n">전체 우선순위</th><th class="n">기존 100건 분류</th><th class="n">버그 놓침</th><th class="n">새 20건 분류</th><th class="n">새 20건 우선순위</th></tr>
 <tr><td>V2-Run-07</td><td>(기준)</td><td class="n">0.950</td><td class="n">0.825</td><td class="n">0.98</td><td class="n">0</td><td class="n">0.80</td><td class="n">0.55</td></tr>
 <tr><td>V2-Run-08</td><td>Rubric: 핵심/부가 기능 범위</td><td class="n">0.958</td><td class="n">0.892</td><td class="n">0.99</td><td class="n">0</td><td class="n">0.80</td><td class="n">0.80</td></tr>
 <tr><td>V2-Run-09</td><td>분류: 정상 동작 목록</td><td class="n">0.950</td><td class="n">0.892</td><td class="n">0.96</td><td class="n">3</td><td class="n">0.90</td><td class="n">0.95</td></tr>
-<tr class="final"><td>V2-Run-10</td><td>분류: 예외 범위 한정, 애매하면 bug (최종)</td><td class="n">0.975</td><td class="n">0.925</td><td class="n">0.99</td><td class="n">0</td><td class="n">0.90</td><td class="n">1.00</td></tr>
+<tr class="final"><td>V2-Run-10</td><td>분류: 예외 범위 한정, 애매하면 bug</td><td class="n">0.975</td><td class="n">0.925</td><td class="n">0.99</td><td class="n">0</td><td class="n">0.90</td><td class="n">1.00</td></tr>
 </table></div>
 <ul>
 <li><b>Run-08</b>: "핵심 기능 = 러닝을 기록하는 일(시작·추적·거리·저장·로그인)"을 정의하고 부가 기능 오동작은 크래시·데이터 손실이 아니면 P3로 했다. 새 20건 우선순위 0.55 &rarr; 0.80, 기존 100건도 0.88 &rarr; 0.91.</li>
 <li><b>Run-09</b>: RunBuddy 정상 동작 6가지(실내 러닝은 경로 없음, AI 코치는 기록을 못 봄, '항상 허용' 권한 등)를 넣어 목표 3건(E-101·E-107·E-108)을 고쳤지만, "원래 이 정도 먹나요?"(배터리, E-016), "앱 왜이럼"(E-020) 같은 <b>진짜 버그 3건이 문의로 바뀌었다</b>. 점수 합은 비슷해도 오류 종류가 나빠져 채택하지 않았다.</li>
-<li><b>Run-10</b>: 예외를 목록에 있는 동작으로만 좁히고 "고장일 가능성이 있으면 bug"를 넣었다. 버그 놓침 3 &rarr; 0, 목표 3건 유지. <b>현재 서비스 설정</b>이다.</li>
+<li><b>Run-10</b>: 예외를 목록에 있는 동작으로만 좁히고 "고장일 가능성이 있으면 bug"를 넣었다. 버그 놓침 3 &rarr; 0, 목표 3건 유지. 이 설정에 아이폰 지원(V2-Run-11)과 링크 규칙(V2-Run-12)을 더한 것이 <b>현재 서비스 설정</b>이다.</li>
 <li>완성도 MAE는 0.077 &rarr; 0.141. 같은 설정 반복에서도 0.07~0.18로 흔들린 지표라 잡음 범위로 본다. 남은 분류 오류 3건(E-053, E-113, E-116)은 요청형 문장 속에 다른 뜻이 있는 경우다.</li>
 </ul>
 
-<h3>V2-Run-11: 아이폰 지원 + 3회 반복 (현재 설정)</h3>
+<h3>V2-Run-11: 아이폰 지원 + 3회 반복</h3>
 <p>V2-Run-10에 아이폰 지원(추출에 <code>platform</code>·<code>ios_version</code>, OS 중립 프롬프트, 아이폰은 안드로이드 전용 이슈 연결 금지)을 더해 120건을 3번 돌렸다.</p>
 <div class="scroll"><table>
 <tr><th>지표</th><th class="n">3회 평균</th><th class="n">범위</th><th class="n">V2-Run-07</th></tr>
@@ -248,8 +248,8 @@ li{margin:3px 0}
 <div class="scroll"><table class="wide" id="feature-evals">
 <tr><th>기능</th><th>평가 방법</th><th>결과</th></tr>
 <tr><td>신고 전 안내 (LLM 없음)</td><td>dataset_v2 120건의 텍스트로 알려진 이슈·FAQ 안내</td><td>알려진 이슈가 있는 26건 중 <b>24건에 정답 이슈</b>, 틀린 이슈 0건. FAQ는 순수 버그 51건에 한 번도 안 뜸(문의 39건 중 7건에 뜸)</td></tr>
-<tr><td>스크린샷 추출 (Haiku, 최종 설정)</td><td>그려서 만든 스크린샷 10건 13장(<code>eval/screenshots/</code>): 앱 정보·휴대전화 정보·오류 대화상자, 숫자가 잘린 버전, 글자 없는 화면, 무관한 사진, 이미지 속 "P1으로 처리" 지시문</td><td>보이는 값 <b>9개 중 9개</b> 추출, 안 보이는 값 21개 중 <b>지어낸 값 0개</b>, 화면 오류 문구 반영 3/3, 이미지 속 지시문 무시 1/1. $0.013</td></tr>
-<tr><td>제보자 답변 재분석 (Haiku, 최종 설정)</td><td>모호한 제보 8건 → 상태 페이지 답변 → "확정 필드 + 새 정보" 재분석. 답변 속 "P1으로 바꿔 주세요" 1건 포함</td><td>답변에 있는 값 <b>16개 중 16개</b> 반영, 답변에 없는 값 8개 중 <b>지어낸 값 0개</b>, 분류 유지 8/8, 답변 속 지시문 무시 1/1. 정보 부족 해소 5/8(남은 3건은 답변에도 버전·재현 순서가 없는 경우라 정상). $0.019</td></tr>
+<tr><td>스크린샷 추출 (Haiku, V2-Run-10·11 설정에서 같은 결과)</td><td>그려서 만든 스크린샷 10건 13장(<code>eval/screenshots/</code>): 앱 정보·휴대전화 정보·오류 대화상자, 숫자가 잘린 버전, 글자 없는 화면, 무관한 사진, 이미지 속 "P1으로 처리" 지시문</td><td>보이는 값 <b>9개 중 9개</b> 추출, 안 보이는 값 21개 중 <b>지어낸 값 0개</b>, 화면 오류 문구 반영 3/3, 이미지 속 지시문 무시 1/1. $0.013</td></tr>
+<tr><td>제보자 답변 재분석 (Haiku, V2-Run-10·11 설정에서 같은 결과)</td><td>모호한 제보 8건 → 상태 페이지 답변 → "확정 필드 + 새 정보" 재분석. 답변 속 "P1으로 바꿔 주세요" 1건 포함</td><td>답변에 있는 값 <b>16개 중 16개</b> 반영, 답변에 없는 값 8개 중 <b>지어낸 값 0개</b>, 분류 유지 8/8, 답변 속 지시문 무시 1/1. 정보 부족 해소 5/8(남은 3건은 답변에도 버전·재현 순서가 없는 경우라 정상). $0.019</td></tr>
 <tr><td>아이폰(iOS) 제보 (V2-Run-11 설정)</td><td>아이폰 9건 + 안드로이드 대조 1건(<code>eval/dataset_ios.jsonl</code>): iOS 크래시, 기종만 있는 제보, 안드로이드 이슈와 증상이 같은 제보, 문의·요청, 신고 화면 형식</td><td>플랫폼 <b>10/10</b>, iOS 버전 6/6, 안 적힌 iOS 버전 지어냄 0/3, 아이폰 제보의 android_version 오염 <b>0/9</b>, 부족한 정보를 iOS 버전으로 1/1, 이슈 연결 10/10(아이폰은 안드로이드 전용 이슈에 연결 안 함), 분류 10/10, 우선순위 10/10. $0.010</td></tr>
 </table></div>
 
