@@ -43,11 +43,11 @@
     <summary>기기 정보 <span class="meta" id="device-note"></span></summary>
     <div class="three">
       <div><label class="field" for="brand">휴대폰 기종</label>
-        <select id="brand" aria-label="제조사"><option value="">제조사 선택</option></select>
+        <select id="brand" aria-label="갤럭시 또는 아이폰"><option value="">갤럭시 / 아이폰</option></select>
         <select id="model" aria-label="기종" disabled><option value="">기종 선택</option></select>
-        <input id="model-other" type="text" maxlength="60" placeholder="기종 이름 (예: 갤럭시 S20)" aria-label="기종 직접 입력" hidden>
+        <input id="model-other" type="text" maxlength="60" placeholder="기종 이름 (예: S20 FE)" aria-label="기종 직접 입력" hidden>
         <input id="device_model" type="hidden"></div>
-      <div><label class="field" for="android_version">안드로이드 버전</label>
+      <div><label class="field" for="android_version" id="os-label">안드로이드 버전</label>
         <input id="android_version" type="text" maxlength="20" placeholder="예: 14"></div>
       <div><label class="field" for="app_version">RunBuddy 앱 버전</label>
         <input id="app_version" type="text" maxlength="20" placeholder="설정 &gt; 앱 정보"></div>
@@ -113,8 +113,9 @@ const category = () => document.querySelector("input[name=category]:checked").va
 function syncCategory() { $("bug-fields").hidden = category() !== "bug"; }
 for (const r of document.querySelectorAll("input[name=category]")) r.onchange = syncCategory;
 
-// ---- phone: maker -> model dropdowns (static/devices.json); "직접 입력" for anything not listed.
-// The chosen name goes into the hidden #device_model, which is what the form sends.
+// ---- phone: 갤럭시 / 아이폰 -> model dropdowns (static/devices.json); "직접 입력" when not listed.
+// The chosen name goes into the hidden #device_model. 아이폰 switches the version box to iOS:
+// it is then sent as ios_version, so an iOS version never lands in the Android version field.
 const OTHER = "__other__";
 let brands = [];
 
@@ -125,43 +126,50 @@ function setOptions(sel, first, items) {
     const o = document.createElement("option"); o.value = value; o.textContent = label; sel.appendChild(o);
   }
 }
+const currentBrand = () => brands.find(b => b.id === $("brand").value);
+const isIOS = () => (currentBrand() || {}).os === "ios";
+function syncOs() {
+  $("os-label").textContent = isIOS() ? "iOS 버전" : "안드로이드 버전";
+  $("android_version").placeholder = isIOS() ? "예: 17.5" : "예: 14";
+}
 function syncDevice() {
-  const other = $("model").value === OTHER || $("brand").value === "other";
+  const other = $("model").value === OTHER;
   $("model-other").hidden = !other;
   const name = other ? $("model-other").value.trim() : $("model").value;
-  const brand = brands.find(b => b.id === $("brand").value);
-  // a typed model keeps its maker when the name does not say it (e.g. "S20" under 삼성 갤럭시)
-  const family = brand ? brand.name.split(" ").pop() : "";  // 갤럭시, 픽셀, 샤오미, LG
-  $("device_model").value = other && name && brand && brand.id !== "other" && !name.includes(family)
-    ? family + " " + name : name;
+  const brand = currentBrand();
+  // a typed model keeps its family name when it does not say it ("S20 FE" -> "갤럭시 S20 FE")
+  $("device_model").value = other && name && brand && !name.includes(brand.name) ? brand.name + " " + name : name;
 }
 function fillModels() {
-  const brand = brands.find(b => b.id === $("brand").value);
-  $("model").hidden = !!brand && brand.id === "other";  // other makers: only the text box
+  const brand = currentBrand();
   if (!brand) { setOptions($("model"), "기종 선택", []); $("model").disabled = true; }
-  else if (brand.id === "other") { setOptions($("model"), "직접 입력해 주세요", []); $("model").disabled = true; }
   else {
     setOptions($("model"), "기종 선택", [...brand.models.map(m => [m, m]), [OTHER, "목록에 없어요 (직접 입력)"]]);
     $("model").disabled = false;
   }
+  syncOs();
   syncDevice();
 }
 function selectDevice(name) {
-  const brand = brands.find(b => b.models.includes(name));
+  let brand = brands.find(b => b.models.includes(name));
   if (brand) { $("brand").value = brand.id; fillModels(); $("model").value = name; }
-  else { $("brand").value = "other"; fillModels(); $("model-other").value = name; }
+  else {  // not listed: guess the family from the name, keep the name as typed
+    brand = brands.find(b => b.os === "ios") && /아이폰|iphone/i.test(name) ? brands.find(b => b.os === "ios")
+      : brands.find(b => b.os === "android");
+    if (brand) { $("brand").value = brand.id; fillModels(); $("model").value = OTHER; $("model-other").value = name; }
+  }
   syncDevice();
 }
 $("brand").onchange = fillModels;
 $("model").onchange = () => { syncDevice(); if ($("model").value === OTHER) $("model-other").focus(); };
 $("model-other").oninput = syncDevice;
 
-// ---- device info: the app's "문제 신고" WebView passes it in the URL; Android version from the browser ----
+// ---- device info: the app's "문제 신고" WebView passes it in the URL; OS version from the browser ----
 (async function prefill() {
   try {
     const data = await (await fetch("/static/devices.json")).json();
     brands = data.brands;
-    setOptions($("brand"), "제조사 선택", brands.map(b => [b.id, b.name]));
+    setOptions($("brand"), "갤럭시 / 아이폰", brands.map(b => [b.id, b.name]));
   } catch (e) {  // no list: fall back to typing the model
     $("brand").hidden = true; $("model").hidden = true; $("model-other").hidden = false;
     $("model-other").oninput = () => { $("device_model").value = $("model-other").value.trim(); };
@@ -170,13 +178,15 @@ $("model-other").oninput = syncDevice;
   let filled = 0;
   const dev = q.get("device_model");
   if (dev) { if (brands.length) selectDevice(dev.slice(0, 60)); else { $("model-other").value = dev.slice(0, 60); $("device_model").value = dev.slice(0, 60); } filled++; }
-  for (const k of ["android_version", "app_version"]) {
-    const v = q.get(k);
-    if (v) { $(k).value = v.slice(0, 20); filled++; }
-  }
+  const ua = navigator.userAgent;
+  const iosUa = ua.match(/iPhone OS (\d+)(?:_(\d+))?/);
+  if (!dev && iosUa && brands.some(b => b.os === "ios")) { $("brand").value = brands.find(b => b.os === "ios").id; fillModels(); }
+  const osVer = q.get(isIOS() ? "ios_version" : "android_version");
+  if (osVer) { $("android_version").value = osVer.slice(0, 20); filled++; }
+  if (q.get("app_version")) { $("app_version").value = q.get("app_version").slice(0, 20); filled++; }
   if (!$("android_version").value) {
-    const m = navigator.userAgent.match(/Android (\d+)/);
-    if (m) { $("android_version").value = m[1]; filled++; }
+    const m = isIOS() ? iosUa : ua.match(/Android (\d+)/);
+    if (m) { $("android_version").value = m[2] ? m[1] + "." + m[2] : m[1]; filled++; }
   }
   if (filled) $("device-note").textContent = "(앱에서 자동으로 채웠어요. 다르면 고쳐 주세요)";
 })();
@@ -332,7 +342,8 @@ function suggestionKey() { return [category(), $("report-text").value, $("app_ve
 async function checkSuggestions() {
   const r = await fetch("/api/intake/suggest", {method: "POST", headers: {"Content-Type": "application/json"},
     body: JSON.stringify({text: $("report-text").value + "\n" + $("actual").value, category: category(),
-      app_version: $("app_version").value || null, android_version: $("android_version").value || null})});
+      app_version: $("app_version").value || null,
+      android_version: isIOS() ? null : ($("android_version").value || null)})});  // issue versions are Android
   if (!r.ok) return false;  // suggestions are a convenience: never block the report
   const data = await r.json();
   const list = $("suggest-list");
@@ -377,7 +388,8 @@ async function submitReport() {
     form.append("category", category());
     for (const k of FIELDS) {
       if (category() !== "bug" && ["steps", "expected", "actual", "frequency"].includes(k)) continue;
-      if ($(k).value.trim()) form.append(k, $(k).value);
+      const key = k === "android_version" && isIOS() ? "ios_version" : k;  // the box holds the iOS version for 아이폰
+      if ($(k).value.trim()) form.append(key, $(k).value);
     }
     for (const f of files) form.append("files", f, f.name);
     if (logFile) form.append("log", logFile, logFile.name);

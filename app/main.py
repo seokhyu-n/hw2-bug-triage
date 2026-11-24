@@ -189,7 +189,7 @@ def report_page():
     return FileResponse(STATIC_DIR / "report.html")
 
 
-FORM_KEYS = ("text", "category", "frequency", "device_model", "android_version", "app_version",
+FORM_KEYS = ("text", "category", "frequency", "device_model", "android_version", "ios_version", "app_version",
              "steps", "expected", "actual")
 
 

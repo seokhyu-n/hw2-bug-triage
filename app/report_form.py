@@ -13,6 +13,7 @@ FREQUENCIES = {"always": "매번", "sometimes": "가끔", "once": "한 번"}
 _TEXT_FIELDS = [
     ("device_model", "기기", 60),
     ("android_version", "안드로이드 버전", 20),
+    ("ios_version", "iOS 버전", 20),  # 아이폰 reporters: kept apart so it never reads as an Android version
     ("app_version", "앱 버전", 20),
     ("steps", "재현 순서", 1000),
     ("expected", "기대한 결과", 500),
@@ -33,6 +34,7 @@ class ReportForm:
     frequency: str | None = None
     device_model: str | None = None
     android_version: str | None = None
+    ios_version: str | None = None
     app_version: str | None = None
     steps: str | None = None
     expected: str | None = None

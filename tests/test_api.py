@@ -180,11 +180,21 @@ def test_chat_endpoint_returns_reply(client, monkeypatch):
 
 def test_device_list_for_report_page(client):
     data = client.get("/static/devices.json").json()
-    ids = [b["id"] for b in data["brands"]]
-    assert ids[-1] == "other" and len(ids) == len(set(ids))
+    assert [(b["id"], b["name"], b["os"]) for b in data["brands"]] == [("galaxy", "갤럭시", "android"),
+                                                                       ("iphone", "아이폰", "ios")]
     names = [m for b in data["brands"] for m in b["models"]]
     assert len(names) == len(set(names)) and all(len(m) <= 60 for m in names)  # fits the device_model limit
+    assert all(m.startswith(b["name"]) for b in data["brands"] for m in b["models"])
     assert "갤럭시 S23" in names  # the eval set's spelling
+
+
+def test_iphone_version_is_sent_as_ios_version(reporter, store):
+    r = reporter.post("/api/intake", data={"text": "러닝 시작하면 꺼져요", "device_model": "아이폰 15",
+                                           "ios_version": "17.5", "app_version": "1.2.0"})
+    assert r.status_code == 200
+    rec = next(iter(store.all_reports()), None) or store.get_queued(r.json()["request_id"])
+    assert "- iOS 버전: 17.5" in rec["text"] and "안드로이드 버전" not in rec["text"]
+    assert rec["form"]["ios_version"] == "17.5" and "android_version" not in rec["form"]
 
 
 def test_static_pages(client):

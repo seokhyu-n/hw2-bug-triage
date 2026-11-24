@@ -1,6 +1,9 @@
 # HISTORY
 
 Newest entry on top.
+## 2026-11-24 Phone list: 갤럭시 / 아이폰 only
+- User decision: the report page offers only Galaxy and iPhone. `static/devices.json` now has galaxy (27, os android) and iphone (22, os ios); other makers removed (typed names go through "목록에 없어요"). Choosing 아이폰 relabels the version box "iOS 버전" and sends `ios_version` (new optional form field, composed as "- iOS 버전"), so it never reads as an Android version; suggestions skip Android rules for iOS.
+- Known limit: pipeline, known issues and eval set are Android-only; an iPhone report has `android_version` null and may show as need_info.
 ## 2026-11-24 Phone maker/model dropdowns on the report page
 - `static/devices.json` (Samsung/Google/Xiaomi/LG, ~45 models + "기타 제조사"); report page: maker -> model selects, "목록에 없어요" or other maker shows a text box; a typed name gets the family prefix (갤럭시/픽셀/...). Hidden `device_model` keeps the API unchanged. App URL prefill selects the model or falls back to other + text. Checked in the browser (no submission); test for the list.
 ## 2026-11-24 One analysis page only
