@@ -7,6 +7,7 @@ Newest entry on top.
 - `app/main.py`: intake enqueues and returns the receipt at once; dev3 (fallback) sees pending/failed reports and can call `POST /api/reports/{id}/retry`. `static/app.js`: 분석 중 / 분석 실패 badges and a retry button.
 - Verified live: receipt in 0.02 s, bug report analyzed in the background (~17 s) and assigned to dev1 as P1 with ISSUE-02; failed-report screen checked with a temporary entry (removed). 174 tests pass.
 - Also: set up on a second PC at `C:\Users\hi\부트캠프\hw2-bug-triage`.
+- Analysis page: service tab 1 (flow) and 2 (new bullet: intake/analysis split, retries, failed reports, resume) updated in `service_workflow.html`, combined page rebuilt, both artifacts republished (combined v4, service page v3).
 ## 2026-11-22 Eval strengthening: repeats, human label review, dataset_v2
 - Repeat runs: Run-04 x3 (at commit 988c4a5 via a temporary worktree) and Run-07 x3. Priority exact 0.823 -> 0.880 and extraction 0.949 -> 0.973 hold across all repeats; completeness MAE swings 0.071-0.179 within one setting.
 - Human review in chat (no Excel at hand): 56 labels (36 from v1 + 20 new) checked, 0 fixes. E-024 note: 3-second countdown already exists in RunBuddy (kept as feature_request).
