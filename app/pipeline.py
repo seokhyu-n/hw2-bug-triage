@@ -195,6 +195,13 @@ def _finalize_link(link: Link, seen: dict[str, str | None], extraction: Extracti
                         match_reason=f"{issue_id}는 안드로이드 전용 이슈라 아이폰 제보와 연결하지 않음",
                         fixed_in=None, user_should_update=None)
     fixed_in = seen[issue_id] if issue_id is not None else None
+    if version_lt(extraction.app_version, fixed_in) is False:
+        # the reporter already runs a version with the fix: the same symptom is a regression or a
+        # different cause, so it must stay a new report instead of being closed as a known issue
+        return Link(linked_issue_id=None,
+                    match_reason=(f"{issue_id}와 증상이 비슷하지만 제보자 앱 버전({extraction.app_version})이 이미 "
+                                  f"수정 버전({fixed_in}) 이상이라 연결하지 않음. 재발·새 원인 가능성"),
+                    fixed_in=None, user_should_update=None)
     return Link(linked_issue_id=issue_id, match_reason=link.match_reason, fixed_in=fixed_in,
                 user_should_update=version_lt(extraction.app_version, fixed_in))
 

@@ -1,6 +1,8 @@
 # HISTORY
 
 Newest entry on top.
+## 2026-11-24 Link rule: no link when the reporter already has the fixed version
+- `_finalize_link`: app_version >= issue fixed_in -> no link (regression / new cause stays a new report). Measured first on saved V2-Run-11 x3 results (post-processing, no cost): link 0.967 -> 0.983 in all three (E-043, E-049), no correct link removed. V2-Run-12 live ($0.105): link 0.992 (only E-090, version "최신" = null), cls 0.983, priority 0.925, MAE 0.092, v1 missed bugs 0. Current setting = V2-Run-12. 2 tests added (234 pass).
 ## 2026-11-24 iPhone support in the analysis + final setting repeated 3x
 - Extraction gets `platform` (android/ios) and `ios_version` (defaults keep old saved results loadable); missing_fields / need_info use the OS-specific version (`pipeline.os_version_field`); prompts say Android·iOS, rubric "환경" = OS version + app version, extract few-shot adds an iPhone example; iPhone reports are never linked to Android-only issues (prompt + `_finalize_link`). Dev screen shows iOS version; chat detail includes platform.
 - V2-Run-11 x3 on dataset_v2 ($0.32): cls 0.975 (0.967-0.983), priority 0.928 (0.900-0.958), new-20 priority 0.95-1.00, extraction 0.974, MAE 0.129 (0.108-0.154, probably slightly worse than Run-07's 0.071-0.109), link 0.967 (E-043/049/090 regression-link pattern). v1/v2 labels unchanged (platform/ios_version not labelled there).

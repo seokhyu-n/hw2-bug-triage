@@ -1,6 +1,6 @@
 # STATE (2026-11-24)
 
-Branch: main (GitHub private repo `seokhyu-n/hw2-bug-triage`). Service setting = V2-Run-11 (V2-Run-10 + iPhone support, 3x repeated). Tests: `venv\Scripts\python.exe -m pytest`.
+Branch: main (GitHub private repo `seokhyu-n/hw2-bug-triage`). Service setting = V2-Run-12 (V2-Run-11 iPhone support, 3x repeated, + fixed-version link rule). Tests: `venv\Scripts\python.exe -m pytest`.
 
 ## Where things are
 - Reporter `/report`: optional fields (`app/report_form.py`), screenshots + redaction, log, pre-submit known issue/FAQ
@@ -22,6 +22,6 @@ Branch: main (GitHub private repo `seokhyu-n/hw2-bug-triage`). Service setting =
 - Also set up at `C:\Users\hi\부트캠프\hw2-bug-triage` (11-24); git author set repo-locally to match earlier commits.
 
 ## Next (optional)
-- Remaining class errors E-053/E-113/E-116; link rule "app_version >= fixed_in -> no link" (E-043/049/090); MAE 0.129 vs 0.077 (check).
+- Remaining class errors E-053/E-113/E-116; E-090 ("최신" version) link; MAE (Run-11 x3 0.108-0.154, Run-12 0.092).
 - Eval runner must keep NOT importing `app.main` (registered issues stay out of eval).
 - `.env` holds the real key; never read it. `data/faq.json` and the classify "정상 동작" list must change together.

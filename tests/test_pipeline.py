@@ -309,3 +309,30 @@ def test_old_saved_result_without_platform_still_loads():
     raw = make_result().model_dump(mode="json")
     del raw["extraction"]["platform"], raw["extraction"]["ios_version"]
     assert TriageResult.model_validate(raw).extraction.platform is None
+
+
+def test_no_link_when_reporter_already_has_the_fixed_version(fake_llm):
+    # E-049 pattern: same crash as ISSUE-02 but on 1.2.0, the version that fixed it -> regression
+    fake_llm.queue(
+        jr(extraction(app_version="1.2.0", missing_fields=[])),
+        jr(classification()),
+        tool_use("search_known_issues", {**SEARCH_CRASH, "app_version": "1.2.0"}),
+        jr(link("ISSUE-02", "1.2.0")),
+        jr(score()),
+    )
+    result, _ = analyze("업데이트 1.2.0 받았는데도 러닝 시작하면 꺼져요. 안드로이드 14")
+    assert result.link.linked_issue_id is None
+    assert "이미 수정 버전(1.2.0) 이상" in result.link.match_reason
+
+
+def test_link_kept_when_app_version_unknown(fake_llm):
+    # "최신 버전" is not a version: the rule needs a known app version, so the link stays
+    fake_llm.queue(
+        jr(extraction(app_version=None)),
+        jr(classification()),
+        tool_use("search_known_issues", SEARCH_CRASH),
+        jr(link("ISSUE-02", "1.2.0")),
+        jr(score()),
+    )
+    result, _ = analyze("최신 버전인데 러닝 시작하면 꺼져요. 안드로이드 14")
+    assert result.link.linked_issue_id == "ISSUE-02" and result.link.user_should_update is None
