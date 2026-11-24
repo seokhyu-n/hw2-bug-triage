@@ -13,6 +13,8 @@ from app.schemas import TriageResult
 
 # One process-wide re-entrant lock: FastAPI runs sync endpoints in a thread pool.
 _LOCK = threading.RLock()
+# Reports waiting for (or failed) analysis. Not a developer ID, so nobody can log in as it.
+INTAKE_DIR = "_intake"
 
 
 def _now() -> str:
@@ -81,21 +83,69 @@ class Store:
                     "cost_usd": log.cost_usd, "at": _now(),
                 }))
 
+    # ---- intake queue (saved before analysis, so a failed analysis never loses a report) ----
+    def enqueue(self, text: str) -> str:
+        """Save a new report as `pending` in the shared intake queue and return its ID."""
+        with _LOCK:
+            request_id = self._next_id()
+            now = _now()
+            queued = self._load(INTAKE_DIR)
+            queued.append({"request_id": request_id, "text": text, "status": "pending",
+                           "attempts": 0, "last_error": None, "created_at": now, "updated_at": now})
+            self._save(INTAKE_DIR, queued)
+        return request_id
+
+    def queued(self, status: str | None = None) -> list[dict]:
+        rows = self._load(INTAKE_DIR)
+        return [r for r in rows if status is None or r["status"] == status]
+
+    def get_queued(self, request_id: str) -> dict | None:
+        return next((r for r in self._load(INTAKE_DIR) if r["request_id"] == request_id), None)
+
+    def set_queue_status(self, request_id: str, status: str, error: str | None = None,
+                         count_attempt: bool = False) -> None:
+        with _LOCK:
+            queued = self._load(INTAKE_DIR)
+            for r in queued:
+                if r["request_id"] == request_id:
+                    r["status"] = status
+                    r["last_error"] = error
+                    r["attempts"] += 1 if count_attempt else 0
+                    r["updated_at"] = _now()
+                    break
+            else:
+                raise KeyError(request_id)
+            self._save(INTAKE_DIR, queued)
+
+    def complete(self, request_id: str, dev_id: str, result: TriageResult,
+                 logs: list[StepLog]) -> None:
+        """Move an analyzed report out of the queue into its developer's list, keeping its ID."""
+        with _LOCK:
+            queued = self._load(INTAKE_DIR)
+            entry = next((r for r in queued if r["request_id"] == request_id), None)
+            if entry is None:
+                raise KeyError(request_id)
+            self._append_report(dev_id, request_id, entry["text"], result, logs, entry["created_at"])
+            self._save(INTAKE_DIR, [r for r in queued if r["request_id"] != request_id])
+
     # ---- reports ----
+    def _append_report(self, dev_id: str, request_id: str, text: str, result: TriageResult,
+                       logs: list[StepLog], created_at: str) -> None:
+        reports = self._load(dev_id)
+        reports.append({
+            "request_id": request_id, "dev_id": dev_id, "text": text,
+            "result": result.model_dump(mode="json"), "added_info": [],
+            "logs_summary": _summary(logs),
+            "created_at": created_at, "updated_at": _now(),
+        })
+        self._save(dev_id, reports)
+        self._log(request_id, dev_id, logs)
+
     def create_report(self, dev_id: str, text: str, result: TriageResult,
                       logs: list[StepLog]) -> str:
         with _LOCK:
             request_id = self._next_id()
-            now = _now()
-            reports = self._load(dev_id)
-            reports.append({
-                "request_id": request_id, "dev_id": dev_id, "text": text,
-                "result": result.model_dump(mode="json"), "added_info": [],
-                "logs_summary": _summary(logs),
-                "created_at": now, "updated_at": now,
-            })
-            self._save(dev_id, reports)
-            self._log(request_id, dev_id, logs)
+            self._append_report(dev_id, request_id, text, result, logs, _now())
         return request_id
 
     def get_report(self, dev_id: str, request_id: str) -> dict | None:

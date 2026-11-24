@@ -1,8 +1,10 @@
 import pytest
 from fastapi.testclient import TestClient
 
+import app.intake as intake
 import app.main as main
 from app.chat import ChatReply
+from app.intake import IntakeWorker
 from app.llm import LLMRefusal, LLMUnavailable
 from app.store import Store
 from tests.test_store import make_log, make_result
@@ -11,7 +13,11 @@ from tests.test_store import make_log, make_result
 @pytest.fixture
 def store(tmp_path, monkeypatch):
     main.app.state.store = Store(tmp_path)
-    monkeypatch.setattr(main, "analyze", lambda text, **kw: (make_result(), [make_log()]))
+    # analysis runs inline in tests (the real worker is a background thread)
+    main.app.state.worker = IntakeWorker(main.app.state.store, sync=True)
+    fake = lambda text, **kw: (make_result(), [make_log()])  # noqa: E731
+    monkeypatch.setattr(main, "analyze", fake)    # reanalyze endpoint
+    monkeypatch.setattr(intake, "analyze", fake)  # background intake analysis
     return main.app.state.store
 
 
@@ -61,7 +67,7 @@ def test_logout_invalidates_session(client):
 
 
 def test_intake_works_without_login_and_returns_receipt_only(reporter, monkeypatch):
-    monkeypatch.setattr(main, "assign_developer", lambda area: "dev2")
+    monkeypatch.setattr(intake, "assign_developer", lambda area: "dev2")
     r = reporter.post("/api/intake", json={"text": "지도가 안 열려요"})
     assert r.status_code == 200
     body = r.json()
@@ -77,7 +83,7 @@ def test_intake_rejects_empty_and_too_long(reporter):
 
 
 def test_intake_assigns_developer_and_only_assignee_sees_it(reporter, monkeypatch):
-    monkeypatch.setattr(main, "assign_developer", lambda area: "dev2")
+    monkeypatch.setattr(intake, "assign_developer", lambda area: "dev2")
     rid = reporter.post("/api/intake", json={"text": "지도가 안 열려요"}).json()["request_id"]
     dev2 = login_as("dev2")
     body = dev2.get(f"/api/reports/{rid}").json()
@@ -91,18 +97,56 @@ def test_intake_assigns_developer_and_only_assignee_sees_it(reporter, monkeypatc
     assert dev1.post(f"/api/reports/{rid}/reanalyze", json={"added_info": "x"}).status_code == 404
 
 
-@pytest.mark.parametrize("exc,status", [(LLMRefusal("x"), 422), (LLMUnavailable("x"), 502)])
-def test_intake_llm_error_returns_message(reporter, monkeypatch, exc, status):
+@pytest.mark.parametrize("exc,attempts", [(LLMRefusal("x"), 1), (LLMUnavailable("x"), 3)])
+def test_intake_llm_error_keeps_report_as_failed(reporter, store, monkeypatch, exc, attempts):
+    calls = []
+
     def boom(text, **kw):
+        calls.append(text)
         raise exc
-    monkeypatch.setattr(main, "analyze", boom)
+    monkeypatch.setattr(intake, "analyze", boom)
     r = reporter.post("/api/intake", json={"text": "제보"})
-    assert r.status_code == status
-    assert any("가" <= ch <= "힣" for ch in r.json()["detail"])
+    # the reporter still gets a receipt: the report is saved before the analysis
+    assert r.status_code == 200 and r.json()["request_id"] == "R-0001"
+    entry = store.get_queued("R-0001")
+    assert entry["status"] == "failed" and entry["text"] == "제보"
+    # transient errors are retried, a refusal is not
+    assert len(calls) == attempts and entry["attempts"] == attempts
+    assert any("가" <= ch <= "힣" for ch in entry["last_error"])
+
+
+def test_failed_report_visible_to_fallback_dev_and_retry_assigns_it(reporter, store, monkeypatch):
+    def boom(text, **kw):
+        raise LLMUnavailable("x")
+    monkeypatch.setattr(intake, "analyze", boom)
+    rid = reporter.post("/api/intake", json={"text": "지도가 안 열려요"}).json()["request_id"]
+
+    dev3 = login_as(intake.FAILED_OWNER)
+    rows = dev3.get("/api/reports").json()
+    assert [(x["request_id"], x["status"], x["result"]) for x in rows] == [(rid, "failed", None)]
+    assert dev3.get(f"/api/reports/{rid}").json()["status"] == "failed"
+    # other developers do not see unassigned reports and cannot retry them
+    dev1 = login_as("dev1")
+    assert dev1.get("/api/reports").json() == []
+    assert dev1.post(f"/api/reports/{rid}/retry").status_code == 404
+
+    monkeypatch.setattr(intake, "analyze", lambda text, **kw: (make_result(), [make_log()]))
+    monkeypatch.setattr(intake, "assign_developer", lambda area: "dev2")
+    r = dev3.post(f"/api/reports/{rid}/retry")
+    assert r.status_code == 200
+    assert store.get_queued(rid) is None
+    assert dev3.get("/api/reports").json() == []
+    assert login_as("dev2").get(f"/api/reports/{rid}").json()["status"] == "done"
+    assert dev3.post(f"/api/reports/{rid}/retry").status_code == 404
+
+
+def test_retry_rejects_report_still_pending(reporter, store):
+    rid = store.enqueue("분석 대기")
+    assert login_as(intake.FAILED_OWNER).post(f"/api/reports/{rid}/retry").status_code == 409
 
 
 def test_list_and_reanalyze(client, reporter, monkeypatch):
-    monkeypatch.setattr(main, "assign_developer", lambda area: "dev1")
+    monkeypatch.setattr(intake, "assign_developer", lambda area: "dev1")
     rid = reporter.post("/api/intake", json={"text": "제보"}).json()["request_id"]
     seen = {}
 
@@ -144,16 +188,29 @@ def test_static_pages(client):
     assert client.get("/static/app.js").status_code == 200
 
 
-def test_missing_api_key_returns_502_with_korean_detail(reporter, monkeypatch):
+def test_missing_api_key_saves_report_as_failed(reporter, store, monkeypatch):
     from app import llm
     from app.pipeline import analyze
 
     def no_key():
         raise RuntimeError("CLAUDE_API_KEY가 .env에 없습니다")
-    monkeypatch.setattr(main, "analyze", analyze)  # undo the fixture stub: go through the real call_llm
+    monkeypatch.setattr(intake, "analyze", analyze)  # undo the fixture stub: go through the real call_llm
     monkeypatch.setattr(llm, "_client", None)
     monkeypatch.setattr(llm, "get_api_key", no_key)
     r = reporter.post("/api/intake", json={"text": "제보"})
+    assert r.status_code == 200
+    entry = store.get_queued(r.json()["request_id"])
+    assert entry["status"] == "failed" and "CLAUDE_API_KEY" not in entry["last_error"]
+
+
+def test_reanalyze_llm_error_returns_message(client, reporter, monkeypatch):
+    monkeypatch.setattr(intake, "assign_developer", lambda area: "dev1")
+    rid = reporter.post("/api/intake", json={"text": "제보"}).json()["request_id"]
+
+    def boom(text, **kw):
+        raise LLMUnavailable("x")
+    monkeypatch.setattr(main, "analyze", boom)
+    r = client.post(f"/api/reports/{rid}/reanalyze", json={"added_info": "앱 버전 1.0"})
     assert r.status_code == 502
     assert any("가" <= ch <= "힣" for ch in r.json()["detail"])
 

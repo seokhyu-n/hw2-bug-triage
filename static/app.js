@@ -37,9 +37,15 @@ async function loadList() {
   ul.replaceChildren();
   for (const r of rows) {
     const li = el("li", null, r.request_id === selectedId ? "sel" : "");
-    li.appendChild(el("span", r.result.score.priority, "badge " + r.result.score.priority));
-    li.appendChild(el("span", r.request_id));
-    li.appendChild(el("span", r.result.classification.category));
+    if (r.result) {
+      li.appendChild(el("span", r.result.score.priority, "badge " + r.result.score.priority));
+      li.appendChild(el("span", r.request_id));
+      li.appendChild(el("span", r.result.classification.category));
+    } else {
+      li.appendChild(el("span", STATUS_LABEL[r.status], "badge " + r.status));
+      li.appendChild(el("span", r.request_id));
+      li.appendChild(el("span", "미분석"));
+    }
     li.appendChild(el("span", (r.text || "").slice(0, 40)));
     li.onclick = () => { selectedId = r.request_id; showDetail(r); loadList(); };
     ul.appendChild(li);
@@ -47,7 +53,39 @@ async function loadList() {
   if (!rows.length) ul.appendChild(el("li", "아직 제보가 없습니다"));
 }
 
+const STATUS_LABEL = {pending: "분석 중", failed: "분석 실패"};
+
+// A report saved by the intake whose background analysis is running or failed.
+function showQueued(r) {
+  const d = $("detail");
+  d.replaceChildren();
+  const head = el("h2", r.request_id + " ");
+  head.appendChild(el("span", STATUS_LABEL[r.status], "badge " + r.status));
+  d.appendChild(head);
+  if (r.status === "pending") {
+    line(d, "상태:", "분석 중입니다. 끝나면 담당 개발자 목록으로 옮겨집니다. \"새로 고침\"으로 확인하세요.");
+  } else {
+    line(d, "상태:", "자동 분석이 " + r.attempts + "번 실패했습니다. 제보는 저장되어 있습니다.");
+    line(d, "마지막 오류:", val(r.last_error));
+  }
+  d.appendChild(el("h3", "제보 원문"));
+  d.appendChild(el("div", r.text, "box raw"));
+  if (r.status !== "failed") return;
+  const btn = el("button", "다시 분석 시도");
+  const err = el("div", "", "error");
+  btn.onclick = async () => {
+    err.textContent = ""; btn.disabled = true;
+    try {
+      await api("/api/reports/" + r.request_id + "/retry", "POST");
+      showQueued({...r, status: "pending"}); loadList();
+    } catch (e) { err.textContent = e.message; btn.disabled = false; }
+  };
+  const p = el("p"); p.appendChild(btn); d.appendChild(p);
+  d.appendChild(err);
+}
+
 function showDetail(r) {
+  if (!r.result) return showQueued(r);
   const d = $("detail");
   d.replaceChildren();
   const x = r.result.extraction, s = r.result.score, c = r.result.classification, l = r.result.link;

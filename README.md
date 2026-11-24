@@ -15,9 +15,13 @@
                     FastAPI (app/main.py)
         ┌──────────────────────────┬───────────────────────────┐
    POST /api/intake          POST /api/reports/{id}/reanalyze   POST /api/chat/stream (스트리밍)
-   (접수 번호만 응답,          GET /api/reports[/{id}]
-    feature_area로 담당 배정)  (담당자만 조회)
+   (먼저 저장, 접수 번호       GET /api/reports[/{id}]
+    즉시 응답)                 (담당자만 조회)
         │                          │                            │
+        ▼                          │                            │
+  app/intake.py IntakeWorker       │                            │
+  (백그라운드 분석, 재시도,        │                            │
+   feature_area로 담당 배정)       │                            │
         ▼                          ▼                            ▼
   app/pipeline.py analyze()  (확정 필드 + 새 정보만 전달)   app/chat.py chat_turn()
   extract → classify → link(tool_use 루프) → score          최근 6턴 + [상태 요약] + 도구 5종
@@ -26,7 +30,8 @@
                       (system/user 분리, output_config, 비용·캐시·응답시간 기록)
         │
         ▼
-  app/store.py  개발자별 JSONL (data/runtime/<dev>/), logs.jsonl ↔ request_id
+  app/store.py  개발자별 JSONL (data/runtime/<dev>/), 분석 대기·실패 큐 (data/runtime/_intake/),
+                logs.jsonl ↔ request_id
 ```
 
 ## 실행법 (Windows)
@@ -50,6 +55,7 @@ python -m pip install -r requirements.txt     # 재현용 고정 버전은 requi
    (담당 영역: dev1 = tracking·voice·login, dev2 = map·record·card_image, dev3 = ai_chat·other, 배정 불가 시 기본)
 3. 화면 사용법
    - 접수된 제보는 분석 후 `feature_area`에 맞는 개발자의 목록에 자동으로 들어갑니다. 개발자 화면에는 제보 입력란이 없고, "새로 고침"으로 새 제보를 불러옵니다.
+   - **접수와 분석은 분리되어 있습니다.** `POST /api/intake`는 제보를 먼저 파일에 저장하고 접수 번호를 바로 돌려줍니다(약 12초 → 0.02초). 분석은 백그라운드 작업자(`app/intake.py:IntakeWorker`)가 합니다. API 연결 오류처럼 일시적인 실패는 5초, 30초 뒤 다시 시도하고(최대 3번), 모델 거부·응답 잘림은 같은 입력이면 반복되므로 바로 실패 처리합니다. 그래도 실패한 제보는 지워지지 않고 **dev3(기본 담당자) 목록에 "분석 실패"로** 보이며, "다시 분석 시도" 버튼(`POST /api/reports/{id}/retry`)으로 다시 돌릴 수 있습니다. 분석 중에 서버가 꺼져도 다음 시작 때 이어서 분석합니다.
    - 제보를 누르면 분류, 추출 필드, 이슈 연결, 우선순위(P1~P4), 완성도(0~2), 제보자에게 물어볼 질문이 나오고, 제보자에게 받은 새 정보를 입력해 재분석할 수 있습니다. 우선순위·분류 필터는 `GET /api/reports?priority=&category=`와 챗봇(`list_my_reports`)에서 쓸 수 있습니다.
    - 챗봇에는 "내 P1 제보 보여줘", "R-0003 재분석해줘, 앱 버전은 1.0이래"처럼 말하면 됩니다.
 4. 테스트 (LLM은 가짜 클라이언트로 대체, 실제 호출 없음)
@@ -146,7 +152,7 @@ python -m pip install -r requirements.txt     # 재현용 고정 버전은 requi
 
 - Run 사이에 같은 프롬프트라도 1~2건은 결과가 흔들린다(예: 분류를 건드리지 않은 Run-07에서 E-093이 바뀜). 1~2%p 차이는 잡음이다.
 - 정보 부족(completeness 0) 사례는 평가셋에 적어 해당 지표의 신뢰 구간이 넓다.
-- 저장소는 JSONL 파일과 프로세스 안 잠금(RLock)이라 **단일 프로세스**용이다. 세션은 메모리에 있어 서버를 재시작하면 다시 로그인해야 한다.
+- 저장소는 JSONL 파일과 프로세스 안 잠금(RLock)이라 **단일 프로세스**용이다. 세션은 메모리에 있어 서버를 재시작하면 다시 로그인해야 한다. 분석 작업자도 프로세스 안 스레드 하나라, 제보가 몰리면 한 건씩 차례로 분석한다(실무에서는 별도 작업 큐와 여러 작업자를 둔다).
 - Sonnet은 최초 프롬프트(Run-04 설정)로만 돌렸고, 수정 2건을 반영한 프롬프트로는 다시 돌리지 않았다(비용·한 변수 원칙). 두 모델의 최종 비교는 완전하지 않다.
 - 미적용 개선 후보: Rubric에 핵심 기능 범위 명시(과대평가 7건), 링크 프롬프트의 "앱 버전 ≥ fixed_in이면 연결 안 함"(재발 크래시 near miss 3건), frequency 표현 정리(6건).
 - 공개 접수 API(`POST /api/intake`)에는 요청 횟수 제한이 없다. 접수마다 Claude 호출 비용이 들기 때문에 외부에 공개하려면 IP별 횟수 제한이나 캡차가 필요하다. 제보자가 처리 상태를 확인하는 화면도 없다(실무에서는 순번 대신 추측할 수 없는 토큰 링크를 준다).

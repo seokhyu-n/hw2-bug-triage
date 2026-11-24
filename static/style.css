@@ -17,6 +17,8 @@ button:disabled { opacity: .5; cursor: default; }
 .report-list li.sel { background: #e8f0fe; }
 .badge { display: inline-block; padding: 1px 8px; border-radius: 10px; color: #fff; font-size: 12px; font-weight: bold; }
 .P1 { background: #b42318; } .P2 { background: #dc6803; } .P3 { background: #2563eb; } .P4 { background: #667085; }
+.badge.pending, .badge.failed { white-space: nowrap; }
+.badge.pending { background: #98a2b3; } .badge.failed { background: #7a271a; }
 .box { border: 1px solid #e5e7eb; border-radius: 6px; padding: 8px; margin: 6px 0; white-space: pre-wrap; }
 .box.raw { background: #fffbea; }
 .box.facts { background: #ecfdf3; }
