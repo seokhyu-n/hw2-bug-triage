@@ -18,7 +18,13 @@ from app import auth
 from app.attachments import MAX_BYTES, MAX_FILES, AttachmentError, Upload
 from app.attachments import validate as validate_attachments
 from app.report_form import LOG_MAX_BYTES, FormError, ReportForm, validate_log
+from app.activity import block as activity_block
+from app.activity import facts as activity_facts
+from app.activity import parse as parse_activity
+from app.activity import samples as activity_samples
 from app.issues import IssueRegistry
+from app.self_help import match as self_help_match
+from app.self_help import match_record as self_help_record
 from app.ratelimit import RateLimiter
 from app.similar import groups as similar_groups
 from app.store import tracked_issue
@@ -95,6 +101,8 @@ class SuggestIn(BaseModel):
     category: str | None = None
     app_version: str | None = Field(default=None, max_length=20)
     android_version: str | None = Field(default=None, max_length=20)
+    device_model: str | None = Field(default=None, max_length=60)
+    platform: Literal["android", "ios"] | None = None
 
 
 class WorkflowIn(BaseModel):
@@ -161,6 +169,36 @@ def app_page():
     return FileResponse(STATIC_DIR / "app.html")
 
 
+# ---------- public "known problems" page (like a status page): no login ----------
+
+PUBLIC_ISSUE_FIELDS = ("id", "title", "feature_area", "status", "fixed_in", "workaround")
+
+
+@app.get("/known-issues")
+def known_issues_page():
+    return FileResponse(STATIC_DIR / "known_issues.html")
+
+
+@app.get("/api/public/issues")
+def public_issues(request: Request):
+    """Known issues for reporters: what is being fixed and what is fixed in which version.
+    Only public fields (no reports, assignees or who registered it); open issues first."""
+    _limit(request, "status")
+    reports = _store(request).all_reports()
+    out = []
+    for issue in _issues(request).all():
+        row = {k: issue.get(k) for k in PUBLIC_ISSUE_FIELDS}
+        # status pages describe what users see, not the cause: the first symptom is in users' words
+        # ("러닝 30분 동안 배터리가 20% 이상 감소함"), the title is the developers' diagnosis
+        row["title"] = (issue.get("symptoms") or [issue["title"]])[0]
+        row["status"] = "fixed" if issue.get("status") == "fixed" or issue.get("fixed_in") else "open"
+        row["reports"] = sum(tracked_issue(r) == issue["id"] for r in reports)  # "N명이 같은 문제를 신고"
+        row["platform"] = "android" if issue.get("affected_android") else "all"
+        out.append(row)
+    out.sort(key=lambda r: (r["status"] != "open", -r["reports"], r["id"]))
+    return {"open": sum(r["status"] == "open" for r in out), "issues": out}
+
+
 @app.post("/api/login")
 def login(body: LoginIn, response: Response):
     dev_id = body.dev_id.strip()
@@ -193,12 +231,12 @@ FORM_KEYS = ("text", "category", "frequency", "device_model", "android_version",
              "steps", "expected", "actual")
 
 
-async def _read_intake(request: Request) -> tuple[dict, list[Upload], Upload | None]:
+async def _read_intake(request: Request) -> tuple[dict, list[Upload], Upload | None, object]:
     """JSON (app/API clients: the same keys, no files) or a multipart form (report page) with
     up to 3 `files` screenshots and one `log` text file."""
     ctype = request.headers.get("content-type", "")
     if ctype.startswith(("multipart/form-data", "application/x-www-form-urlencoded")):
-        form = await request.form(max_files=MAX_FILES + 3, max_fields=len(FORM_KEYS) + 2)
+        form = await request.form(max_files=MAX_FILES + 3, max_fields=len(FORM_KEYS) + 3)
         fields = {k: v for k in FORM_KEYS if isinstance(v := form.get(k), str)}
         uploads = []
         for f in form.getlist("files"):
@@ -209,14 +247,15 @@ async def _read_intake(request: Request) -> tuple[dict, list[Upload], Upload | N
         log = None
         if isinstance(log_file, StarletteUpload):
             log = Upload(log_file.filename or "", await log_file.read(LOG_MAX_BYTES + 1))
-        return fields, uploads, log
+        activity = form.get("activity")
+        return fields, uploads, log, activity if isinstance(activity, str) else None
     try:
         body = await request.json()
     except ValueError:
         raise HTTPException(422, "요청 형식이 올바르지 않습니다")
     if not isinstance(body, dict):
         raise HTTPException(422, "요청 형식이 올바르지 않습니다")
-    return {k: v for k in FORM_KEYS if isinstance(v := body.get(k), str)}, [], None
+    return {k: v for k in FORM_KEYS if isinstance(v := body.get(k), str)}, [], None, body.get("activity")
 
 
 @app.post("/api/intake")
@@ -229,7 +268,7 @@ async def intake(request: Request):
     result and the assignee stay on the developer side.
     """
     _limit(request, "intake")
-    fields, uploads, log_upload = await _read_intake(request)
+    fields, uploads, log_upload, activity_raw = await _read_intake(request)
     try:
         body = ReportIn(text=fields.get("text", ""))
     except ValidationError as e:
@@ -240,19 +279,39 @@ async def intake(request: Request):
         log = validate_log(log_upload.filename, log_upload.data) if log_upload else None
     except (AttachmentError, FormError) as e:
         raise HTTPException(422, str(e))
-    rid, token = await run_in_threadpool(_store(request).enqueue, form.compose(body.text), files,
-                                         form.as_dict(), log)
+    try:
+        activity = parse_activity(activity_raw)
+    except (ValueError, TypeError):  # bad JSON or a value out of range (pydantic errors are ValueErrors)
+        raise HTTPException(422, "러닝 기록 정보가 올바르지 않습니다")
+    text = form.compose(body.text)
+    if activity is not None:
+        text += "\n\n" + activity_block(activity)
+    rid, token = await run_in_threadpool(_store(request).enqueue, text, files, form.as_dict(), log,
+                                         activity.model_dump() if activity else None)
     _worker(request).submit(rid)
     return {"request_id": rid, "status_url": f"/status/{token}",
             "message": f"제보가 접수되었습니다. 접수 번호는 {rid}입니다. 담당 개발자가 확인할 예정입니다."}
+
+
+@app.get("/api/demo/activities/{activity_id}")
+def demo_activity(activity_id: str, request: Request):
+    """Sample run records for the demo (a real app sends the summary of the run being reported)."""
+    _limit(request, "status")
+    sample = activity_samples().get(activity_id)
+    if sample is None:
+        raise HTTPException(404, "러닝 기록을 찾을 수 없습니다")
+    return {**sample, "facts": activity_facts(parse_activity(sample))}
 
 
 @app.post("/api/intake/suggest")
 def intake_suggest(body: SuggestIn, request: Request):
     """Before submitting: known issues and FAQ entries that look like this report (no LLM call)."""
     _limit(request, "suggest")
-    return suggest(body.text, category=body.category, app_version=body.app_version,
-                   android_version=body.android_version)
+    out = suggest(body.text, category=body.category, app_version=body.app_version,
+                  android_version=body.android_version)
+    # device self-check steps (battery/sleep settings, GPS fix) that running apps document
+    out["self_help"] = self_help_match(body.text, body.device_model, body.platform) if body.category != "question" else []
+    return out
 
 
 def _queue_view(entry: dict) -> dict:
@@ -311,6 +370,9 @@ def _with_team_info(view: dict, dev_id: str, sim: tuple, store: Store) -> dict:
     view["similar"] = sorted(r for r in others if owner.get(r) == dev_id)
     view["similar_elsewhere"] = sum(owner.get(r) != dev_id for r in others)
     view["issue_id"] = tracked_issue(view)
+    view["self_help"] = [{"id": g["id"], "title": g["title"]} for g in self_help_record(view)]
+    if view.get("activity"):
+        view["activity_facts"] = activity_facts(parse_activity(view["activity"]))
     return view
 
 

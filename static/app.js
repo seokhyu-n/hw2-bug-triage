@@ -238,6 +238,16 @@ function replies(d, r) {
   for (const x of list) d.appendChild(el("div", x.text + "\n— " + x.at.replace("T", " ") + " · " + (REPLY_STATE[x.state] || x.state), "box raw"));
 }
 
+function activityCard(d, r) {
+  if (!(r.activity_facts || []).length) return;
+  const box = el("div", null, "activity-card");
+  box.appendChild(el("b", "연결된 러닝 기록 (제보자 앱이 보낸 요약)"));
+  const ul = el("ul");
+  for (const f of r.activity_facts) ul.appendChild(el("li", f, /끊김 \d|튄 위치/.test(f) ? "gap" : ""));
+  box.appendChild(ul);
+  d.appendChild(box);
+}
+
 function logLink(d, r) {
   if (!r.log) return;
   const p = el("p");
@@ -248,6 +258,7 @@ function logLink(d, r) {
 
 // Screenshots the reporter attached; served only to the developer who can see the report.
 function shots(d, r) {
+  activityCard(d, r);
   logLink(d, r);
   const list = r.attachments || [];
   if (!list.length) return;
@@ -304,6 +315,9 @@ function showDetail(r) {
   line(d, "분류:", c.category + (c.labels.length > 1 ? " (복합: " + c.labels.join(", ") + ")" : ""));
   line(d, "완성도:", s.completeness === null ? "해당 없음" : s.completeness + "/2");
   line(d, "답변 상태:", r.result.answer_status);
+  if ((r.self_help || []).length)  // a hint, not a verdict: the settings running apps document for this symptom
+    d.appendChild(el("p", "기기 설정 원인 가능성: " + r.self_help.map(g => g.title).join(" / ") +
+      ". 신고 화면에서 같은 점검 방법을 안내했어요.", "hint-warn"));
   workflow(d, r);
   const teamSlot = el("div"); d.appendChild(teamSlot);
   teamPanel(teamSlot, r).catch(e => teamSlot.appendChild(el("div", e.message, "error")));

@@ -3,8 +3,8 @@
 Branch: main (GitHub private repo `seokhyu-n/hw2-bug-triage`). Service setting = V2-Run-12 (V2-Run-11 iPhone support, 3x repeated, + fixed-version link rule). Tests: `venv\Scripts\python.exe -m pytest`.
 
 ## Where things are
-- Reporter `/report`: optional fields (`app/report_form.py`), screenshots + redaction, log, pre-submit known issue/FAQ
-  suggestions (`app/suggest.py`), private status page `/status/<token>` with replies. Intake saves first, `app/intake.py`
+- Reporter `/report`: optional fields, Galaxy/iPhone picker, screenshots + redaction, log, run record (`app/activity.py`), self-check guides (`app/self_help.py`), known issue/FAQ
+  suggestions (`app/suggest.py`), public `/known-issues`, private status page `/status/<token>` with replies. Intake saves first, `app/intake.py`
   worker analyzes (retries; failures go to dev3).
 - Developer `/` (dev1~3) -> `/app`: workflow state + message to reporter, same-symptom groups (`app/similar.py`),
   issue register/link/resolve-and-notify (`app/issues.py`, runtime `_issues.json`), reassign, 20 s refresh + P1 alert,

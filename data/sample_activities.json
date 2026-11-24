@@ -1,0 +1,11 @@
+{
+  "_note": "시연용 러닝 기록 요약. 실제 앱이라면 기록 상세의 '이 기록 신고하기'가 이 형식을 /api/intake의 activity로 보낸다.",
+  "activities": [
+    {"activity_id": "A-1001", "started_at": "2026-11-23T07:05:00", "distance_km": 5.02, "duration_s": 1690,
+     "gps_points": 1612, "gaps": [], "max_jump_m": 12},
+    {"activity_id": "A-1002", "started_at": "2026-11-23T19:40:00", "distance_km": 3.21, "duration_s": 1805,
+     "gps_points": 640, "gaps": [{"start_s": 760, "end_s": 1315}], "max_jump_m": 9},
+    {"activity_id": "A-1003", "started_at": "2026-11-24T06:30:00", "distance_km": 5.64, "duration_s": 1660,
+     "gps_points": 1575, "gaps": [], "max_jump_m": 410}
+  ]
+}

@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RunBuddy 알려진 문제</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div class="intake status">
+  <h2>RunBuddy 알려진 문제</h2>
+  <p>개발팀이 알고 있는 문제와 처리 상황이에요. 같은 문제라면 따로 신고하지 않아도 돼요. 목록에 없는 문제는 <a href="/report">문제 신고</a>로 알려 주세요.</p>
+  <div class="error" id="err"></div>
+  <h3 id="open-title">수정 중인 문제</h3>
+  <div id="open"></div>
+  <h3>수정된 문제</h3>
+  <p class="meta">앱을 표시된 버전 이상으로 업데이트하면 해결돼요.</p>
+  <div id="fixed"></div>
+</div>
+<script>
+// Public page: issue titles and workarounds only (text inserted with textContent).
+const $ = id => document.getElementById(id);
+const AREA = {tracking: "러닝 기록", map: "지도", record: "기록 목록", card_image: "러닝 카드", voice: "음성 안내",
+              login: "로그인", ai_chat: "AI 코치", other: "기타"};
+function card(i) {
+  const d = document.createElement("div"); d.className = "card";
+  const t = document.createElement("b"); t.textContent = i.title;
+  const m = document.createElement("p"); m.className = "meta";
+  m.textContent = [AREA[i.feature_area] || "기타", i.platform === "android" ? "안드로이드" : "전체",
+                   i.reports ? "같은 문제 신고 " + i.reports + "건" : null].filter(Boolean).join(" · ");
+  d.append(t, m);
+  const p = document.createElement("p");
+  p.textContent = i.status === "fixed" ? i.fixed_in + " 버전에서 수정됐어요." : "수정 중이에요.";
+  d.appendChild(p);
+  if (i.workaround) { const w = document.createElement("p"); w.textContent = "임시 해결: " + i.workaround; d.appendChild(w); }
+  return d;
+}
+(async () => {
+  const r = await fetch("/api/public/issues");
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) { $("err").textContent = data.detail || "불러오지 못했어요."; return; }
+  const open = data.issues.filter(i => i.status === "open"), fixed = data.issues.filter(i => i.status === "fixed");
+  $("open-title").textContent = "수정 중인 문제 (" + open.length + ")";
+  $("open").replaceChildren(...(open.length ? open.map(card) : [Object.assign(document.createElement("p"), {textContent: "지금 알려진 문제가 없어요."})]));
+  $("fixed").replaceChildren(...fixed.map(card));
+})();
+</script>
+</body>
+</html>

@@ -98,7 +98,8 @@ class Store:
 
     # ---- intake queue (saved before analysis, so a failed analysis never loses a report) ----
     def enqueue(self, text: str, files: list[tuple[str, str, bytes]] | None = None,
-                form: dict | None = None, log: tuple[str, bytes] | None = None) -> tuple[str, str]:
+                form: dict | None = None, log: tuple[str, bytes] | None = None,
+                activity: dict | None = None) -> tuple[str, str]:
         """Save a new report as `pending` in the intake queue. Returns (request_id, status token).
 
         `files` are validated screenshots (display name, media type, bytes) and `log` a validated
@@ -113,7 +114,7 @@ class Store:
             attachments = self._save_files(request_id, files or [])
             entry = {"request_id": request_id, "text": text, "status": "pending",
                      "attempts": 0, "last_error": None, "attachments": attachments,
-                     "form": form or {}, "log": self._save_log(request_id, log),
+                     "form": form or {}, "log": self._save_log(request_id, log), "activity": activity,
                      "status_token": token, "created_at": now, "updated_at": now}
             queued = self._load(INTAKE_DIR)
             queued.append(entry)
@@ -200,7 +201,7 @@ class Store:
             entry = next((r for r in queued if r["request_id"] == request_id), None)
             if entry is None:
                 raise KeyError(request_id)
-            carried = {k: entry[k] for k in ("attachments", "form", "log", "status_token") if k in entry}
+            carried = {k: entry[k] for k in ("attachments", "form", "log", "status_token", "activity") if k in entry}
             self._append_report(dev_id, request_id, entry["text"], result, logs, entry["created_at"], carried)
             self._save(INTAKE_DIR, [r for r in queued if r["request_id"] != request_id])
 

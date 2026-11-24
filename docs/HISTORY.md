@@ -1,6 +1,11 @@
 # HISTORY
 
 Newest entry on top.
+## 2026-11-24 Ideas from running apps' support (NRC, Strava, Runkeeper, MapMyRun)
+- Public known-issues page `/known-issues` + `GET /api/public/issues` (public fields only; title = first symptom in users' words; open first; "N reports") and a banner on the report page.
+- Device self-check guides (`data/self_help.json`, `app/self_help.py`): Galaxy app-sleep steps, iPhone Low Power/location/background refresh, GPS-fix tips; shown before submitting (not for questions or crashes) and as a "기기 설정 원인 가능성" hint for developers.
+- Run record attached to a report (`app/activity.py`, `data/sample_activities.json` for the demo): validated summary -> `[연결된 러닝 기록]` block + developer card; `/report?activity_id=A-1002`.
+- Live: Galaxy "화면 끄면 기록이 끊겨요" + A-1002 -> guide shown first, then the AI wrote "GPS 위치 없는 구간 9분 15초" into actual; developer saw card + hint. 253 tests pass.
 ## 2026-11-24 Link rule: no link when the reporter already has the fixed version
 - `_finalize_link`: app_version >= issue fixed_in -> no link (regression / new cause stays a new report). Measured first on saved V2-Run-11 x3 results (post-processing, no cost): link 0.967 -> 0.983 in all three (E-043, E-049), no correct link removed. V2-Run-12 live ($0.105): link 0.992 (only E-090, version "최신" = null), cls 0.983, priority 0.925, MAE 0.092, v1 missed bugs 0. Current setting = V2-Run-12. 2 tests added (234 pass).
 ## 2026-11-24 iPhone support in the analysis + final setting repeated 3x
