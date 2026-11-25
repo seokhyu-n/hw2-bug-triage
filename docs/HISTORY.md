@@ -1,6 +1,8 @@
 # HISTORY
 
 Newest entry on top.
+## 2026-11-25 Presentation PDF: whole screens
+- 23 pages: whole reporter page (p.8) and whole developer page (p.14-15, shows missing information); the time/cost line on the requirement page removed (user request). Seen in the shot: the score reason calls ISSUE-10 "linked" although code cut the link, and the steps were inferred from a one-line report.
 ## 2026-11-25 Presentation PDF: reporter screens
 - 20 pages: p.9-12 show 13 more reporter features (run record, steps, Galaxy/iPhone, redaction, log, self-check, FAQ, receipt, known issues, AI questions, developer reply), shot from the real app on temporary data. Seen while shooting: the suggestion for a "record cuts off" report also listed an unrelated map-route issue. Scripts renumbered.
 ## 2026-11-25 Garbled run notes repaired
