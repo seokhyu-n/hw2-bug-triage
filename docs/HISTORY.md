@@ -1,6 +1,8 @@
 # HISTORY
 
 Newest entry on top.
+## 2026-11-25 Garbled run notes repaired
+- `eval/runs.csv` 변경사항 of Run-04-r2/r3 and Run-07-r2/r3 (UTF-8 read as cp949) restored, `runs.xlsx` rebuilt; only those 4 cells differ. README technique map: `_with_images` -> `_extract_messages`.
 ## 2026-11-25 Presentation PDF, second version
 - 16 pages (p.16 appendix: how each common requirement is met, time and cost): added an improvements table (p.12) and a technique comparison table (p.13), and small term explanations on 11 pages. Scripts (3 minutes, full) renumbered. All changed pages rendered from the PDF and checked.
 ## 2026-11-25 Presentation slides

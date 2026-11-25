@@ -22,7 +22,6 @@ Branch: main (GitHub repo `seokhyu-n/hw2-bug-triage`, public since 11-25). Servi
 - Setting = V3-Run-15 (headless, completeness 1/2 in code, data-tag guard, extract rules). Numbers and limits: `docs/analysis/v3_experiments.md` 8-9.
 - Live analysis page = version 16 (published 11-25, V3-Run-15). Not done: screenshots/iPhone v3 sets not re-run headless (chatbot was: FE-CHAT-12/13); pre-warmed headless processes (speed) not built.
 - Presentation: `docs/presentation/` (16-page PDF + 2 scripts). The private Slides artifact lacks the term lines and p.16.
-- Found, not fixed: `eval/runs.csv` 변경사항 text is garbled in Run-04-r2/r3, Run-07-r2/r3; README names a missing `_with_images`.
 ## Next (optional)
 - Human label review done (34, `eval/review/v3_review_log.md`); after a label fix run `eval.regrade V3- HO-`. Harder holdout; iPhone / new-policy holdout cases.
 - Known: E-342 (rhetorical question gets a question label); unquoted pasted reporter text can still name a receiver in chat.
