@@ -1,9 +1,29 @@
 # RunBuddy 버그 제보 트리아지
 
+## 화면 바로가기
+
+| 화면 | 주소 | 들어가는 방법 |
+|---|---|---|
+| **신고자** (문제 신고) | http://127.0.0.1:8000/report | 로그인 없음 |
+| **신고자** (처리 상황 확인) | 접수하면 나오는 개인 링크 `/status/<토큰>` | 로그인 없음, 추가 질문에 답할 수 있음 |
+| **개발자** | http://127.0.0.1:8000 | 개발자 ID `dev1`, `dev2`, `dev3` 중 하나(비밀번호 없음) |
+| **알려진 문제** (공개) | http://127.0.0.1:8000/known-issues | 로그인 없음 |
+| **분석 페이지** (평가 결과·구조) | https://claude.ai/artifact/XzpwoBQTWzGYMtCFiRppnX | 인터넷 주소, 서버 없이 열림 |
+
+서버 켜기(프로젝트 폴더에서, 켜 둔 동안만 위 `127.0.0.1` 주소가 열림):
+
+```powershell
+venv\Scripts\python.exe -m uvicorn app.main:app --port 8000
+```
+
+- `127.0.0.1` 주소는 **서버를 켠 그 컴퓨터에서만** 열립니다. 인터넷에 공개한 사이트가 아닙니다. 끄기는 `Ctrl+C`.
+- 분석·챗봇은 Claude Code 로그인이 필요합니다(`claude auth status`로 확인). 자세한 준비는 아래 "실행법".
+- 담당: dev1 = 기록 추적·음성·로그인, dev2 = 지도·기록 목록·러닝 카드, dev3 = AI 코치·그 밖의 문의.
+
 러닝 앱 **RunBuddy**의 사용자·QA가 **문제 신고 페이지**(로그인 없음)에 남긴 제보(자유 서술 한국어)를 받아 **추출 → 분류 → 알려진 이슈 연결 → 우선순위·완성도 채점**까지 자동으로 처리하고 담당 개발자에게 배정합니다.
 개발자는 **개발자 ID로 로그인**해 자기 담당 제보를 보면서 **멀티턴 챗봇**으로 조회·재분석을 요청합니다. 제보자 화면과 개발자 화면은 분리되어 있습니다. (부트캠프 1주차 과제 2)
 
-- 프레임워크(LangChain 등) 없이 **Anthropic SDK + FastAPI**만 사용. 기본 모델은 Claude Haiku 5.5.
+- 프레임워크(LangChain 등) 없이 **FastAPI + Claude 호출 한 곳**(`app/llm.py`)으로 구성. 기본은 **Claude Code 헤드리스**(`claude -p`), `LLM_BACKEND=api`이면 Anthropic SDK. 기본 모델은 Claude Haiku 5.5.
 - 설계: `docs/superpowers/specs/2026-11-21-runbuddy-bug-triage-design.md`, 진행 기록: `docs/HISTORY.md`
 
 ## 구조
