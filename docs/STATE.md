@@ -21,7 +21,7 @@ Branch: main (GitHub repo `seokhyu-n/hw2-bug-triage`, public since 11-25). Servi
 ## Done 11-25
 - Setting = V3-Run-15 (headless, completeness 1/2 in code, data-tag guard, extract rules). Numbers and limits: `docs/analysis/v3_experiments.md` 8-9.
 - Live analysis page = version 16 (published 11-25, V3-Run-15). Not done: screenshots/iPhone v3 sets not re-run headless (chatbot was: FE-CHAT-12/13); pre-warmed headless processes (speed) not built.
-- Presentation: `docs/presentation/` (23-page PDF + 2 scripts). The private Slides artifact is the older 15-page one (no term lines, reporter features, whole screens, requirement page).
+- Presentation: `docs/presentation/` (23-page PDF, message titles: talk p.1-13, appendix p.14-23; 2 scripts). The private Slides artifact is the older 15-page one (no term lines, reporter features, whole screens, requirement page).
 ## Next (optional)
 - Human label review done (34, `eval/review/v3_review_log.md`); after a label fix run `eval.regrade V3- HO-`. Harder holdout; iPhone / new-policy holdout cases.
 - Known: E-342 (rhetorical question gets a question label); unquoted pasted reporter text can still name a receiver in chat.

@@ -1,6 +1,8 @@
 # HISTORY
 
 Newest entry on top.
+## 2026-11-25 Presentation PDF without a script in hand
+- Talk = p.1-13 (about 3 minutes by estimate), appendix = p.14-23. Slide titles carry the message and a short key line replaces spoken sentences (a version with the sentences in yellow boxes was rejected: it looked like a script). Practice text: `발표_대본_3분.md`.
 ## 2026-11-25 Presentation PDF: whole screens
 - 23 pages: whole reporter page (p.8) and whole developer page (p.14-15, shows missing information); the time/cost line on the requirement page removed (user request). Seen in the shot: the score reason calls ISSUE-10 "linked" although code cut the link, and the steps were inferred from a one-line report.
 ## 2026-11-25 Presentation PDF: reporter screens
