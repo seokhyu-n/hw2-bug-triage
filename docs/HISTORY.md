@@ -1,6 +1,8 @@
 # HISTORY
 
 Newest entry on top.
+## 2026-11-25 Presentation PDF: RunBuddy page
+- p.3 introduces the RunBuddy app with the screenshots of its public repository; 24 pages (talk p.1-14, appendix p.15-24). Checked: the app code drops moves over 30 m (`RunningRepository.kt:139`), the basis of ISSUE-04.
 ## 2026-11-25 Presentation PDF without a script in hand
 - Talk = p.1-13 (about 3 minutes by estimate), appendix = p.14-23. Slide titles carry the message and a short key line replaces spoken sentences (a version with the sentences in yellow boxes was rejected: it looked like a script). Practice text: `발표_대본_3분.md`.
 ## 2026-11-25 Presentation PDF: whole screens
