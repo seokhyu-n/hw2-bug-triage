@@ -1,6 +1,8 @@
 # HISTORY
 
 Newest entry on top.
+## 2026-11-25 Presentation PDF: reporter screens
+- 20 pages: p.9-12 show 13 more reporter features (run record, steps, Galaxy/iPhone, redaction, log, self-check, FAQ, receipt, known issues, AI questions, developer reply), shot from the real app on temporary data. Seen while shooting: the suggestion for a "record cuts off" report also listed an unrelated map-route issue. Scripts renumbered.
 ## 2026-11-25 Garbled run notes repaired
 - `eval/runs.csv` 변경사항 of Run-04-r2/r3 and Run-07-r2/r3 (UTF-8 read as cp949) restored, `runs.xlsx` rebuilt; only those 4 cells differ. README technique map: `_with_images` -> `_extract_messages`.
 ## 2026-11-25 Presentation PDF, second version
