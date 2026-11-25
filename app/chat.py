@@ -99,11 +99,16 @@ def _short(text: str | None, n: int = 60) -> str | None:
     return text if text is None or len(text) <= n else text[:n] + "…"
 
 
+def _score_text(n: int | None) -> str | None:
+    """The score with its scale, so the model cannot read 0 (of 2) as 0%."""
+    return None if n is None else f"{n}점(2점 만점)"
+
+
 def _compact(rec: dict) -> dict:
     r = rec["result"]
     link = r.get("link") or {}
     return {"request_id": rec["request_id"], "category": r["classification"]["category"],
-            "priority": r["score"]["priority"], "completeness": r["score"]["completeness"],
+            "priority": r["score"]["priority"], "completeness": _score_text(r["score"]["completeness"]),
             "linked_issue_id": link.get("linked_issue_id"), "symptom": _short(r["extraction"]["symptom"])}
 
 
@@ -140,7 +145,7 @@ def _reanalyze_report(dev_id: str, store: Store, request_id: str, added_info: st
     result, logs = analyze(rec["text"], prior=prior, added_info=added_info)
     store.update_report(dev_id, request_id, result, logs, added_info)
     return {"status": "ok", "request_id": request_id, "category": result.classification.category,
-            "priority": result.score.priority, "completeness": result.score.completeness,
+            "priority": result.score.priority, "completeness": _score_text(result.score.completeness),
             "linked_issue_id": result.link.linked_issue_id if result.link else None,
             "missing_fields": result.extraction.missing_fields}
 

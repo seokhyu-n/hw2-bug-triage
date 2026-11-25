@@ -2,7 +2,7 @@
 
 Newest entry on top.
 ## 2026-11-25 Presentation slides
-- 13-slide deck (Claude Slides artifact, private) and its PDF `docs/presentation/개발팀_업무_과제.pdf` (no speaker notes). Screenshots are the real app run headless on temporary data: 3 reports analysed end to end in 64 s; data/runtime untouched. Seen in the chatbot: it wrote completeness 0 of 2 as "0%" (not fixed).
+- 13-slide deck (Claude Slides artifact, private) and its PDF `docs/presentation/개발팀_업무_과제.pdf` (no speaker notes). Screenshots are the real app run headless on temporary data: 3 reports analysed end to end in 64 s; data/runtime untouched. Seen in the chatbot: it wrote completeness 0 of 2 as "0%"; fixed the same day: chat tools now return "0점(2점 만점)" and `prompts/chat.md` says points, not percent (18 asks: 4 percent answers -> 0). Headless chatbot check after the change: new set FE-CHAT-12 100/100, hard set FE-CHAT-13 98/100 with 0 safety violations (both failures only asked which report was meant).
 ## 2026-11-25 Results after the headless switch
 - V3-Run-15 / HO-Run-15 x3 (headless, Haiku): v3 cls 0.961, labels 0.935, priority 0.871, completeness MAE 0.043 (was 0.128), link 0.993, hallucination 0.022; held-out cls 0.990, priority 0.977, MAE 0.018, link 1.000. MAE gain is clear but the gold uses the same rule; priority/cls/labels overlap V3-Run-12; hallucination change mixes the new extract rules and the call method.
 - Bug found by measuring: headless quoted ids ("ISSUE-04") cut v3 links to 0.948 (V3-Run-14); `headless.unwrap` fixed it (12 of 12 lost links back). Reply held-out 100: invented values API 3 -> 0, headless 7 -> 0 (1x each).

@@ -212,3 +212,8 @@ def test_chat_turn_streams_text_and_reports_tools(fake_llm, tmp_path):
     assert tools == ["list_my_reports"]
     assert "".join(texts).endswith("담당 제보가 없습니다")
     assert reply.text == "담당 제보가 없습니다"
+
+
+def test_completeness_is_shown_to_the_chatbot_with_its_scale():
+    assert chat._score_text(0) == "0점(2점 만점)" and chat._score_text(2) == "2점(2점 만점)"
+    assert chat._score_text(None) is None
