@@ -216,7 +216,7 @@ li{margin:3px 0}
 <div class="flow">
 <div class="node a"><b>1. extract: 필드 추출</b><small>device_model, platform(android/ios), android_version, ios_version, app_version, feature_area, symptom, expected, actual, frequency, repro_steps. 원문에 없으면 <code>null</code>.</small></div><div class="arrow">&#8595; Extraction JSON</div><div class="node a"><b>2. classify: 분류</b><small>category(bug / question / feature_request) + labels(복합 가능) + reason</small></div><div class="arrow">&#8595; Classification JSON</div><div class="node w"><b>3. link: 알려진 이슈 연결 (버그일 때만)</b><small>도구 <code>search_known_issues</code>, <code>get_release_info</code>를 호출하는 tool_use 루프. 문의·개선 요청이면 건너뛰고 <code>null</code>.</small></div><div class="arrow">&#8595; Link JSON (또는 null)</div><div class="node g"><b>4. score: 채점</b><small>reasoning을 먼저 쓰고 completeness(0~2), priority(P1~P4), questions_to_reporter. 문의·개선 요청은 completeness를 코드가 <code>null</code>로 고정.</small></div>
 </div>
-<div class="note ok"><b>코드가 맡는 부분.</b> <code>missing_fields</code>는 코드가 계산(버그일 때만). <code>need_info</code>는 필수 3개 필드(app_version, OS 버전(아이폰이면 ios_version, 아니면 android_version), repro_steps) 중 2개 이상 비었을 때. 링크의 <code>fixed_in</code>과 <code>user_should_update</code>는 도구 결과와 버전 비교로 계산한다. 모델이 도구가 돌려주지 않은 이슈 ID를 말하면 연결하지 않는다(<code>_finalize_link</code>).</div>
+<div class="note ok"><b>코드가 맡는 부분.</b> <code>missing_fields</code>는 코드가 계산(버그일 때만). <code>need_info</code>는 필수 3개 필드(app_version, OS 버전(아이폰이면 ios_version, 아니면 android_version), repro_steps) 중 2개 이상 비었을 때. 링크의 <code>fixed_in</code>과 <code>user_should_update</code>는 도구 결과와 버전 비교로 계산한다. 모델이 도구가 돌려주지 않은 이슈 ID를 말하면 연결하지 않는다(<code>_finalize_link</code>). 완성도는 증상이 불명확한 0점만 모델이 정하고, 1점·2점은 앱 버전·OS 버전·재현 절차가 모두 있는지로 코드가 정한다(V3-Run-15).</div>
 
 <h2>2. 단계별로 무엇을 받는가 (Context 선별)</h2>
 <p><code>PipelineConfig.context_select</code>가 켜져 있으면(기본) 단계마다 필요한 것만 전달한다. 꺼진 기준선(Run-01~03)은 원문과 앞 단계 결과를 모두 전달한다.</p>
@@ -231,7 +231,7 @@ li{margin:3px 0}
 <p><b>재분석</b>(<code>_source_block</code>): 원문 전체를 다시 보내지 않고 이전 분석의 <b>확정 필드</b>(추출 필드 + category·labels)와 개발자가 입력한 <b>새 정보</b>(<code>&lt;added_info&gt;</code>)만 보낸다. 원본은 서버(<code>app/store.py</code>)에 있다.</p>
 
 <h2>3. 호출 한 번의 프롬프트 구조</h2>
-<p><code>app/llm.py:call_llm</code>이 만드는 요청은 <b>tools &rarr; system &rarr; messages</b> 순서이고, 앞쪽 고정 부분이 prefix cache 대상이다.</p>
+<p>기본 호출은 Claude Code 헤드리스(<code>claude -p</code>, <code>app/headless.py</code>)이고, 아래는 <code>LLM_BACKEND=api</code>일 때의 요청 모양이다(시스템·도구·출력 스키마·user 메시지 내용은 같다). <code>app/llm.py:call_llm</code>이 만드는 요청은 <b>tools &rarr; system &rarr; messages</b> 순서이고, 앞쪽 고정 부분이 prefix cache 대상이다.</p>
 <div class="grid">
 <div class="card"><h3><span class="tag g">고정 (캐시)</span> system 블록</h3>
 <ol>
@@ -475,7 +475,7 @@ li{margin:3px 0}
 <ul>
 <li><b>Run-08</b>: "핵심 기능 = 러닝을 기록하는 일(시작·추적·거리·저장·로그인)"을 정의하고 부가 기능 오동작은 크래시·데이터 손실이 아니면 P3로 했다. 새 20건 우선순위 0.55 &rarr; 0.80, 기존 100건도 0.88 &rarr; 0.91.</li>
 <li><b>Run-09</b>: RunBuddy 정상 동작 6가지(실내 러닝은 경로 없음, AI 코치는 기록을 못 봄, '항상 허용' 권한 등)를 넣어 목표 3건(E-101·E-107·E-108)을 고쳤지만, "원래 이 정도 먹나요?"(배터리, E-016), "앱 왜이럼"(E-020) 같은 <b>진짜 버그 3건이 문의로 바뀌었다</b>. 점수 합은 비슷해도 오류 종류가 나빠져 채택하지 않았다.</li>
-<li><b>Run-10</b>: 예외를 목록에 있는 동작으로만 좁히고 "고장일 가능성이 있으면 bug"를 넣었다. 버그 놓침 3 &rarr; 0, 목표 3건 유지. 이 설정에 아이폰 지원(V2-Run-11)과 링크 규칙(V2-Run-12)을 더한 것이 <b>현재 서비스 설정</b>이다.</li>
+<li><b>Run-10</b>: 예외를 목록에 있는 동작으로만 좁히고 "고장일 가능성이 있으면 bug"를 넣었다. 버그 놓침 3 &rarr; 0, 목표 3건 유지. 이 설정에 아이폰 지원(V2-Run-11)과 링크 규칙(V2-Run-12)을 더한 것이 <b>당시 서비스 설정(지금은 V3-Run-15)</b>이다.</li>
 <li>완성도 MAE는 0.077 &rarr; 0.141. 같은 설정 반복에서도 0.07~0.18로 흔들린 지표라 잡음 범위로 본다. 남은 분류 오류 3건(E-053, E-113, E-116)은 요청형 문장 속에 다른 뜻이 있는 경우다.</li>
 </ul>
 
@@ -516,19 +516,19 @@ li{margin:3px 0}
 </table></div>
 
 <h2>11. 대규모 평가: 기법 비교와 새 사례 검증</h2>
-<p>평가셋을 250건(<code>dataset_v3</code>, 어려운 사례 175건)으로 늘려 기법을 하나씩 껐다. 끄기 실험과 Sonnet은 1회씩이라, 튜닝 전 설정의 3회 범위를 크게 벗어난 값(굵게)만 효과로 본다.</p>
+<p>평가셋을 250건(<code>dataset_v3</code>, 어려운 사례 175건)으로 늘려 기법을 하나씩 껐다. 끄기 실험은 3회씩(평균, 괄호는 최소~최대), Sonnet만 1회다. 튜닝 전 프롬프트로 쟀다.</p>
 <div class="scroll"><table class="wide" id="v3-ablation">
 <tr><th>설정 (250건)</th><th class="n">분류</th><th class="n">우선순위</th><th class="n">완성도 MAE</th><th class="n">추출 환각률</th><th class="n">비용</th></tr>
-<tr><td>튜닝 전 설정 (3회 범위)</td><td class="n">0.940~0.956</td><td class="n">0.844~0.876</td><td class="n">0.111~0.130</td><td class="n">0.035~0.041</td><td class="n">$0.25</td></tr>
-<tr><td>Rubric 끔</td><td class="n">0.940</td><td class="n"><b>0.688</b></td><td class="n"><b>0.419</b></td><td class="n">0.038</td><td class="n">$0.25</td></tr>
-<tr><td>Few-shot 끔</td><td class="n">0.956</td><td class="n">0.872</td><td class="n"><b>0.190</b></td><td class="n">0.036</td><td class="n">$0.27</td></tr>
-<tr><td>Context 선별 끔</td><td class="n">0.944</td><td class="n">0.856</td><td class="n">0.131</td><td class="n">0.042</td><td class="n">$0.26</td></tr>
-<tr><td>CoT 끔</td><td class="n">0.936</td><td class="n">0.836</td><td class="n"><b>0.230</b></td><td class="n">0.039</td><td class="n">$0.21</td></tr>
-<tr><td>체이닝 끔 (한 번 호출)</td><td class="n">0.964</td><td class="n">0.860</td><td class="n"><b>0.037</b></td><td class="n"><b>0.051</b></td><td class="n">$0.33</td></tr>
-<tr><td>effort medium</td><td class="n">0.952</td><td class="n">0.840</td><td class="n">0.116</td><td class="n">0.041</td><td class="n">$0.29</td></tr>
-<tr><td>Sonnet 5.5</td><td class="n">0.968</td><td class="n">0.888</td><td class="n">0.068</td><td class="n">0.034</td><td class="n">$4.51</td></tr>
+<tr><td>튜닝 전 설정</td><td class="n">0.948 (0.940~0.956)</td><td class="n">0.864 (0.844~0.876)</td><td class="n">0.120 (0.111~0.130)</td><td class="n">0.038 (0.035~0.041)</td><td class="n">$0.25</td></tr>
+<tr><td>Rubric 끔</td><td class="n">0.939 (0.932~0.944)</td><td class="n">0.712 (0.688~0.732)</td><td class="n">0.403 (0.383~0.419)</td><td class="n">0.040 (0.038~0.042)</td><td class="n">$0.25</td></tr>
+<tr><td>Few-shot 끔</td><td class="n">0.953 (0.948~0.956)</td><td class="n">0.861 (0.848~0.872)</td><td class="n">0.158 (0.135~0.190)</td><td class="n">0.039 (0.036~0.041)</td><td class="n">$0.27</td></tr>
+<tr><td>Context 선별 끔</td><td class="n">0.943 (0.940~0.944)</td><td class="n">0.864 (0.856~0.872)</td><td class="n">0.099 (0.074~0.131)</td><td class="n">0.041 (0.039~0.042)</td><td class="n">$0.27</td></tr>
+<tr><td>CoT 끔</td><td class="n">0.936 (0.936~0.936)</td><td class="n">0.833 (0.820~0.844)</td><td class="n">0.204 (0.169~0.230)</td><td class="n">0.038 (0.036~0.039)</td><td class="n">$0.21</td></tr>
+<tr><td>체이닝 끔 (한 번 호출)</td><td class="n">0.961 (0.960~0.964)</td><td class="n">0.845 (0.832~0.860)</td><td class="n">0.047 (0.037~0.062)</td><td class="n">0.041 (0.032~0.051)</td><td class="n">$0.33</td></tr>
+<tr><td>effort medium</td><td class="n">0.947 (0.944~0.952)</td><td class="n">0.849 (0.840~0.868)</td><td class="n">0.132 (0.116~0.155)</td><td class="n">0.044 (0.041~0.046)</td><td class="n">$0.29</td></tr>
+<tr><td>Sonnet 5.5 (1회)</td><td class="n">0.968</td><td class="n">0.888</td><td class="n">0.068</td><td class="n">0.034</td><td class="n">$4.51</td></tr>
 </table></div>
-<p>CoT는 점수 단계에만 쓰이는데도 분류가 0.936으로 나왔다. 분류 1%p 안팎의 차이는 흔들림이다. 한 번 호출은 API의 스키마 제한 때문에 다른 스키마를 써서 순수한 체이닝 비교가 아니다.</p>
+<p>Rubric은 우선순위와 완성도에서 가장 크고, CoT와 Few-shot은 완성도에서 효과가 보인다(Few-shot은 끈 쪽의 labels가 더 높다). Context 선별과 effort medium은 차이가 확인되지 않는다. 한 번 호출은 완성도가 더 좋고 비용이 더 든다. 추출 환각률은 범위가 겹쳐 더 나쁘다고 할 수 없고, API의 스키마 제한 때문에 다른 스키마를 써서 순수한 체이닝 비교가 아니다.</p>
 <h3>튜닝 전후: 튜닝에 쓰지 않은 새 사례 100건 (각 3회)</h3>
 <div class="scroll"><table id="holdout">
 <tr><th>지표</th><th class="n">튜닝 전</th><th class="n">튜닝 후</th><th>판단</th></tr>
@@ -538,9 +538,9 @@ li{margin:3px 0}
 <tr><td>완성도 MAE</td><td class="n">0.147</td><td class="n">0.122</td><td>차이 확인 안 됨</td></tr>
 <tr><td>링크</td><td class="n">0.993</td><td class="n">1.000</td><td>1건 안팎</td></tr>
 </table></div>
-<p><b>한계.</b> 오류를 보고 고친 250건에서는 labels가 0.867 &rarr; 0.944까지 올랐지만, 그 실행(V3-Run-10·11)에는 평가 사례와 겹치는 예시 문구가 있어 최종 성능으로 쓰지 않는다. 문구를 바꾼 현재 설정 <b>V3-Run-12</b>는(뒤에 V3-Run-15로 바뀜) 250건에서 분류 0.955, labels 0.931, 우선순위 0.893, 완성도 MAE 0.128(3회 평균, MAE는 튜닝 전과 범위가 겹침)이다. 사례와 정답은 AI가 썼고, 판단이 갈리는 34건만 사람이 검토해 5건을 바꾼 뒤 저장된 예측을 다시 채점했다. 새 사례는 250건보다 쉽다. 따지는 질문에 문의 라벨을 잘못 붙이는 부작용(E-342)이 생겼다.</p>
+<p><b>한계.</b> 오류를 보고 고친 250건에서는 labels가 0.867 &rarr; 0.944까지 올랐지만, 그 실행(V3-Run-10·11)에는 평가 사례와 겹치는 예시 문구가 있어 최종 성능으로 쓰지 않는다. 문구를 바꾼 당시 설정 <b>V3-Run-12</b>는(지금은 V3-Run-15) 250건에서 분류 0.955, labels 0.931, 우선순위 0.893, 완성도 MAE 0.128(3회 평균, MAE는 튜닝 전과 범위가 겹침)이다. 사례와 정답은 AI가 썼고, 판단이 갈리는 34건만 사람이 검토해 5건을 바꾼 뒤 저장된 예측을 다시 채점했다. 새 사례는 250건보다 쉽다. 따지는 질문에 문의 라벨을 잘못 붙이는 부작용(E-342)이 생겼다.</p>
 <h3>챗봇과 추가 기능 (각 100건)</h3>
-<p>챗봇 어려운 100건은 94 &rarr; 99, 안전 위반 5 &rarr; 0이다(실패를 보고 고친 같은 100건의 점수이고, 첫 실행 92 뒤 사례 2건을 교체했다). 인용한 제보자 답장 속 "넘겨 달라"를 실행하던 구멍은 따옴표 안의 이름을 무시하게 막았으나, 따옴표 없이 붙여 넣은 글은 구분하지 못한다. 스크린샷·답변·아이폰은 모두 100%지만 틀로 만든 쉬운 사례다.</p>
+<p>챗봇 어려운 100건은 94 &rarr; 99, 안전 위반 5 &rarr; 0이다(실패를 보고 고친 같은 100건의 점수이고, 첫 실행 92 뒤 사례 2건을 교체했다). 인용한 제보자 답장 속 "넘겨 달라"를 실행하던 구멍은 따옴표 안의 이름을 무시하게 막았으나, 따옴표 없이 붙여 넣은 글은 구분하지 못한다. 스크린샷·답변·아이폰의 첫 100건 셋은 모두 100%지만 틀로 만든 쉬운 사례다. 더 어려운 셋(각 100건, V3-Run-12, 1회)에서는 캡처 96/98(지어낸 값 4/202), 답변 119/122(지어낸 값 9/178), 아이폰 우선순위 94/99였다. 답변 셋에서는 제보자 글 속 명령으로 기종이 바뀐 사례가 있어 태그 보호와 추출 규칙을 넣었다. 다른 답변 100건(처음 보는 사례)에서 지어낸 값은 헤드리스 7 &rarr; 0, API 3 &rarr; 0이었다(각 1회).</p>
 
 <h3>V3-Run-15: 완성도 규칙과 헤드리스 (현재 설정)</h3>
 <p>완성도 1점·2점을 코드가 앱 버전·OS 버전·재현 절차로 정하고, 제보자 글이 데이터 태그를 닫지 못하게 했으며, Claude 호출을 Claude Code 헤드리스(claude-haiku-5-5)로 바꿨다. 250건 3회 평균 분류 0.961, 우선순위 0.871, <b>완성도 MAE 0.128 &rarr; 0.043</b>, 링크 0.993, 새 사례 100건은 분류 0.990, 우선순위 0.977, 완성도 MAE 0.018. 정답도 같은 기준이라 완성도는 좋게 나오는 면이 있고, 분류·우선순위는 이전 설정과 범위가 겹친다. 캡처·아이폰은 이 설정으로 다시 재지 않았다. 헤드리스는 API보다 느리다(버그 한 건 17.7초).</p>

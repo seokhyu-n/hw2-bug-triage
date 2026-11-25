@@ -80,7 +80,7 @@ li{margin:3px 0}
 <div class="flow">
 <div class="node a"><b>1. extract: 필드 추출</b><small>device_model, platform(android/ios), android_version, ios_version, app_version, feature_area, symptom, expected, actual, frequency, repro_steps. 원문에 없으면 <code>null</code>.</small></div><div class="arrow">&#8595; Extraction JSON</div><div class="node a"><b>2. classify: 분류</b><small>category(bug / question / feature_request) + labels(복합 가능) + reason</small></div><div class="arrow">&#8595; Classification JSON</div><div class="node w"><b>3. link: 알려진 이슈 연결 (버그일 때만)</b><small>도구 <code>search_known_issues</code>, <code>get_release_info</code>를 호출하는 tool_use 루프. 문의·개선 요청이면 건너뛰고 <code>null</code>.</small></div><div class="arrow">&#8595; Link JSON (또는 null)</div><div class="node g"><b>4. score: 채점</b><small>reasoning을 먼저 쓰고 completeness(0~2), priority(P1~P4), questions_to_reporter. 문의·개선 요청은 completeness를 코드가 <code>null</code>로 고정.</small></div>
 </div>
-<div class="note ok"><b>코드가 맡는 부분.</b> <code>missing_fields</code>는 코드가 계산(버그일 때만). <code>need_info</code>는 필수 3개 필드(app_version, OS 버전(아이폰이면 ios_version, 아니면 android_version), repro_steps) 중 2개 이상 비었을 때. 링크의 <code>fixed_in</code>과 <code>user_should_update</code>는 도구 결과와 버전 비교로 계산한다. 모델이 도구가 돌려주지 않은 이슈 ID를 말하면 연결하지 않는다(<code>_finalize_link</code>).</div>
+<div class="note ok"><b>코드가 맡는 부분.</b> <code>missing_fields</code>는 코드가 계산(버그일 때만). <code>need_info</code>는 필수 3개 필드(app_version, OS 버전(아이폰이면 ios_version, 아니면 android_version), repro_steps) 중 2개 이상 비었을 때. 링크의 <code>fixed_in</code>과 <code>user_should_update</code>는 도구 결과와 버전 비교로 계산한다. 모델이 도구가 돌려주지 않은 이슈 ID를 말하면 연결하지 않는다(<code>_finalize_link</code>). 완성도는 증상이 불명확한 0점만 모델이 정하고, 1점·2점은 앱 버전·OS 버전·재현 절차가 모두 있는지로 코드가 정한다(V3-Run-15).</div>
 
 <h2>2. 단계별로 무엇을 받는가 (Context 선별)</h2>
 <p><code>PipelineConfig.context_select</code>가 켜져 있으면(기본) 단계마다 필요한 것만 전달한다. 꺼진 기준선(Run-01~03)은 원문과 앞 단계 결과를 모두 전달한다.</p>
@@ -95,7 +95,7 @@ li{margin:3px 0}
 <p><b>재분석</b>(<code>_source_block</code>): 원문 전체를 다시 보내지 않고 이전 분석의 <b>확정 필드</b>(추출 필드 + category·labels)와 개발자가 입력한 <b>새 정보</b>(<code>&lt;added_info&gt;</code>)만 보낸다. 원본은 서버(<code>app/store.py</code>)에 있다.</p>
 
 <h2>3. 호출 한 번의 프롬프트 구조</h2>
-<p><code>app/llm.py:call_llm</code>이 만드는 요청은 <b>tools &rarr; system &rarr; messages</b> 순서이고, 앞쪽 고정 부분이 prefix cache 대상이다.</p>
+<p>기본 호출은 Claude Code 헤드리스(<code>claude -p</code>, <code>app/headless.py</code>)이고, 아래는 <code>LLM_BACKEND=api</code>일 때의 요청 모양이다(시스템·도구·출력 스키마·user 메시지 내용은 같다). <code>app/llm.py:call_llm</code>이 만드는 요청은 <b>tools &rarr; system &rarr; messages</b> 순서이고, 앞쪽 고정 부분이 prefix cache 대상이다.</p>
 <div class="grid">
 <div class="card"><h3><span class="tag g">고정 (캐시)</span> system 블록</h3>
 <ol>

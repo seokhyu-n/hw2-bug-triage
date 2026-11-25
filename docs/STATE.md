@@ -20,7 +20,7 @@ Branch: main (GitHub private repo `seokhyu-n/hw2-bug-triage`). Service setting =
 - Also set up at `C:\Users\hi\부트캠프\hw2-bug-triage` (11-24); git author set repo-locally to match earlier commits.
 ## Done 11-25
 - Setting = V3-Run-15 (headless, completeness 1/2 in code, data-tag guard, extract rules). Numbers and limits: `docs/analysis/v3_experiments.md` 8-9.
-- Not done: live analysis page still says MAE got worse (sources updated, not published); screenshots/iPhone v3 sets and the chatbot not re-run headless; pre-warmed headless processes (speed) not built.
+- Live analysis page = version 16 (published 11-25, V3-Run-15). Not done: screenshots/iPhone v3 sets and the chatbot not re-run headless; pre-warmed headless processes (speed) not built.
 ## Next (optional)
 - Human label review done (34, `eval/review/v3_review_log.md`); after a label fix run `eval.regrade V3- HO-`. Harder holdout; iPhone / new-policy holdout cases.
 - Known: E-342 (rhetorical question gets a question label); unquoted pasted reporter text can still name a receiver in chat.
