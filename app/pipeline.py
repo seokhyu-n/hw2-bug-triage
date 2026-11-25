@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import base64
 import json
+import re
 from dataclasses import dataclass
 
 from pydantic import BaseModel, ValidationError
@@ -71,17 +72,26 @@ def _json(obj: BaseModel | dict | None) -> str:
     return "```json\n" + json.dumps(data, ensure_ascii=False, indent=2) + "\n```"
 
 
+# reporter text must not be able to close (or open) the tags that mark it as data
+_DATA_TAG_RE = re.compile(r"<(\s*/?\s*(?:report|added_info|app_log)\b)", re.IGNORECASE)
+
+
+def _as_data(text: str) -> str:
+    """Text without these tags is returned unchanged (byte for byte)."""
+    return _DATA_TAG_RE.sub(r"‹\1", text)
+
+
 def _source_block(report_text: str, prior: TriageResult | None, added_info: str | None) -> str:
     """Original report, or on re-analysis the confirmed fields + only the new information."""
     if prior is None:
-        return f"## 제보 원문\n<report>\n{report_text}\n</report>"
+        return f"## 제보 원문\n<report>\n{_as_data(report_text)}\n</report>"
     confirmed = {
         "extraction": prior.extraction.model_dump(exclude={"missing_fields"}),
         "classification": {"category": prior.classification.category,
                            "labels": prior.classification.labels},
     }
     return ("## 확정 필드 (이전 분석 결과)\n" + _json(confirmed)
-            + f"\n\n## 새로 추가된 정보\n<added_info>\n{added_info or ''}\n</added_info>")
+            + f"\n\n## 새로 추가된 정보\n<added_info>\n{_as_data(added_info or '')}\n</added_info>")
 
 
 def _user(sections: list[str], instruction: str) -> list[dict]:
@@ -114,7 +124,7 @@ def _extract_messages(source: str, images: list[tuple[str, bytes]], log: str | N
     before the text (as the API recommends) and their rules, like the log's, only appear when used."""
     sections, rules = [source], []
     if log:
-        sections.append(f"## 첨부 로그 (끝부분)\n<app_log>\n{log}\n</app_log>")
+        sections.append(f"## 첨부 로그 (끝부분)\n<app_log>\n{_as_data(log)}\n</app_log>")
         rules.append(LOG_RULES)
     if images:
         rules.append(SCREENSHOT_RULES.format(n=len(images)))
@@ -131,9 +141,11 @@ def _extract_messages(source: str, images: list[tuple[str, bytes]], log: str | N
 # ---------- step calls ----------
 
 def _call(step: str, cfg: PipelineConfig, messages: list[dict], model_cls: type[BaseModel],
-          logs: list[StepLog], tools: list[dict] | None = None, system: list[dict] | None = None) -> LLMResult:
+          logs: list[StepLog], tools: list[dict] | None = None, system: list[dict] | None = None,
+          tool_runner=None) -> LLMResult:
     res = call_llm(step=step, system=system or build_system(step, cfg), messages=messages,
-                   schema=_SCHEMAS[model_cls], tools=tools, model=cfg.model, effort=cfg.effort)
+                   schema=_SCHEMAS[model_cls], tools=tools, model=cfg.model, effort=cfg.effort,
+                   tool_runner=tool_runner)
     logs.append(StepLog(step, res.model, res.latency_s, res.cost_usd, res.usage))
     return res
 
@@ -172,8 +184,24 @@ def _run_tools(step: str, model_cls: type[BaseModel], cfg: PipelineConfig, messa
                logs: list[StepLog], system: list[dict] | None = None):
     """tool_use -> run_tool -> tool_result loop; the final turn is the step's JSON (tools + schema each call)."""
     seen: dict[str, str | None] = {}
+    calls = 0
+
+    def execute(name: str, tool_input: dict) -> tuple[str, bool]:
+        json_str, is_error = run_tool(name, tool_input)
+        if not is_error:
+            _remember_ids(name, json_str, seen)
+        return json_str, is_error
+
+    def headless_runner(name: str, tool_input: dict) -> tuple[str, bool]:  # Claude Code runs the loop
+        nonlocal calls
+        calls += 1
+        if calls > LINK_MAX_TOOL_ROUNDS * 2:
+            return json.dumps({"error": "도구 호출 한도를 넘었습니다. 지금까지의 결과로 답하세요"}, ensure_ascii=False), True
+        return execute(name, tool_input)
+
     for round_no in range(LINK_MAX_TOOL_ROUNDS + 1):
-        res = _call(step, cfg, messages, model_cls, logs, tools=ISSUE_TOOL_DEFS, system=system)
+        res = _call(step, cfg, messages, model_cls, logs, tools=ISSUE_TOOL_DEFS, system=system,
+                    tool_runner=headless_runner)
         if res.stop_reason != "tool_use":
             return _validate(step, model_cls, res), seen
         if round_no == LINK_MAX_TOOL_ROUNDS:
@@ -183,9 +211,7 @@ def _run_tools(step: str, model_cls: type[BaseModel], cfg: PipelineConfig, messa
         for block in res.content:
             if getattr(block, "type", None) != "tool_use":
                 continue
-            json_str, is_error = run_tool(block.name, block.input)
-            if not is_error:
-                _remember_ids(block.name, json_str, seen)
+            json_str, is_error = execute(block.name, block.input)
             results.append({"type": "tool_result", "tool_use_id": block.id,
                             "content": json_str, "is_error": is_error})
         messages.append({"role": "user", "content": results})  # all results in ONE message
@@ -220,6 +246,15 @@ def _finalize_link(link: Link, seen: dict[str, str | None], extraction: Extracti
 def _is_missing(extraction: Extraction, field: str) -> bool:
     value = getattr(extraction, field)
     return value is None or value == [] or (isinstance(value, str) and not value.strip())
+
+
+def _settle_completeness(score: Score, extraction: Extraction, is_bug: bool) -> None:
+    """The model only decides whether the symptom is unclear (0). Whether app version, OS version and
+    reproduction steps are all there (2) or not (1) is a fact of the extraction, so code decides it."""
+    if not is_bug:
+        score.completeness = None
+    elif score.completeness != 0:
+        score.completeness = 1 if any(_is_missing(extraction, f) for f in required_fields(extraction)) else 2
 
 
 # ---------- public API ----------
@@ -287,8 +322,7 @@ def _analyze(report_text: str, cfg: PipelineConfig, prior: TriageResult | None, 
         direct = _validate("score", ScoreDirect, _call(
             "score", cfg, _user(sections, "근거를 쓰지 말고 점수만 바로 JSON으로 출력하라."), ScoreDirect, logs))
         score = Score(reasoning="", **direct.model_dump())
-    if not is_bug:
-        score.completeness = None
+    _settle_completeness(score, extraction, is_bug)
 
     missing_required = sum(_is_missing(extraction, f) for f in required_fields(extraction))
     status = "need_info" if is_bug and missing_required >= 2 else "ready"
@@ -323,8 +357,7 @@ def _analyze_single(source: str, cfg: PipelineConfig, prior: TriageResult | None
     link = _finalize_link(out.link, seen, extraction) if is_bug and out.link else (
         Link(linked_issue_id=None, match_reason=None, fixed_in=None, user_should_update=None) if is_bug else None)
     score = out.score
-    if not is_bug:
-        score.completeness = None
+    _settle_completeness(score, extraction, is_bug)
     missing_required = sum(_is_missing(extraction, f) for f in required_fields(extraction))
     status = "need_info" if is_bug and missing_required >= 2 else "ready"
     return TriageResult(extraction=extraction, classification=classification, link=link, score=score,

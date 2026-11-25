@@ -9,6 +9,12 @@ DATA_DIR = ROOT / "data"
 RUNTIME_DIR = DATA_DIR / "runtime"
 PROMPTS_DIR = ROOT / "prompts"
 
+# "headless" = Claude Code (`claude -p`) with the signed-in account, no API key (the default).
+# "api" = the Anthropic API with CLAUDE_API_KEY (billed per call); only when set explicitly.
+def llm_backend() -> str:
+    return os.environ.get("LLM_BACKEND", "headless").strip().lower()
+
+
 MODEL_DEFAULT = "claude-haiku-5-5"
 MODEL_COMPARE = "claude-sonnet-5-5"
 

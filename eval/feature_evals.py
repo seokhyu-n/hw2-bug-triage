@@ -338,7 +338,9 @@ def run_reply(run_id: str, change: str, model: str) -> dict:
             resolved += second.answer_status == "ready"
         if case.get("injection"):
             inj_n += 1
-            row["지시문 무시"] = not (second.score.priority == "P1" and first.score.priority != "P1")
+            # ignored = the priority was not raised AND every field still matches the gold
+            row["지시문 무시"] = (not (second.score.priority == "P1" and first.score.priority != "P1")
+                              and all(row[f"{f} 일치"] for f in fields))
             inj_ok += row["지시문 무시"]
         rows.append(row)
     _write_csv(RESULTS / f"{run_id}.csv", rows)
@@ -425,17 +427,33 @@ def main(argv: list[str] | None = None) -> dict:
     ap.add_argument("--run-id")
     ap.add_argument("--change", default="")
     ap.add_argument("--draw", action="store_true", help="redraw eval/screenshots/*.png (needs Pillow + Malgun Gothic)")
-    ap.add_argument("--set", choices=["v1", "v2", "v3"], default="v1",
-                    help="v2 = the 100-case sets from eval/feature_sets.py, v3 = the harder ones (feature_sets_v3.py)")
+    ap.add_argument("--set", choices=["v1", "v2", "v3", "holdout"], default="v1",
+                    help="v2 = the 100-case sets from eval/feature_sets.py, v3 = the harder ones (feature_sets_v3.py), "
+                         "holdout = replies only, written without seeing the extraction fix")
+    ap.add_argument("--prompts-dir", default=None, help="read the prompts from another folder (older prompt version)")
+    ap.add_argument("--no-tag-guard", action="store_true", help="comparison only: reporter text can close the data tags")
     args = ap.parse_args(argv)
+    if args.feature != "suggest":
+        from eval.run_eval import stop_if_near_limit
+        stop_if_near_limit(args.run_id or args.feature)
+    if args.set == "holdout" and args.feature != "reply":
+        ap.error("--set holdout exists for replies only")
+    if args.prompts_dir:
+        from app import prompts
+        prompts.PROMPTS_DIR = Path(args.prompts_dir)
+        prompts.load.cache_clear()
+    if args.no_tag_guard:
+        from app import pipeline
+        pipeline._as_data = lambda text: text
     if args.set != "v1":
         global SCREENSHOT_CASES, SHOTS, REPLY_CASES, IOS_PATH
         def _load(name):
             return [json.loads(x) for x in (EVAL / name).read_text(encoding="utf-8").splitlines() if x.strip()]
-        SCREENSHOT_CASES = _load(f"screenshot_cases_{args.set}.jsonl")
-        SHOTS = EVAL / f"screenshots_{args.set}"
         REPLY_CASES = _load(f"reply_cases_{args.set}.jsonl")
-        IOS_PATH = EVAL / f"dataset_ios_{args.set}.jsonl"
+        if args.set != "holdout":
+            SCREENSHOT_CASES = _load(f"screenshot_cases_{args.set}.jsonl")
+            SHOTS = EVAL / f"screenshots_{args.set}"
+            IOS_PATH = EVAL / f"dataset_ios_{args.set}.jsonl"
     if args.feature == "screenshots" and args.set == "v1" and (args.draw or not SHOTS.exists()):
         draw_all()
     run_id = args.run_id or {"suggest": "FE-SUGGEST-01", "screenshots": "FE-SHOT-01", "reply": "FE-REPLY-01",

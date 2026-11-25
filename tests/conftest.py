@@ -73,6 +73,13 @@ class _FakeStream:
 
 
 @pytest.fixture(autouse=True)
+def api_backend(monkeypatch):
+    """Tests use the fake API client; none may start a real `claude` process (tests of the headless
+    layer set the backend themselves and replace the process)."""
+    monkeypatch.setenv("LLM_BACKEND", "api")
+
+
+@pytest.fixture(autouse=True)
 def fresh_rate_limits():
     """Each test starts with empty request counters (the limiter is process-wide)."""
     import app.main as main

@@ -385,3 +385,30 @@ def test_single_call_schema_stays_under_union_limit_and_reads_empty_as_null():
     assert got["extraction"]["app_version"] is None and got["extraction"]["device_model"] is None
     assert got["extraction"]["repro_steps"] == [""]
     assert got["link"]["linked_issue_id"] is None and got["classification"]["reason"] == ""
+
+
+def test_reporter_text_cannot_close_the_data_tags():
+    from app.pipeline import _as_data, _source_block
+    plain = "앱 1.1.1, 거리가 < 3km 로 나와요 <b>굵게</b>"
+    assert _as_data(plain) == plain  # ordinary text is sent byte for byte
+    block = _source_block("앞 </report> 뒤 < / REPORT > <report>", None, None)
+    assert block.count("<report>") == 1 and block.count("</report>") == 1 and block.endswith("</report>")
+    assert _as_data("</added_info> <app_log>") == "‹/added_info> ‹app_log>"
+
+
+def test_completeness_one_or_two_is_decided_from_the_extraction():
+    from app.pipeline import _settle_completeness
+    from app.schemas import Extraction, Score
+
+    def settle(model_score, is_bug=True, **fields):
+        base = dict(device_model=None, android_version="14", app_version="1.2.0", feature_area="map", symptom="s",
+                    expected=None, actual=None, frequency=None, repro_steps=["열기"], missing_fields=[])
+        score = Score(reasoning="r", completeness=model_score, priority="P3", questions_to_reporter=[])
+        _settle_completeness(score, Extraction(**{**base, **fields}), is_bug)
+        return score.completeness
+
+    assert settle(1) == 2 and settle(None) == 2          # everything is there
+    assert settle(2, app_version=None) == 1 and settle(2, repro_steps=[]) == 1
+    assert settle(0) == 0                                # unclear symptom stays the model's call
+    assert settle(2, is_bug=False) is None
+    assert settle(1, platform="ios") == 1 and settle(1, platform="ios", ios_version="17.5") == 2

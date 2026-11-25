@@ -249,10 +249,25 @@ def chat_turn(dev_id: str, message: str, store: Store, model: str = MODEL_DEFAUL
     cost = latency = 0.0
     cache_read = 0
     changed: list[str] = []  # state-changing tools that succeeded this turn
+
+    def execute(name: str, tool_input: dict) -> tuple[str, bool]:
+        tool_calls.append(name)
+        if on_tool:
+            on_tool(name)
+        json_str, is_error = run_chat_tool(dev_id, store, name, tool_input, message, history)
+        if name == "reanalyze_report" and not is_error:
+            changed.append(name)
+        return json_str, is_error
+
+    def headless_runner(name: str, tool_input: dict) -> tuple[str, bool]:  # Claude Code runs the loop
+        if len(tool_calls) >= MAX_TOOL_ROUNDS * 2:
+            return _j({"error": "도구 호출 한도를 넘었습니다. 지금까지의 결과로 답하세요"}), True
+        return execute(name, tool_input)
+
     for round_no in range(MAX_TOOL_ROUNDS + 1):
         try:
             res = call_llm(step="chat", system=system, messages=messages, tools=CHAT_TOOL_DEFS, model=model,
-                           on_text=on_text)
+                           on_text=on_text, tool_runner=headless_runner)
         except LLMError:
             if not changed:
                 raise
@@ -277,12 +292,7 @@ def chat_turn(dev_id: str, message: str, store: Store, model: str = MODEL_DEFAUL
         for block in res.content:
             if getattr(block, "type", None) != "tool_use":
                 continue
-            tool_calls.append(block.name)
-            if on_tool:
-                on_tool(block.name)
-            json_str, is_error = run_chat_tool(dev_id, store, block.name, block.input, message, history)
-            if block.name == "reanalyze_report" and not is_error:
-                changed.append(block.name)
+            json_str, is_error = execute(block.name, block.input)
             results.append({"type": "tool_result", "tool_use_id": block.id,
                             "content": json_str, "is_error": is_error})
         messages.append({"role": "user", "content": results})  # all results in ONE message

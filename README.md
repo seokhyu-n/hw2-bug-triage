@@ -42,10 +42,11 @@ venv\Scripts\activate
 python -m pip install -r requirements.txt     # 재현용 고정 버전은 requirements.lock.txt
 ```
 
-1. 프로젝트 루트에 `.env` 파일을 만들고 한 줄을 넣습니다. 키는 저장소에 올리지 않습니다(`.gitignore`).
-   ```
-   CLAUDE_API_KEY=여기에_본인_키
-   ```
+1. **Claude Code에 로그인**합니다(API 키 불필요). 터미널에서 `claude`를 실행해 `/login`. 확인은 `claude auth status`.
+   - 분석·챗봇은 Claude Code 헤드리스 모드(`claude -p`, 모델 claude-haiku-5-5)로 호출합니다(`app/headless.py`). 호출마다 프로세스를 띄워 제보 한 건에 약 12~30초 걸립니다(API 방식 약 9초).
+   - 호출 비용은 청구되지 않지만 **로그인한 계정의 사용 한도**를 씁니다. 화면과 평가의 비용은 같은 토큰의 API 정가 환산값입니다.
+   - 개인 로그인을 쓰는 방식이라 내 컴퓨터의 개발·시연용입니다. 다른 사람에게 공개하는 서비스로 운영하려면 API 방식을 쓰세요.
+   - API 방식으로 되돌리기: `$env:LLM_BACKEND="api"` + `.env`의 `CLAUDE_API_KEY`(호출마다 과금).
 2. 서버 실행
    ```powershell
    python -m uvicorn app.main:app --port 8000
@@ -81,7 +82,7 @@ python -m pip install -r requirements.txt     # 재현용 고정 버전은 requi
    ```powershell
    python -m pytest
    ```
-5. 평가 실행 (실제 API 호출, 비용 발생)
+5. 평가 실행 (실제 호출. 헤드리스는 계정 사용 한도를 쓰고 95% 이상이면 시작하지 않음)
    ```powershell
    python -m eval.run_eval --run-id Run-01 --baseline --change "기준선: 지시문만, 전체 원문 전달"
    python -m eval.run_eval --run-id Run-05 --model sonnet --change "모델 비교: Sonnet"
@@ -94,7 +95,7 @@ python -m pip install -r requirements.txt     # 재현용 고정 버전은 requi
 
 | 조건 | 구현 위치 |
 |---|---|
-| LLM API 호출, System·User 분리, 주요 파라미터 | `app/llm.py:call_llm` 하나로 모든 호출. `model`, `system`(블록 리스트), `messages`, `max_tokens`, `output_config`(`effort`, `format`), `tools`, `tool_choice=auto`, `stop_sequences`, **스트리밍**(`on_text`를 주면 `client.messages.stream()`으로 받아 글자가 생성되는 대로 전달, `_send`). 챗봇은 `POST /api/chat/stream`으로 답변을 실시간 표시한다(NDJSON: text·tool·done 이벤트). 가격·모델명은 `app/config.py` |
+| LLM API 호출, System·User 분리, 주요 파라미터 | `app/llm.py:call_llm` 하나로 모든 호출. 기본은 Claude Code 헤드리스(`app/headless.py`: `--system-prompt-file`, `--json-schema`, `--effort`, 도구는 앱 안의 MCP 서버, `--include-partial-messages` 스트리밍)이고, `LLM_BACKEND=api`이면 아래 API 파라미터를 쓴다. `model`, `system`(블록 리스트), `messages`, `max_tokens`, `output_config`(`effort`, `format`), `tools`, `tool_choice=auto`, `stop_sequences`, **스트리밍**(`on_text`를 주면 `client.messages.stream()`으로 받아 글자가 생성되는 대로 전달, `_send`). 챗봇은 `POST /api/chat/stream`으로 답변을 실시간 표시한다(NDJSON: text·tool·done 이벤트). 가격·모델명은 `app/config.py` |
 | Markdown 프롬프트 템플릿 | `prompts/extract.md`, `classify.md`, `link.md`, `score.md`, `chat.md` (Task / Context / Constraints / Input / Output format / Success criteria). 로딩은 `app/prompts.py:load` |
 | Few-shot | `prompts/extract_fewshot.md`, `classify_fewshot.md`, `score_fewshot.md` (버그 vs 문의, 버그 vs 개선 요청, 복합, 주입 시도 경계 사례). `app/prompts.py:build_system`이 `few_shot` 옵션일 때 붙임 |
 | Decomposition, Prompt Chaining | `app/pipeline.py:analyze`: 추출 → 분류 → 링크 → 스코어. 앞 단계 결과를 다음 호출의 user 메시지에 넣음(`_user`, `_json`) |
@@ -133,7 +134,7 @@ python -m pip install -r requirements.txt     # 재현용 고정 버전은 requi
 - 실패 유형을 보고 고른 두 가지 수정이 효과가 있었다. 추출 누락률 0.068 → 0.005(Run-06), P1 재현율 10/16 → 15/16으로 우선순위 exact 0.84 → 0.88(Run-07).
 - 분류는 Run-01부터 0.98~1.00으로 이미 높아 변수 효과를 보기 어렵다. 1~2%p 차이는 Run 간 잡음 범위다.
 
-**최종 선택: Run-07 (Haiku 5.5 + Few-shot + Rubric + Context 선별 + 수정 2건)** → 이후 dataset_v2에서 프롬프트 수정 3건(V2-Run-08~10), 아이폰 지원(V2-Run-11, 3회 반복)과 링크 규칙을 더한 V2-Run-12를 거쳐 **V3-Run-12**가 현재 서비스 설정이다(아래 "평가 보강", "대규모 평가").
+**최종 선택: Run-07 (Haiku 5.5 + Few-shot + Rubric + Context 선별 + 수정 2건)** → 이후 dataset_v2에서 프롬프트 수정 3건(V2-Run-08~10), 아이폰 지원(V2-Run-11, 3회 반복)과 링크 규칙을 더한 V2-Run-12, V3-Run-12를 거쳐 **V3-Run-15**가 현재 서비스 설정이다(아래 "평가 보강", "대규모 평가").
 - Sonnet(Run-05)은 우선순위 exact(0.93 vs 0.88), 완성도 MAE(0.036 vs 0.109), labels(0.98 vs 0.95), 링크(0.97 vs 0.96)에서 낫다. 분류 정확도는 같고(0.98) 추출 정확도는 Haiku가 더 높다(0.972 vs 0.962).
 - 그래도 비용이 약 18배($1.568 vs $0.087 / 100건), 응답시간이 36% 더 길어(10.93s vs 8.06s) 남은 차이가 그만한 값어치는 없다고 판단해 Haiku를 최종으로 골랐다.
 - Run-01~07 총비용 약 $2.11 (Haiku 6회 $0.544 + Sonnet 1회 $1.568, 스모크 Run-00 $0.005 별도).
@@ -184,18 +185,17 @@ V2-Run-07에서 **새 경계 사례가 기준선보다 나빴던 것**(고장처
 
 자세한 내용과 한계: `docs/analysis/v3_experiments.md`. 비용 약 $10.6(Sonnet $4.51 포함).
 
-| 기법을 끈 실험 (v3 250건) | 분류 | 우선순위 | 완성도 MAE | 추출 환각률 |
-|---|---|---|---|---|
-| 튜닝 전 설정 (3회 범위) | 0.940~0.956 | 0.844~0.876 | 0.111~0.130 | 0.035~0.041 |
-| rubric 끔 | 0.940 | **0.688** | **0.419** | 0.038 |
-| few-shot 끔 | 0.956 | 0.872 | **0.190** | 0.036 |
-| context 선택 끔 | 0.944 | 0.856 | 0.131 | 0.042 |
-| CoT 끔 | 0.936 | 0.836 | **0.230** | 0.039 |
-| 체이닝 끔 (한 번 호출) | 0.964 | 0.860 | **0.037** | **0.051** |
-| effort medium | 0.952 | 0.840 | 0.116 | 0.041 |
-| Sonnet 5.5 (비용 약 18배) | 0.968 | 0.888 | 0.068 | 0.034 |
+| 기법을 끈 실험 (v3 250건, 3회 평균·범위) | 분류 | labels | 우선순위 | 완성도 MAE | 추출 환각률 |
+|---|---|---|---|---|---|
+| 튜닝 전 설정 | 0.948 (0.940~0.956) | 0.867 (0.864~0.872) | 0.864 (0.844~0.876) | 0.120 (0.111~0.130) | 0.038 (0.035~0.041) |
+| few-shot 끔 | 0.953 (0.948~0.956) | 0.892 (0.888~0.900) | 0.861 (0.848~0.872) | 0.158 (0.135~0.190) | 0.039 (0.036~0.041) |
+| rubric 끔 | 0.939 (0.932~0.944) | 0.876 (0.872~0.880) | 0.712 (0.688~0.732) | 0.403 (0.383~0.419) | 0.040 (0.038~0.042) |
+| context 선택 끔 | 0.943 (0.940~0.944) | 0.868 (0.860~0.872) | 0.864 (0.856~0.872) | 0.099 (0.074~0.131) | 0.041 (0.039~0.042) |
+| CoT 끔 | 0.936 (0.936~0.936) | 0.864 (0.856~0.872) | 0.833 (0.820~0.844) | 0.204 (0.169~0.230) | 0.038 (0.036~0.039) |
+| 체이닝 끔(한 번 호출) | 0.961 (0.960~0.964) | 0.897 (0.892~0.904) | 0.845 (0.832~0.860) | 0.047 (0.037~0.062) | 0.041 (0.032~0.051) |
+| effort medium | 0.947 (0.944~0.952) | 0.869 (0.868~0.872) | 0.849 (0.840~0.868) | 0.132 (0.116~0.155) | 0.044 (0.041~0.046) |
 
-끄기 실험과 Sonnet은 1회씩이라 3회 범위를 크게 벗어난 값(굵게)만 효과로 본다. 한 번 호출은 다른 스키마를 써서 순수한 체이닝 비교가 아니다.
+Sonnet(1회, V3-Run-09): 분류 0.968, 우선순위 0.888, MAE 0.068, 비용 약 18배. 한 번 호출은 다른 스키마를 써서 순수한 체이닝 비교가 아니다.
 
 **튜닝 전후 (튜닝에 쓰지 않은 새 사례 100건, 각 3회)**
 
@@ -206,7 +206,9 @@ V2-Run-07에서 **새 경계 사례가 기준선보다 나빴던 것**(고장처
 | 우선순위 | 0.947 | 0.977 | 확실하지 않음(검토 전 정답으로는 0.957 → 0.973) |
 | 완성도 MAE | 0.147 | 0.122 | 차이 확인 안 됨 |
 
-- 오류를 보고 고친 v3 250건의 점수(V3-Run-10·11)는 일반화 점수가 아니고, 평가 사례와 겹치는 예시 문구도 있었다. 겹치는 문구를 바꾼 **V3-Run-12가 현재 설정**이다(v3 3회 평균: 분류 0.955, labels 0.931, 우선순위 0.893, MAE 0.128. MAE는 튜닝 전과 범위가 겹쳐 차이를 말할 수 없고, 이 250건은 튜닝에 쓴 것이다. 반복 실행과 챗봇 새 사례는 `docs/analysis/v3_experiments.md` 8번).
+**현재 설정 = V3-Run-15** (헤드리스, 완성도 1·2점은 코드, 추출 규칙, 태그 보호): v3 3회 평균 분류 0.961, labels 0.935, 우선순위 0.871, 완성도 MAE 0.043(V3-Run-12는 0.128), 링크 0.993. 새 사례 100건은 분류 0.990, 우선순위 0.977, MAE 0.018, 링크 1.000(이미 결과를 본 셋). 완성도는 정답도 같은 기준이라 좋게 나오는 면이 있고, 추가 기능(캡처·아이폰)은 이 설정으로 다시 재지 않았다. `docs/analysis/v3_experiments.md` 8·9번.
+
+- 오류를 보고 고친 v3 250건의 점수(V3-Run-10·11)는 일반화 점수가 아니고, 평가 사례와 겹치는 예시 문구도 있었다. 겹치는 문구를 바꾼 것이 V3-Run-12다(v3 3회 평균: 분류 0.955, labels 0.931, 우선순위 0.893, MAE 0.128. MAE는 튜닝 전과 범위가 겹쳐 차이를 말할 수 없고, 이 250건은 튜닝에 쓴 것이다. 반복 실행과 챗봇 새 사례는 `docs/analysis/v3_experiments.md` 8번).
 - 사례와 정답은 AI가 썼고, 판단이 갈리는 34건만 사람이 검토해 5건을 바꿨다(`eval/review/v3_review_log.md`). 위 수치는 저장된 예측을 다시 채점한 값이다(`eval/regrade.py`). 새 사례는 v3보다 쉽다. 부작용: 따지는 질문에 문의 라벨을 잘못 붙임(E-342).
 - 챗봇 어려운 100건: 94 → 99(같은 100건으로 고치고 다시 잰 값), 안전 위반 5 → 0. 스크린샷·답변·아이폰 각 100건은 모두 100%지만 쉬운 셋이다.
 
@@ -239,7 +241,8 @@ V2-Run-07에서 **새 경계 사례가 기준선보다 나빴던 것**(고장처
 - **화면 렌더링은 `textContent`만** 사용해 제보·챗봇 응답 속 HTML이 실행되지 않는다(`static/app.js`).
 - **제보자 링크**: 상태 페이지 토큰은 `secrets.token_urlsafe`(18바이트)이고 상수 시간 비교로 찾습니다. 페이지는 `Referrer-Policy: no-referrer`로 열어 링크가 외부로 새지 않게 했습니다. 제보자 답변은 원래 제보와 같은 신뢰 수준(신뢰하지 않는 텍스트)으로 `<added_info>`에만 들어갑니다.
 - **첨부 파일**: 파일 앞부분 바이트로 이미지인지 확인해 이름만 바꾼 HTML·스크립트는 거부하고, 저장 파일명은 서버가 정한다(경로 조작 불가). 응답에는 `X-Content-Type-Options: nosniff`와 `Content-Security-Policy: default-src 'none'`을 붙인다. 이미지 속 글자의 지시문도 제보 내용으로만 다루도록 추출 지시에 명시했다.
-- **API 키는 `.env`에만** 있고(`.gitignore`), 코드에서는 `app/config.py:get_api_key`로만 읽는다. 로그·문서·커밋에 키를 넣지 않는다.
+- **헤드리스 격리**: 기본 도구 전부 끔(`--tools ""`), 설정·프로젝트 지침·다른 MCP를 읽지 않음, 빈 작업 폴더, 세션 저장 안 함. 허용한 도구 외의 도구가 켜져 있으면 실행을 중단한다. 앱의 MCP 서버는 127.0.0.1의 임의 포트와 호출마다 다른 비밀 경로를 쓴다. 자식 프로세스에는 API 키 환경변수를 넘기지 않는다. Claude Code가 모델 맥락에 넣는 계정 이메일·폴더 경로는 끌 수 없어, 답·스트리밍·도구 입력에서 코드로 지우고(글자 그대로인 경우) 쓰지 말라는 규칙을 붙였다. 모양을 바꾼 유출(띄어쓰기 등)까지 막지는 못한다.
+- **API 키(API 방식에서만 사용)는 `.env`에만** 있고(`.gitignore`), 코드에서는 `app/config.py:get_api_key`로만 읽는다. 로그·문서·커밋에 키를 넣지 않는다.
 
 ## 알려진 한계
 

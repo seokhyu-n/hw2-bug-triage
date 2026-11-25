@@ -1,6 +1,6 @@
-# STATE (2026-11-24)
+# STATE (2026-11-25)
 
-Branch: main (GitHub private repo `seokhyu-n/hw2-bug-triage`). Service setting = V3-Run-12 (V2-Run-12 + V3 tuning, final wording). Tests: `venv\Scripts\python.exe -m pytest`.
+Branch: main (GitHub private repo `seokhyu-n/hw2-bug-triage`). Service setting = V3-Run-15 (headless; V3-Run-12 + code completeness, extract rules, tag guard). Tests: `venv\Scripts\python.exe -m pytest`.
 ## Where things are
 - Reporter `/report`: optional fields, Galaxy/iPhone picker, screenshots + redaction, log, run record (`app/activity.py`), self-check guides (`app/self_help.py`), known issue/FAQ
   suggestions (`app/suggest.py`), public `/known-issues`, private status page `/status/<token>` with replies. Intake saves first, `app/intake.py`
@@ -15,13 +15,12 @@ Branch: main (GitHub private repo `seokhyu-n/hw2-bug-triage`). Service setting =
   `build_combined.py`, publish the body only. Keep lecture page numbers/wording OUT of these pages.
 ## Setting up on another computer
 - Clone, `python -m venv venv`, `venv\Scripts\python.exe -m pip install -r requirements.txt`.
-- The user creates `.env` with `CLAUDE_API_KEY=...` (not in git). Runtime data (`data/runtime/`) starts empty.
+- LLM calls: Claude Code headless (`claude -p`, `app/headless.py`), needs `claude` + `/login`, no key. `LLM_BACKEND=api` = old way with `.env`. Uses the account limits. Runtime data (`data/runtime/`) starts empty.
 - Server: `venv\Scripts\python.exe -m uvicorn app.main:app --port 8000`.
 - Also set up at `C:\Users\hi\부트캠프\hw2-bug-triage` (11-24); git author set repo-locally to match earlier commits.
-## In progress (11-24 evening; stopped at 17:50, unfinished)
-- Left to run (old prompts folder is the output of `git show e0e6b82:prompts/<file>`): V3-Run-06-r2, V3-Run-07-r2, V3-Run-08-r2, V3-Run-08-r3. Runs done and numbers: `docs/analysis/v3_experiments.md` section 8.
-- To do: completeness 1 vs 2 in code (required_fields; model keeps 0), then V3-Run-13 + holdout; publish the rebuilt analysis page (the live one still says MAE got worse), commit.
-
+## Done 11-25
+- Setting = V3-Run-15 (headless, completeness 1/2 in code, data-tag guard, extract rules). Numbers and limits: `docs/analysis/v3_experiments.md` 8-9.
+- Not done: live analysis page still says MAE got worse (sources updated, not published); screenshots/iPhone v3 sets and the chatbot not re-run headless; pre-warmed headless processes (speed) not built.
 ## Next (optional)
 - Human label review done (34, `eval/review/v3_review_log.md`); after a label fix run `eval.regrade V3- HO-`. Harder holdout; iPhone / new-policy holdout cases.
 - Known: E-342 (rhetorical question gets a question label); unquoted pasted reporter text can still name a receiver in chat.

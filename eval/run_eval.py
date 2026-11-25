@@ -15,7 +15,7 @@ from pathlib import Path
 import openpyxl
 from openpyxl.chart import BarChart, Reference
 
-from app.config import MODEL_COMPARE, MODEL_DEFAULT, ROOT
+from app.config import MODEL_COMPARE, MODEL_DEFAULT, ROOT, llm_backend
 from app.llm import LLMError
 from app.pipeline import BASELINE, PipelineConfig, analyze
 from eval import grade
@@ -50,11 +50,26 @@ def load_dataset(only_hard: bool = False, limit: int | None = None, dataset: str
     return cases[:limit] if limit else cases
 
 
+def stop_if_near_limit(run_id: str, limit: float = 0.95) -> None:
+    """Headless runs use the account's Claude limits, which the user also works with: one tiny call
+    reads the current use, and a run is not started above `limit`."""
+    if llm_backend() == "api":
+        return
+    from app import headless
+    headless.run(system=[{"type": "text", "text": "ok"}], messages=[{"role": "user", "content": "ok"}], schema=None,
+                 tools=None, tool_runner=None, model=MODEL_DEFAULT, effort="low", max_tokens=200)
+    info = headless.last_rate_limit
+    used = float(info.get("utilization") or 0)
+    if info.get("status") == "rejected" or used >= limit:
+        raise SystemExit(f"Claude 사용 한도 {used:.0%}: {run_id} not started")
+
+
 def describe(cfg: PipelineConfig) -> str:
     def on(b: bool) -> str:
         return "on" if b else "off"
     return (f"few_shot={on(cfg.few_shot)} rubric={on(cfg.rubric)} "
             f"context_select={on(cfg.context_select)} effort={cfg.effort}"
+            + ("" if llm_backend() == "api" else " backend=headless")
             + ("" if cfg.cot else " cot=off") + ("" if cfg.chain else " chain=off"))
 
 
@@ -369,6 +384,7 @@ def main(argv: list[str] | None = None) -> dict:
     args = ap.parse_args(argv)
     if (RESULTS_DIR.parent / ".stop").exists():  # a queue of runs stops before its next (paid) run
         raise SystemExit(f"eval/.stop exists: {args.run_id} not started")
+    stop_if_near_limit(args.run_id)
     if args.prompts_dir:
         from app import prompts
         prompts.PROMPTS_DIR = Path(args.prompts_dir)

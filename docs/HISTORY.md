@@ -1,6 +1,15 @@
 # HISTORY
 
 Newest entry on top.
+## 2026-11-25 Results after the headless switch
+- V3-Run-15 / HO-Run-15 x3 (headless, Haiku): v3 cls 0.961, labels 0.935, priority 0.871, completeness MAE 0.043 (was 0.128), link 0.993, hallucination 0.022; held-out cls 0.990, priority 0.977, MAE 0.018, link 1.000. MAE gain is clear but the gold uses the same rule; priority/cls/labels overlap V3-Run-12; hallucination change mixes the new extract rules and the call method.
+- Bug found by measuring: headless quoted ids ("ISSUE-04") cut v3 links to 0.948 (V3-Run-14); `headless.unwrap` fixed it (12 of 12 lost links back). Reply held-out 100: invented values API 3 -> 0, headless 7 -> 0 (1x each).
+- Ablations now 3x each: single-run readings of 11-24 corrected in `docs/analysis/v3_experiments.md` section 8. Harder screenshots and iPhone were not re-run with this setting (user's choice). Public analysis page not republished.
+## 2026-11-25 Claude Code headless mode instead of the API key
+- User request: call Claude through `claude -p` (signed-in account, claude-haiku-5-5) instead of CLAUDE_API_KEY. `app/headless.py`; `call_llm` uses it by default, `LLM_BACKEND=api` keeps the old path (tests use that with the fake client). Function calling stays real: in-process MCP server on 127.0.0.1, executed in the caller's thread by `tool_runner`, so guards and store locks are unchanged. Screenshots, JSON schema, effort and streaming work; chat history is sent as a transcript in one message.
+- Found: Claude Code puts the account email and working folder into the model context with no switch (6 option sets tried) -> verbatim scrub of answers, streams and tool input + a privacy rule; two leak attempts and one chat question returned nothing. Runs with any unexpected tool are stopped.
+- Live without a key: bug 17.7 s, question 12.3 s, screenshot 29.6 s; chatbot tools and guards worked. 13 tests (300 pass). Evals record `backend=headless` and do not start above 95% of the account limit; API and headless runs are different conditions.
+- Same day before the switch (API): ablation repeats finished (3x each); completeness 1/2 decided in code; `_as_data` stops reporter text from closing data tags (Q3-093); extract rules (own phone, certain, current values); V3-Run-13 (1x, API).
 ## 2026-11-24 Evening: repeats, blind chatbot set, harder feature sets (unfinished)
 - Ablation repeats with the old prompts (left to run: V3-Run-06-r2, V3-Run-07-r2, V3-Run-08-r2, V3-Run-08-r3). Final wording x3: MAE 0.098-0.148 vs pre-tuning 0.111-0.130, so the earlier "worse" claim is not confirmed.
 - Blind chatbot set (`eval/chat_holdout.py`, `chat_eval --set holdout`): 98/96/96 -> 100/100/100, all from ambiguous-target cases. Harder feature sets (`feature_sets_v3.py`, `--set v3`): see `docs/analysis/v3_experiments.md` section 8.
