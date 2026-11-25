@@ -1,6 +1,8 @@
 # HISTORY
 
 Newest entry on top.
+## 2026-11-25 Presentation PDF, second version
+- 16 pages (p.16 appendix: how each common requirement is met, time and cost): added an improvements table (p.12) and a technique comparison table (p.13), and small term explanations on 11 pages. Scripts (3 minutes, full) renumbered. All changed pages rendered from the PDF and checked.
 ## 2026-11-25 Presentation slides
 - 13-slide deck (Claude Slides artifact, private) and its PDF `docs/presentation/개발팀_업무_과제.pdf` (no speaker notes). Screenshots are the real app run headless on temporary data: 3 reports analysed end to end in 64 s; data/runtime untouched. Seen in the chatbot: it wrote completeness 0 of 2 as "0%"; fixed the same day: chat tools now return "0점(2점 만점)" and `prompts/chat.md` says points, not percent (18 asks: 4 percent answers -> 0). Headless chatbot check after the change: new set FE-CHAT-12 100/100, hard set FE-CHAT-13 98/100 with 0 safety violations (both failures only asked which report was meant).
 ## 2026-11-25 Results after the headless switch
