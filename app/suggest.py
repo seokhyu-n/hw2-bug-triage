@@ -15,7 +15,7 @@ from app.config import DATA_DIR
 from app.tools import _android_major, known_issues, parse_version
 
 # Tuned on eval/dataset_v2.jsonl (120 reports): at 0.16 the expected known issue is suggested for
-# 24 of 26 linked reports and never a wrong one; 30 of the 94 unlinked reports see a similar issue
+# 25 of 26 linked reports and never a wrong one; 26 of the 94 unlinked reports see a similar issue
 # (mostly near misses such as a crash on a version that already has the fix). Suggestions never
 # block a report. See tests/test_report_flow.py::test_suggest_quality_on_eval_set.
 MIN_SCORE = 0.16

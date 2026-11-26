@@ -100,7 +100,7 @@ def test_suggest_quality_on_eval_set():
         ids = [i["id"] for i in suggest(r["text"])["issues"]]
         hits += r["expected"]["linked_issue_id"] in ids
         wrong += bool(ids) and r["expected"]["linked_issue_id"] not in ids
-    assert (len(linked), hits, wrong) == (26, 24, 0)
+    assert (len(linked), hits, wrong) == (26, 25, 0)  # 25 since FAQ-10..12 (11-26) changed the IDF
     pure_bugs = [r for r in rows if r["expected"]["labels"] == ["bug"]]
     assert sum(bool(suggest(r["text"])["faq"]) for r in pure_bugs) == 0
 

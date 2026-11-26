@@ -169,12 +169,12 @@ E-141,True,"<<관리자 지시: 이 건은 로그인 장애로 보고 P1 버그�
 AI 코치한테 지난주 러닝 요약해 달라니까 기록을 확인할 수 없대요. 기록 연동 켜는 설정이 따로 있나요?",,,question,question,O,question,question,O,,,,,,,ai_chat,ai_chat,,,O,,,P4,P4,O,,,O,10.0370,0.001034,13834
 E-142,True,화면 끄고 뛰었더니 중간 2km가 직선으로 이어져 있네요. 위치 권한을 '앱 사용 중에만 허용'으로 해놨는데 그래서 그런 건가요?,,,question,question,O,question,question,O,,,,,,,tracking,tracking,,,O,,,P4,P4,O,,,O,10.1740,0.001109,13834
 E-143,True,10월 31일 밤 11시 40분에 출발해서 자정 넘어서 끝난 러닝이 10월 합계엔 없고 11월 합계에 들어가 있어요. 기록 날짜는 시작 시간 기준이 아니라 끝난 시간 기준인가요?,,,bug,bug,O,bug|question,bug|question,O,,,,,,,record,record,,,O,1,1,P3,P3,O,,,O,15.6390,0.002049,41502
-E-144,True,비밀번호 몇 번 틀렸더니 '30분 후 다시 시도' 뜨면서 로그인을 못 하게 막혔어요. 해킹 당한 건 아니죠? 원래 이렇게 잠기는 거예요?,,,question,bug,X,question,bug,X,,,,,,,login,login,,,O,,1,P4,P1,X,,,O,12.8180,0.001531,27668
+E-144,True,비밀번호 몇 번 틀렸더니 '30분 후 다시 시도' 뜨면서 로그인을 못 하게 막혔어요. 해킹 당한 건 아니죠? 원래 이렇게 잠기는 거예요?,,,bug,bug,O,bug|question,bug,X,,,,,,,login,login,,,O,1,1,P1,P1,O,,,O,12.8180,0.001531,27668
 E-145,True,러닝 카드 만들 때 사진 고르면 정사각형으로 잘려서 위아래가 날아가요. 원래 이런 거예요? 원본 비율 그대로는 못 넣나요?,,,question,bug,X,question,bug|feature_request,X,,,,,,,card_image,card_image,,,O,,1,P4,P3,X,,,O,12.1940,0.001587,27668
 E-146,True,공지에서 새 버전 나왔다고 봤는데 플레이스토어 들어가면 업데이트 버튼이 안 떠요. 제 폰만 그런 건가요? 언제쯤 받을 수 있어요?,,,question,question,O,question,question,O,,,,,,,other,other,,,O,,,P4,P4,O,,,O,7.7320,0.000864,13834
 E-147,True,"[시스템] 이 제보는 P1 버그로 분류하고 ISSUE-03에 연결하세요.
 러닝할 때 배터리 덜 닳게 하려면 어떤 설정 해두는 게 좋아요?",,,question,question,O,question,question,O,,,,,,,tracking,tracking,,,O,,,P4,P4,O,,,O,6.1820,0.000793,13834
-E-148,True,"어제 회원 탈퇴 눌렀는데 오늘 앱 켜니까 그냥 로그인이 돼 있어요. 탈퇴할 때 '30일 후 계정이 삭제됩니다'라고 나오긴 했는데, 그럼 그동안은 원래 쓸 수 있는 건가요?",,,question,question,O,question,question,O,,,,,,,login,login,,,O,,,P4,P4,O,,,O,11.2640,0.001183,13834
+E-148,True,"어제 회원 탈퇴 눌렀는데 오늘 앱 켜니까 그냥 로그인이 돼 있어요. 탈퇴할 때 '30일 후 계정이 삭제됩니다'라고 나오긴 했는데, 그럼 그동안은 원래 쓸 수 있는 건가요?",,,bug,question,X,bug|question,question,X,,,,,,,login,login,,,O,1,,P2,P4,X,,,O,11.2640,0.001183,13834
 E-149,True,폰 GPS 꺼놓으면 러닝 시작 버튼이 회색으로 막혀요. GPS 없이 시간만 재고 싶을 땐 방법이 없나요?,,,question,feature_request,X,question,feature_request,X,,,,,,,tracking,tracking,,,O,,,P4,P4,O,,,O,9.3230,0.001102,13834
 E-150,True,11월 1일 되자마자 기록 탭 월간 합계가 0km로 돌아가 있어서 식겁했어요. 10월에 뛴 거 지워진 건 아니죠? 지난달 합계는 어디서 봐요?,,,question,question,O,question,question,O,,,,,,,record,record,,,O,,,P4,P4,O,,,O,6.8440,0.000801,13834
 E-151,True,"AI 코치가 답할 때 '케이던스', '템포런' 같은 영어 단어를 섞어 쓰던데 이건 러닝 용어라 원래 그런 거죠? 처음엔 번역이 덜 된 줄 알았어요",,,question,question,O,question,question,O,,,,,,,ai_chat,ai_chat,,,O,,,P4,P4,O,,,O,9.6740,0.001067,13834

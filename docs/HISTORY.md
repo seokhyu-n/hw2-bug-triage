@@ -1,6 +1,9 @@
 # HISTORY
 
 Newest entry on top.
+## 2026-11-26 Product policies as normal behavior (V3-Run-17)
+- User decided: no auto pause, staged rollout, AI coach keeps English running terms = normal behavior (classify list + FAQ-10~12); the account lock / 30-day grace reports are bugs (E-144, E-148 -> bug+question, re-graded). FAQ-11 keywords narrowed after it showed on 2 pure bug reports.
+- V3-Run-17 x3 (same labels): cls 0.967 -> 0.980 (no overlap), non-bug called bug 4/4/5 -> 2/1/1, priority 0.917 -> 0.925; holdout priority 0.963 and holdout2 0.927 overlap Run-16 (changes there are P1/P2/P3 boundary noise). Baseline V3-Run-02 re-graded: 0.953 / priority 0.877. README, `docs/analysis/v3_experiments.md` 12, presentation p.11, 14.
 ## 2026-11-26 Priority rubric, harder held-out set, feature sets re-measured
 - User set 4 priority boundaries (cosmetic only -> P4, record-tab weekly/monthly totals -> P3, AI course map -> P3, suspected loss -> P1): 3 labels changed (E-089 in v3 only via V2_LABEL_FIXES, E-124, E-136; re-graded), 3 rubric lines. A first, too wide map line dropped iPhone "map not shown" cases to P3 (FE-IOS-04 void) and its V3-Run-16 start was stopped; narrowed to "AI course map only".
 - V3-Run-16 x3: priority 0.883 -> 0.911 (no overlap), others in range; holdout HO-Run-16 x3 priority 0.973 (overlaps). New blind harder set dataset_holdout2 (E-401..E-500, written by an agent that saw no results; E-439 set to P3 by the 11-26 rule before any run): HO2-Run-16 x3 cls 0.987, priority 0.940.

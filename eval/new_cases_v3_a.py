@@ -150,8 +150,9 @@ CASES = [
          ex("record", "자정을 넘긴 러닝이 시작한 달이 아니라 끝난 달 합계에 들어감", actual="11월 합계에 들어가 있음"), 1, "P3"),
     case("E-144", "비밀번호 몇 번 틀렸더니 '30분 후 다시 시도' 뜨면서 로그인을 못 하게 막혔어요. "
                   "해킹 당한 건 아니죠? 원래 이렇게 잠기는 거예요?",
-         ["boundary_bug_question"], "question", ["question"],
-         ex("login", "비밀번호를 여러 번 틀린 뒤 로그인이 30분 잠기는 것이 정상인지 문의"), None, "P4"),
+         ["boundary_bug_question", "missing", "mixed_labels"], "bug", ["bug", "question"],  # human decision 11-26: no lock policy
+         ex("login", "비밀번호를 몇 번 틀린 뒤 '30분 후 다시 시도'가 뜨며 로그인이 막힘",
+            actual="'30분 후 다시 시도'가 뜨며 로그인 불가", steps=["비밀번호를 몇 번 틀리게 입력"]), 1, "P1"),
     case("E-145", "러닝 카드 만들 때 사진 고르면 정사각형으로 잘려서 위아래가 날아가요. 원래 이런 거예요? "
                   "원본 비율 그대로는 못 넣나요?",
          ["boundary_bug_question"], "question", ["question"],
@@ -167,8 +168,9 @@ CASES = [
          ex("tracking", "러닝 중 배터리 소모를 줄이는 설정 문의"), None, "P4"),
     case("E-148", "어제 회원 탈퇴 눌렀는데 오늘 앱 켜니까 그냥 로그인이 돼 있어요. 탈퇴할 때 '30일 후 계정이 "
                   "삭제됩니다'라고 나오긴 했는데, 그럼 그동안은 원래 쓸 수 있는 건가요?",
-         ["boundary_bug_question"], "question", ["question"],
-         ex("login", "탈퇴 신청 후 30일 유예 기간 동안 로그인이 유지되는 것이 정상인지 문의"), None, "P4"),
+         ["boundary_bug_question", "missing", "mixed_labels"], "bug", ["bug", "question"],  # human decision 11-26: no grace period
+         ex("login", "회원 탈퇴 후 다음 날에도 로그인된 상태로 앱이 열림", expected="탈퇴하면 로그인되지 않음",
+            actual="다음 날 앱을 켜니 로그인되어 있음", steps=["회원 탈퇴", "다음 날 앱 실행"]), 1, "P2"),
     case("E-149", "폰 GPS 꺼놓으면 러닝 시작 버튼이 회색으로 막혀요. GPS 없이 시간만 재고 싶을 땐 방법이 없나요?",
          ["boundary_bug_question"], "question", ["question"],
          ex("tracking", "GPS 없이 시간만 기록할 방법이 있는지 문의"), None, "P4"),

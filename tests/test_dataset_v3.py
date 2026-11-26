@@ -56,7 +56,7 @@ def test_v2_is_an_unchanged_prefix_except_listed_label_fixes(raw_bytes):
 def test_new_cases_are_hard_and_cover_every_task(rows):
     new = [r["expected"] for r in rows[120:]]
     assert sum(r["hard"] for r in rows[120:]) >= 100
-    assert Counter(e["category"] for e in new)["question"] >= 15
+    assert Counter(e["category"] for e in new)["question"] >= 13  # E-144/E-148 became bugs (11-26 policy)
     assert Counter(e["category"] for e in new)["feature_request"] >= 15
     assert all(Counter(e["priority"] for e in new)[p] >= 10 for p in ("P1", "P2", "P3"))
     assert sum(1 for e in new if e["linked_issue_id"]) >= 20
