@@ -1,6 +1,9 @@
 # HISTORY
 
 Newest entry on top.
+## 2026-11-26 Priority boundaries: battery drain and missing records (V3-Run-18)
+- User decided: abnormal battery drain = P2 (phone battery-optimization settings excluded); record from an earlier day / already in the list not visible = P1, run reset mid-way = P1, today's finished run missing from the list = P2. Labels already matched; only `prompts/score_rubric.md` changed.
+- V3-Run-18 x3: priority 0.925 -> 0.937 (ranges touch), 3/3 wrong 13 -> 9; holdout 0.967; holdout2 0.927 -> 0.967 (but these boundaries came from holdout2 errors). All 16 target cases right 3/3. Classification moves are noise (rubric is score-only). README, v3_experiments 13, presentation p.11/14.
 ## 2026-11-26 Product policies as normal behavior (V3-Run-17)
 - User decided: no auto pause, staged rollout, AI coach keeps English running terms = normal behavior (classify list + FAQ-10~12); the account lock / 30-day grace reports are bugs (E-144, E-148 -> bug+question, re-graded). FAQ-11 keywords narrowed after it showed on 2 pure bug reports.
 - V3-Run-17 x3 (same labels): cls 0.967 -> 0.980 (no overlap), non-bug called bug 4/4/5 -> 2/1/1, priority 0.917 -> 0.925; holdout priority 0.963 and holdout2 0.927 overlap Run-16 (changes there are P1/P2/P3 boundary noise). Baseline V3-Run-02 re-graded: 0.953 / priority 0.877. README, `docs/analysis/v3_experiments.md` 12, presentation p.11, 14.
