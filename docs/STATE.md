@@ -25,6 +25,6 @@ Branch: main (GitHub repo `seokhyu-n/hw2-bug-triage`, public since 11-25). Servi
 - 11-26 product policies (no auto pause, staged rollout, AI coach English terms = normal; account lock / grace = bug, E-144/E-148): V3-Run-17 non-bug called bug 4-5 -> 1-2. Presentation p.11/14 updated.
 ## Next (optional)
 - Human label review done (34, `eval/review/v3_review_log.md`); after a label fix run `eval.regrade V3- HO-`. Harder holdout; iPhone / new-policy holdout cases.
-- Known: E-342 (rhetorical question gets a question label); unquoted pasted reporter text can still name a receiver in chat. Priority: 13 v3 cases wrong 3/3; open boundaries: battery drain P2 vs P3, "run just done missing from list" P2 vs suspected loss P1 (E-420). `limited_scope` must be set by hand for registered issues.
+- Known: E-342 (rhetorical question gets a question label); unquoted pasted reporter text can still name a receiver in chat. Priority: 13 v3 cases wrong 3/3; boundaries battery drain = P2 and "run just done missing from list" = P2 (older record = P1) decided 11-26, rubric edited; Run-18 x9 running. `limited_scope` must be set by hand for registered issues.
 - Eval runner must keep NOT importing `app.main` (registered issues stay out of eval).
 - `.env` holds the real key; never read it. `data/faq.json` and the classify "정상 동작" list must change together.
