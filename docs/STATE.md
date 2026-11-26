@@ -1,6 +1,6 @@
 # STATE (2026-11-26)
 
-Branch: main (GitHub repo `seokhyu-n/hw2-bug-triage`, public since 11-25). Service setting = V3-Run-15 (headless; V3-Run-12 + code completeness, extract rules, tag guard). Tests: `venv\Scripts\python.exe -m pytest`.
+Branch: main (GitHub repo `seokhyu-n/hw2-bug-triage`, public since 11-25). Service setting = V3-Run-15 + code P1->P2 rule (headless; code completeness, extract rules, tag guard; priority 0.885 / held-out 0.983). Tests: `venv\Scripts\python.exe -m pytest`.
 ## Where things are
 - Reporter `/report`: optional fields, Galaxy/iPhone picker, screenshots + redaction, log, run record (`app/activity.py`), self-check guides (`app/self_help.py`), known issue/FAQ
   suggestions (`app/suggest.py`), public `/known-issues`, private status page `/status/<token>` with replies. Intake saves first, `app/intake.py`
@@ -25,6 +25,6 @@ Branch: main (GitHub repo `seokhyu-n/hw2-bug-triage`, public since 11-25). Servi
   https://claude.ai/artifact/Pu2oAvFYpLiDiYygAeyL63 ; copy in `docs/presentation/deck/`, PDF via `deck/build_pdf.py` (Edge). Edit the artifact, copy files back, rebuild.
 ## Next (optional)
 - Human label review done (34, `eval/review/v3_review_log.md`); after a label fix run `eval.regrade V3- HO-`. Harder holdout; iPhone / new-policy holdout cases.
-- Known: E-342 (rhetorical question gets a question label); unquoted pasted reporter text can still name a receiver in chat.
+- Known: E-342 (rhetorical question gets a question label); unquoted pasted reporter text can still name a receiver in chat. Priority: 19 v3 cases wrong 3/3 (cosmetic P4 vs P3, stats/map P2 vs P3 where gold and rubric differ, non-bugs called bugs). `limited_scope` must be set by hand for registered issues.
 - Eval runner must keep NOT importing `app.main` (registered issues stay out of eval).
 - `.env` holds the real key; never read it. `data/faq.json` and the classify "정상 동작" list must change together.

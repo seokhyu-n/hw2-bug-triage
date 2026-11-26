@@ -6,6 +6,7 @@
     "symptoms": ["Android 7.0/7.1 기기에서 러닝 시작 버튼을 누르면 앱이 강제 종료됨", "러닝 서비스 시작 직후 크래시 발생", "알림 채널(NotificationChannel) 관련 오류 로그"],
     "affected_android": ["7.0", "7.1"],
     "affected_app_versions": ["1.0", "1.0.1"],
+    "limited_scope": "Android 7.0·7.1 구형 OS 사용자",
     "status": "fixed",
     "fixed_in": "1.1.0",
     "workaround": "Android 8.0 이상 기기로 업데이트하거나 1.1.0 이상으로 앱을 업데이트하세요."
@@ -83,6 +84,7 @@
     "symptoms": ["갤러리에서 큰 사진을 선택하면 앱이 종료됨", "러닝 카드 이미지 생성 중 크래시 발생", "OutOfMemoryError 로그"],
     "affected_android": ["7.0", "7.1", "8", "9"],
     "affected_app_versions": ["1.0"],
+    "limited_scope": "Android 9 이하 구형 OS 사용자",
     "status": "fixed",
     "fixed_in": "1.0.1",
     "workaround": "1.0.1 이상으로 업데이트하거나, 해상도가 낮은 사진을 선택하세요."
@@ -94,6 +96,7 @@
     "symptoms": ["저장 버튼을 눌러도 갤러리에 이미지가 보이지 않음", "러닝 카드 저장이 실패함", "Android 9 이하 기기에서만 발생"],
     "affected_android": ["7.0", "7.1", "8", "9"],
     "affected_app_versions": ["1.0", "1.0.1", "1.1.0", "1.1.1", "1.2.0"],
+    "limited_scope": "Android 9 이하 구형 OS 사용자",
     "status": "open",
     "fixed_in": null,
     "workaround": "카드 미리보기 화면을 스크린샷으로 저장하세요."
@@ -116,6 +119,7 @@
     "symptoms": ["가입은 되었는데 같은 비밀번호로 로그인이 안 됨", "로그인 실패, 비밀번호가 틀렸다고 표시됨", "비밀번호 앞뒤에 공백이 있는 경우에만 발생"],
     "affected_android": ["7.0", "7.1", "8", "9", "10", "11", "12", "13", "14"],
     "affected_app_versions": ["1.0"],
+    "limited_scope": "가입할 때 비밀번호에 공백이 들어간 사용자",
     "status": "fixed",
     "fixed_in": "1.0.1",
     "workaround": "1.0.1 이상으로 업데이트하거나, 비밀번호에서 앞뒤 공백을 제거하고 재설정하세요."

@@ -84,7 +84,16 @@ def search_known_issues(keywords: list[str], feature_area: str | None = None,
     if not scored:
         return {"status": "not_found"}
     scored.sort(key=lambda s: -s[0])  # stable: ties keep file order
-    return {"status": "ok", "issues": [i for _, i in scored[:5]]}
+    return {"status": "ok", "issues": [_for_model(i) for _, i in scored[:5]]}
+
+
+# Fields the code uses after the model's answer; the model never sees them, so adding them does not
+# change what the link and score steps are given.
+_CODE_ONLY_FIELDS = ("limited_scope",)
+
+
+def _for_model(issue: dict) -> dict:
+    return {k: v for k, v in issue.items() if k not in _CODE_ONLY_FIELDS}
 
 
 def get_release_info(version: str) -> dict:

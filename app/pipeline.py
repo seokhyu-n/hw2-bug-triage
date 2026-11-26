@@ -243,6 +243,21 @@ def _finalize_link(link: Link, seen: dict[str, str | None], extraction: Extracti
                 user_should_update=version_lt(extraction.app_version, fixed_in))
 
 
+def _settle_priority(score: Score, link: Link | None) -> None:
+    """The rubric's P1 rule, decided in code: a P1 whose linked issue is already fixed, whose reporter
+    is known to run an older version (`user_should_update`, so an update solves it) and that only some
+    users can hit (the issue's `limited_scope`, data the model is not given) is P2. Everything else
+    stays the model's call."""
+    if score.priority != "P1" or link is None or not link.linked_issue_id or link.user_should_update is not True:
+        return
+    issue = next((i for i in known_issues() if i["id"] == link.linked_issue_id), {})
+    scope = issue.get("limited_scope")
+    if scope:
+        score.priority = "P2"
+        score.reasoning += (f" [코드 규칙] {link.linked_issue_id}는 {link.fixed_in}에서 수정됐고 영향이 일부 사용자"
+                            f"({scope})로 한정되며 업데이트로 해결되므로 P1이 아니라 P2.")
+
+
 def _is_missing(extraction: Extraction, field: str) -> bool:
     value = getattr(extraction, field)
     return value is None or value == [] or (isinstance(value, str) and not value.strip())
@@ -323,6 +338,7 @@ def _analyze(report_text: str, cfg: PipelineConfig, prior: TriageResult | None, 
             "score", cfg, _user(sections, "근거를 쓰지 말고 점수만 바로 JSON으로 출력하라."), ScoreDirect, logs))
         score = Score(reasoning="", **direct.model_dump())
     _settle_completeness(score, extraction, is_bug)
+    _settle_priority(score, link)
 
     missing_required = sum(_is_missing(extraction, f) for f in required_fields(extraction))
     status = "need_info" if is_bug and missing_required >= 2 else "ready"
@@ -358,6 +374,7 @@ def _analyze_single(source: str, cfg: PipelineConfig, prior: TriageResult | None
         Link(linked_issue_id=None, match_reason=None, fixed_in=None, user_should_update=None) if is_bug else None)
     score = out.score
     _settle_completeness(score, extraction, is_bug)
+    _settle_priority(score, link)
     missing_required = sum(_is_missing(extraction, f) for f in required_fields(extraction))
     status = "need_info" if is_bug and missing_required >= 2 else "ready"
     return TriageResult(extraction=extraction, classification=classification, link=link, score=score,

@@ -412,3 +412,25 @@ def test_completeness_one_or_two_is_decided_from_the_extraction():
     assert settle(0) == 0                                # unclear symptom stays the model's call
     assert settle(2, is_bug=False) is None
     assert settle(1, platform="ios") == 1 and settle(1, platform="ios", ios_version="17.5") == 2
+
+
+def test_fixed_p1_for_some_users_only_becomes_p2_when_an_update_solves_it():
+    from app.pipeline import _settle_priority
+    from app.schemas import Link, Score
+
+    def settle(priority="P1", issue="ISSUE-08", fixed_in="1.0.1", update=True):
+        score = Score(reasoning="r", completeness=2, priority=priority, questions_to_reporter=[])
+        link = Link(linked_issue_id=issue, match_reason="m", fixed_in=fixed_in, user_should_update=update)
+        _settle_priority(score, link)
+        return score
+
+    moved = settle()                                   # old-OS crash, fixed, reporter on an older version
+    assert moved.priority == "P2" and "[코드 규칙]" in moved.reasoning and "ISSUE-08" in moved.reasoning
+    assert settle(issue="ISSUE-11").priority == "P2"   # login bug of users with a space in the password
+    assert settle(issue="ISSUE-02", fixed_in="1.2.0").priority == "P1"  # Android 14: most users -> stays P1
+    assert settle(update=None).priority == "P1"        # app version unknown: an update is not confirmed
+    assert settle(update=False).priority == "P1"       # already on the fixed version (link is cut anyway)
+    assert settle(priority="P3").priority == "P3"      # only P1 is ever moved
+    score = Score(reasoning="r", completeness=None, priority="P1", questions_to_reporter=[])
+    _settle_priority(score, None)
+    assert score.priority == "P1"

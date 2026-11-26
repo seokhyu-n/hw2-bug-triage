@@ -29,6 +29,13 @@ def test_search_finds_android14_crash():
     assert len(r["issues"]) <= 5
 
 
+def test_search_does_not_show_code_only_fields_to_the_model():
+    r = tools.search_known_issues(["사진", "카드"], feature_area="card_image")
+    assert r["status"] == "ok" and any(i["id"] == "ISSUE-08" for i in r["issues"])
+    assert all("limited_scope" not in i for i in r["issues"])
+    assert next(i for i in tools.known_issues() if i["id"] == "ISSUE-08")["limited_scope"]  # still in the data
+
+
 def test_search_filters_without_keyword_hit_not_found():
     r = tools.search_known_issues(["존재하지않는단어xyz"], feature_area="tracking", android_version="14")
     assert r["status"] == "not_found"
