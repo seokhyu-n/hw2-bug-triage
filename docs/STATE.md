@@ -1,4 +1,4 @@
-# STATE (2026-11-26)
+# STATE (2026-11-27)
 
 Branch: main (GitHub repo `seokhyu-n/hw2-bug-triage`, public since 11-25). Service setting = V3-Run-18 (headless; code completeness + P1->P2 rule, extract rules, tag guard, 11-26 priority rubric incl. battery/missing-record + 3 product policies). v3 cls 0.979 / priority 0.937, holdout 0.967, holdout2 0.967. Tests: `venv\Scripts\python.exe -m pytest`.
 ## Where things are
@@ -19,7 +19,7 @@ Branch: main (GitHub repo `seokhyu-n/hw2-bug-triage`, public since 11-25). Servi
 - Server: `venv\Scripts\python.exe -m uvicorn app.main:app --port 8000`.
 - Also set up at `C:\Users\hi\부트캠프\hw2-bug-triage` (11-24) and `C:\dev\fde\hw2-bug-triage` (11-26, git author not set there yet).
 ## Done 11-25 / 11-26
-- Live analysis page = version 16 (published 11-25, V3-Run-15). Not done: screenshots/iPhone v3 sets not re-run headless (chatbot was: FE-CHAT-12/13); pre-warmed headless processes (speed) not built.
+- Live analysis page = version 17 (published 11-27, V3-Run-18: summary KPIs, chain rules, evaluation 12). Pre-warmed headless processes (speed) not built (decided).
 - Presentation (11-26): 16 pages = 14 in the course template order (reason+app, architecture, core logic, results, limits) + 2 whole screens at the end. Source = private Slides artifact
   https://claude.ai/artifact/Pu2oAvFYpLiDiYygAeyL63 ; copy in `docs/presentation/deck/`, PDF via `deck/build_pdf.py` (Edge). Edit the artifact, copy files back, rebuild.
 - 11-26 product policies (no auto pause, staged rollout, AI coach English terms = normal; account lock / grace = bug, E-144/E-148): V3-Run-17 non-bug called bug 4-5 -> 1-2. Presentation p.11/14 updated.

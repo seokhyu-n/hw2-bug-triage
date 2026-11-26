@@ -21,14 +21,14 @@ SUMMARY = """
   <h1>RunBuddy 버그 제보 트리아지</h1>
   <p class="lead">러닝 앱 RunBuddy의 사용자가 문제 신고 페이지에 남긴 제보를 Claude가 <b>추출 → 분류 → 알려진 이슈 연결 → 우선순위·완성도 채점</b> 순서로 처리해 담당 개발자에게 배정한다. 개발자는 ID로 로그인해 자기 담당 제보를 보고, 멀티턴 챗봇으로 조회·재분석을 요청한다.</p>
   <div class="kpis">
-    <div class="kpi"><span class="k">분류 정확도</span><span class="v">0.98</span></div>
-    <div class="kpi"><span class="k">추출 정확도</span><span class="v">0.972</span></div>
-    <div class="kpi"><span class="k">우선순위 exact</span><span class="v">0.88</span><span class="s">기준선 0.76</span></div>
-    <div class="kpi"><span class="k">완성도 MAE</span><span class="v">0.109</span><span class="s">기준선 0.411</span></div>
-    <div class="kpi"><span class="k">이슈 연결</span><span class="v">0.96</span></div>
-    <div class="kpi"><span class="k">100건 비용</span><span class="v">$0.087</span><span class="s">건당 약 8.1초</span></div>
+    <div class="kpi"><span class="k">분류 정확도</span><span class="v">0.979</span><span class="s">튜닝 전 0.953</span></div>
+    <div class="kpi"><span class="k">추출 정확도</span><span class="v">0.969</span></div>
+    <div class="kpi"><span class="k">우선순위 exact</span><span class="v">0.937</span><span class="s">튜닝 전 0.877</span></div>
+    <div class="kpi"><span class="k">완성도 MAE</span><span class="v">0.045</span><span class="s">튜닝 전 0.119</span></div>
+    <div class="kpi"><span class="k">이슈 연결</span><span class="v">0.989</span></div>
+    <div class="kpi"><span class="k">250건 처리</span><span class="v">$0.66</span><span class="s">건당 약 19초</span></div>
   </div>
-  <p class="legend">위 수치는 Run-07 (Claude Haiku 5.5, Few-shot + Rubric + Context 선별 + 프롬프트 개선 2건), 평가셋 100건 기준. Run-01~07 전체 실험 비용 약 $2.11. 이후 경계 사례 20건을 더한 120건에서 프롬프트를 3번 더 고치고, 아이폰 지원(3회 반복 평균 분류 0.975, 우선순위 0.928)과 수정 버전 링크 규칙을 더한 V2-Run-12(120건에서 분류 0.983, 우선순위 0.925)를 거쳐, 250건을 보고 고친 V3-Run-12를 거쳐 <b>V3-Run-15가 현재 설정</b>이다(새 사례 100건에서 확실히 좋아진 것은 분류뿐: 0.950 &rarr; 0.993, 평가 결과 11번). 원본 수치는 <code>eval/runs.csv</code>.</p>
+  <p class="legend">위 수치는 <b>현재 설정 V3-Run-18</b>(Claude Haiku 5.5, Claude Code 헤드리스)의 250건 3회 평균이고, 튜닝 전은 V3-Run-02를 같은 정답으로 다시 채점한 값이다. 이 250건은 오류를 보며 고친 셋이라, 튜닝에 쓰지 않은 새 사례 100건(분류 0.987, 우선순위 0.967)과 결과를 보지 않고 쓴 어려운 100건(분류 0.993, 우선순위 0.967)도 함께 잰다(평가 결과 12번). 100건으로 시작한 Run-01~07, 120건의 V2-Run-08~12, 250건의 V3-Run-01~18 순서로 이어졌다. 비용은 API로 환산한 값이다. 원본 수치는 <code>eval/runs.csv</code>.</p>
   <details class="reqs">
     <summary>사용한 기법과 위치</summary>
     <div class="scroll"><table class="wide">
@@ -43,6 +43,7 @@ SUMMARY = """
       <tr><td>약점을 한 변수씩 개선(Run-08~10), 부작용 발견과 수정</td><td>평가 결과 9번</td></tr>
       <tr><td>추가 기능(신고 전 안내, 스크린샷 추출, 제보자 답변 재분석) 평가</td><td>평가 결과 10번</td></tr>
       <tr><td>기법을 하나씩 끈 비교(250건), 튜닝에 쓰지 않은 새 사례 검증</td><td>평가 결과 11번</td></tr>
+      <tr><td>판단이 갈리는 경계를 사람이 정해 기준표·코드에 반영, 결과를 보지 않고 쓴 어려운 새 사례</td><td>평가 결과 12번</td></tr>
     </table></div>
     <p class="legend">파일·함수 단위 대응표는 저장소 README에 있다.</p>
   </details>

@@ -1,6 +1,8 @@
 # HISTORY
 
 Newest entry on top.
+## 2026-11-27 Analysis page brought up to V3-Run-18
+- Summary KPIs now show the current setting (250 cases, 3-run mean, vs re-graded V3-Run-02) instead of Run-07; chain tab lists the 12 normal behaviors and the 11-26 priority rules; evaluation tab gained section 12 (V3-Run-16..18 table, P1->P2 code rule, product policies, two boundaries, feature re-runs, what is left). Rebuilt with `build_combined.py`, published as version 17.
 ## 2026-11-26 Priority boundaries: battery drain and missing records (V3-Run-18)
 - User decided: abnormal battery drain = P2 (phone battery-optimization settings excluded); record from an earlier day / already in the list not visible = P1, run reset mid-way = P1, today's finished run missing from the list = P2. Labels already matched; only `prompts/score_rubric.md` changed.
 - V3-Run-18 x3: priority 0.925 -> 0.937 (ranges touch), 3/3 wrong 13 -> 9; holdout 0.967; holdout2 0.927 -> 0.967 (but these boundaries came from holdout2 errors). All 16 target cases right 3/3. Classification moves are noise (rubric is score-only). README, v3_experiments 13, presentation p.11/14.
