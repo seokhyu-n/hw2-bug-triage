@@ -42,7 +42,8 @@ RUNS_COLUMNS = [
 
 def load_dataset(only_hard: bool = False, limit: int | None = None, dataset: str = "v1") -> list[dict]:
     path = {"v2": DATASET_V2, "v3": DATASET_V2.with_name("dataset_v3.jsonl"),
-            "holdout": DATASET_V2.with_name("dataset_holdout.jsonl")}.get(dataset, DATASET)
+            "holdout": DATASET_V2.with_name("dataset_holdout.jsonl"),
+            "holdout2": DATASET_V2.with_name("dataset_holdout2.jsonl")}.get(dataset, DATASET)
     cases = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
     cases.sort(key=lambda c: c["id"])
     if only_hard:
@@ -289,6 +290,7 @@ def build_xlsx() -> None:
     _v2_sheet(wb, runs)
     _v2_sheet(wb, runs, "V3-", "dataset_v3 기법 실험")
     _v2_sheet(wb, runs, "HO-", "새 사례 검증(holdout)")
+    _v2_sheet(wb, runs, "HO2-", "어려운 새 사례 검증(holdout2)")
     _feature_sheet(wb)
     used = set(wb.sheetnames)
     for r in runs:
@@ -378,8 +380,8 @@ def main(argv: list[str] | None = None) -> dict:
     ap.add_argument("--limit", type=int, default=None)
     ap.add_argument("--only-hard", action="store_true")
     ap.add_argument("--workers", type=int, default=4)
-    ap.add_argument("--dataset", choices=["v1", "v2", "v3", "holdout"], default="v1",
-                    help="v1 = frozen 100 cases, v2 = v1 + 20 hard classification cases")
+    ap.add_argument("--dataset", choices=["v1", "v2", "v3", "holdout", "holdout2"], default="v1",
+                    help="v1 = frozen 100 cases, v2 = v1 + 20 hard classification cases, holdout2 = harder blind cases")
     ap.add_argument("--prompts-dir", default=None, help="read the prompts from another folder (older prompt version)")
     args = ap.parse_args(argv)
     if (RESULTS_DIR.parent / ".stop").exists():  # a queue of runs stops before its next (paid) run

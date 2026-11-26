@@ -1,6 +1,10 @@
 # HISTORY
 
 Newest entry on top.
+## 2026-11-26 Priority rubric, harder held-out set, feature sets re-measured
+- User set 4 priority boundaries (cosmetic only -> P4, record-tab weekly/monthly totals -> P3, AI course map -> P3, suspected loss -> P1): 3 labels changed (E-089 in v3 only via V2_LABEL_FIXES, E-124, E-136; re-graded), 3 rubric lines. A first, too wide map line dropped iPhone "map not shown" cases to P3 (FE-IOS-04 void) and its V3-Run-16 start was stopped; narrowed to "AI course map only".
+- V3-Run-16 x3: priority 0.883 -> 0.911 (no overlap), others in range; holdout HO-Run-16 x3 priority 0.973 (overlaps). New blind harder set dataset_holdout2 (E-401..E-500, written by an agent that saw no results; E-439 set to P3 by the 11-26 rule before any run): HO2-Run-16 x3 cls 0.987, priority 0.940.
+- Feature sets re-run headless: screenshots invented 4 -> 0, replies invented 9 -> 0, iPhone priority 95/100. Speed looked at (CLI start 0.4 s, the rest is generation) and left alone: analysis runs after intake. Presentation p.11, 14 updated. `docs/analysis/v3_experiments.md` 11.
 ## 2026-11-26 Priority: fixed P1 for some users only becomes P2 in code
 - Of the 22 v3 priority errors (3/3 wrong in V3-Run-15), 4 were fixed crashes/login bugs left at P1. `_settle_priority` moves P1 to P2 when the linked issue is fixed, the reporter is on an older version and the issue has `limited_scope` (new field in known_issues.json: ISSUE-01/08/09 old OS, ISSUE-11 space in password; hidden from the model). A wider rule without the scope condition broke ISSUE-02 (Android 14) cases and lowered held-out to 0.953, so it was not used.
 - Applied to the saved V3-Run-15 / HO-Run-15 outputs (post-processing, so exact; no new calls): v3 priority 0.871 -> 0.885 (3/3 wrong 22 -> 19), held-out 0.977 -> 0.983, nothing broken. 2 tests (304 pass). `docs/analysis/v3_experiments.md` 10. Presentation updated (p.5, 10, 11, 14): priority 0.864 -> 0.885 / held-out 0.947 -> 0.983, 3/3 wrong 19.

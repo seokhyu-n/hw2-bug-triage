@@ -9,6 +9,7 @@ debatable labels in REVIEW; eval/review/v3_review.md collects them for a human c
 after a run only need re-grading (the predictions are saved), not a new paid run.
 """
 import importlib
+import json
 from pathlib import Path
 
 EVAL = Path(__file__).resolve().parent
@@ -23,8 +24,22 @@ def review_items() -> list[tuple[str, str, str]]:
     return out
 
 
+# Label fixes for rows that come from dataset_v2, applied in dataset_v3 only (v1/v2 runs keep their labels).
+# 11-26 human decision: weekly/monthly totals and views on the record tab are add-on, so P3.
+V2_LABEL_FIXES = {"E-089": {"priority": "P3"}}
+
+
+def _fix(line: str) -> str:
+    row = json.loads(line)
+    fix = V2_LABEL_FIXES.get(row["id"])
+    if not fix:
+        return line
+    row["expected"].update(fix)
+    return json.dumps(row, ensure_ascii=False)
+
+
 def main() -> None:
-    lines = [x for x in (EVAL / "dataset_v2.jsonl").read_text(encoding="utf-8").splitlines() if x.strip()]
+    lines = [_fix(x) for x in (EVAL / "dataset_v2.jsonl").read_text(encoding="utf-8").splitlines() if x.strip()]
     for part in PARTS:
         lines += [x for x in (EVAL / f"dataset_v3_new_{part}.jsonl").read_text(encoding="utf-8").splitlines() if x.strip()]
     (EVAL / "dataset_v3.jsonl").write_text("\n".join(lines) + "\n", encoding="utf-8", newline="\n")

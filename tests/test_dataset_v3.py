@@ -39,9 +39,18 @@ def test_file_ids_and_shape(raw_bytes, rows):
         assert set(r["tags"]) <= v1checks.TAGS, r["id"]
 
 
-def test_v2_is_an_unchanged_prefix(raw_bytes):
+def test_v2_is_an_unchanged_prefix_except_listed_label_fixes(raw_bytes):
+    from eval.build_dataset_v3 import V2_LABEL_FIXES
     v2 = V2.read_text(encoding="utf-8").splitlines()
-    assert raw_bytes.decode("utf-8").splitlines()[:120] == v2
+    v3 = raw_bytes.decode("utf-8").splitlines()[:120]
+    for old, new in zip(v2, v3):
+        if old == new:
+            continue
+        a, b = json.loads(old), json.loads(new)
+        assert a["id"] in V2_LABEL_FIXES, a["id"]  # only a documented human label fix may differ
+        assert b["expected"] == {**a["expected"], **V2_LABEL_FIXES[a["id"]]}
+        assert {k: v for k, v in a.items() if k != "expected"} == {k: v for k, v in b.items() if k != "expected"}
+    assert len(v3) == len(v2)
 
 
 def test_new_cases_are_hard_and_cover_every_task(rows):

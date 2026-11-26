@@ -48,7 +48,7 @@ CASES = [
          ["boundary_bug_question"], "bug", ["bug"],
          ex("record", "월간 합계에 지난달 10월 31일 기록이 포함되어 18km로 표시됨", device="픽셀 7", android="14",
             app="1.2.0", expected="1일부터의 기록만 합산", actual="월간 합계 18km(10월 31일 10km 포함)",
-            steps=["10월 31일에 10km 러닝", "11월에 4km씩 두 번 러닝"]), 2, "P2"),
+            steps=["10월 31일에 10km 러닝", "11월에 4km씩 두 번 러닝"]), 2, "P3"),  # human decision 11-26: record stats are add-on
     case("E-125", "제 폰은 러닝 시작 누르면 3, 2, 1 카운트다운 나오는데 남편 폰은 누르자마자 바로 시간이 올라가요. "
                   "둘 다 1.2.0인데 남편 건 고장인가요 아니면 설정이 따로 있나요?",
          ["boundary_bug_question", "mixed_labels"], "bug", ["bug", "question"],
@@ -117,7 +117,7 @@ CASES = [
                   "빈 화면만 나와요. 월간은 잘 나옴. 갤럭시 Z폴드4 안드로이드 14",
          ["boundary_bug_feature"], "bug", ["bug"],
          ex("record", "업데이트 후 기록 탭의 주간 보기가 빈 화면으로 나옴", device="갤럭시 Z폴드4", android="14",
-            app="1.2.0", actual="빈 화면만 나옴", steps=["1.2.0 업데이트", "기록 탭에서 '주간' 누름"]), 2, "P2"),
+            app="1.2.0", actual="빈 화면만 나옴", steps=["1.2.0 업데이트", "기록 탭에서 '주간' 누름"]), 2, "P3"),  # human decision 11-26: record stats are add-on
     case("E-137", "위치 '항상 허용' 해두면 원래 배터리 이렇게 먹나요? 러닝 안 하는 날에도 배터리 사용량 1위가 "
                   "RunBuddy예요. 앱은 다 닫아놨어요",
          ["boundary_bug_question", "mixed_labels", "missing", "known_issue_near_miss"], "bug", ["bug", "question"],
