@@ -1,4 +1,4 @@
-# STATE (2026-11-25)
+# STATE (2026-11-26)
 
 Branch: main (GitHub repo `seokhyu-n/hw2-bug-triage`, public since 11-25). Service setting = V3-Run-15 (headless; V3-Run-12 + code completeness, extract rules, tag guard). Tests: `venv\Scripts\python.exe -m pytest`.
 ## Where things are
@@ -17,11 +17,12 @@ Branch: main (GitHub repo `seokhyu-n/hw2-bug-triage`, public since 11-25). Servi
 - Clone, `python -m venv venv`, `venv\Scripts\python.exe -m pip install -r requirements.txt`.
 - LLM calls: Claude Code headless (`claude -p`, `app/headless.py`), needs `claude` + `/login`, no key. `LLM_BACKEND=api` = old way with `.env`. Uses the account limits. Runtime data (`data/runtime/`) starts empty.
 - Server: `venv\Scripts\python.exe -m uvicorn app.main:app --port 8000`.
-- Also set up at `C:\Users\hi\부트캠프\hw2-bug-triage` (11-24); git author set repo-locally to match earlier commits.
-## Done 11-25
+- Also set up at `C:\Users\hi\부트캠프\hw2-bug-triage` (11-24) and `C:\dev\fde\hw2-bug-triage` (11-26, git author not set there yet).
+## Done 11-25 / 11-26
 - Setting = V3-Run-15 (headless, completeness 1/2 in code, data-tag guard, extract rules). Numbers and limits: `docs/analysis/v3_experiments.md` 8-9.
 - Live analysis page = version 16 (published 11-25, V3-Run-15). Not done: screenshots/iPhone v3 sets not re-run headless (chatbot was: FE-CHAT-12/13); pre-warmed headless processes (speed) not built.
-- Presentation: `docs/presentation/` (24-page PDF, message titles: talk p.1-14, appendix p.15-24; 2 scripts). The private Slides artifact is the older 15-page one (no term lines, reporter features, whole screens, requirement page).
+- Presentation (11-26, after the 11-25 feedback): 30 pages, talk p.1-10, appendix p.11-30 (3 expected-question pages). Source = private Slides artifact
+  https://claude.ai/artifact/Pu2oAvFYpLiDiYygAeyL63 ; copy in `docs/presentation/deck/`, PDF via `deck/build_pdf.py` (Edge). Edit the artifact, copy files back, rebuild.
 ## Next (optional)
 - Human label review done (34, `eval/review/v3_review_log.md`); after a label fix run `eval.regrade V3- HO-`. Harder holdout; iPhone / new-policy holdout cases.
 - Known: E-342 (rhetorical question gets a question label); unquoted pasted reporter text can still name a receiver in chat.

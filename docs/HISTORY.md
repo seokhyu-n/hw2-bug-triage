@@ -1,6 +1,10 @@
 # HISTORY
 
 Newest entry on top.
+## 2026-11-26 Presentation revised after the 11-25 feedback
+- Feedback (numbers, own reasons, one case end to end, no pointing words, confirmed vs guessed, talk on what matters) applied: talk cut to p.1-10. New: E-010 end to end with the real V3-Run-15 output (LLM judgement vs code checks), "problem → choice → reason" table (link guard, code completeness, save-first intake, Haiku over Sonnet), results split into the 250 tuning set and the 100 held-out set with counts and conditions, only the 2 largest fixes in the talk (full 7 in the appendix).
+- Appendix: answers to the 3 expected questions. Found while writing them: the code does not check an issue's affected OS range (the search tool only reorders by OS), so an out-of-range issue among the candidates is the model's call -> listed as a next step. App intro and all screens moved to the appendix.
+- The 24-page PDF had no source in the repo; the Slides artifact (15 slides) was extended to 30 and its files + images copied to `docs/presentation/deck/` with `build_pdf.py` (Edge headless). Both scripts rewritten (no "이렇게", no "~것 같다").
 ## 2026-11-25 Presentation PDF: RunBuddy page
 - p.3 introduces the RunBuddy app with the screenshots of its public repository; 24 pages (talk p.1-14, appendix p.15-24). Checked: the app code drops moves over 30 m (`RunningRepository.kt:139`), the basis of ISSUE-04.
 ## 2026-11-25 Presentation PDF without a script in hand

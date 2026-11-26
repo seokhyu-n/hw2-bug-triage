@@ -1,0 +1,16 @@
+<section id="code" class="pg tint" data-transition="fade">
+<div class="stack tight">
+<p class="eyebrow">3 · 핵심 로직: 핵심 코드</p>
+<h2>AI가 고른 번호를 코드가 확인</h2>
+<div class="codebox">
+<p class="mono">def _finalize_link(link, seen, extraction):<br>&#160;&#160;&#160;&#160;issue_id = link.linked_issue_id<br>&#160;&#160;&#160;&#160;if issue_id is not None and issue_id not in seen:<br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;return Link(linked_issue_id=None, …)&#160;&#160;# 도구가 준 적 없는 번호<br>&#160;&#160;&#160;&#160;…<br>&#160;&#160;&#160;&#160;if version_lt(extraction.app_version, fixed_in) is False:<br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;return Link(linked_issue_id=None, …)&#160;&#160;# 이미 수정된 버전 = 재발</p>
+</div>
+<div class="row">
+<div class="card col"><h3>없는 번호</h3><p>도구 결과에 없으면 연결하지 않음</p></div>
+<div class="card col"><h3>재발</h3><p>수정 버전을 쓰면 새 신고로 남김</p></div>
+<div class="card col"><h3>기기</h3><p>아이폰은 안드로이드 전용 이슈에 연결 안 함</p></div>
+</div>
+</div>
+<p class="foot">app/pipeline.py · 일부 줄을 생략하고 짧게 적음</p>
+<aside>핵심 코드 한 곳입니다. AI가 번호를 골라도 도구가 돌려준 적이 없으면 버립니다. 이미 수정된 버전에서 난 증상은 재발이거나 다른 원인이라 연결하지 않습니다.</aside>
+</section>

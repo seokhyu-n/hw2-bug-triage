@@ -1,0 +1,14 @@
+<section id="fix" class="pg tint" data-transition="fade">
+<div class="stack">
+<p class="eyebrow">4 · 틀린 사례 1건</p>
+<h2>버전이 다 있는데 1점을 준 제보</h2>
+<div class="card" style="flex:none"><p>“러닝 끝내기 누르면 ‘저장에 실패했습니다’ 뜨고 기록이 저장이 안 돼요. … 1.1.1 / 안드로이드 11”</p></div>
+<div class="row">
+<div class="card col hot"><p class="tag o">원인</p><h3>AI가 완성도를 잘못 셈</h3><p>앱 버전, OS 버전, 재현 순서가 모두 있는데 3번 모두 1점</p></div>
+<div class="card col blue"><p class="tag">수정 방법</p><h3>코드가 계산</h3><p>1점과 2점은 세 정보가 있는지로 코드가 정하고, AI는 증상이 불명확한 0점만 정함</p></div>
+<div class="card col"><p class="tag">수정 후</p><p class="big">3번 모두 2점</p><p>정답과 같음. 250건 완성도 MAE 0.120 → 0.043</p></div>
+</div>
+</div>
+<p class="foot">평가 사례 E-131 · 앞의 설정 V3-Run-02, 뒤의 설정 V3-Run-15 · 이 사례를 보고 만든 수정</p>
+<aside>제보에는 버전과 재현 순서가 다 있었지만 AI는 세 번 모두 1점을 줬습니다. 1점과 2점은 규칙으로 정해지므로 코드로 옮겼고, 세 번 모두 2점이 됐습니다. 이 사례를 보고 만든 수정이라는 점도 말합니다.</aside>
+</section>
