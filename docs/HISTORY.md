@@ -1,6 +1,11 @@
 # HISTORY
 
 Newest entry on top.
+## 2026-11-26 Presentation in the course template, 14 pages
+- User request: follow the template (1 reason, 2 architecture: diagram + LLM/code split + one design, 3 core logic: one real input + code, 4 results: task table + one wrong case, 5 limits), app intro early, no expected-question pages, no "부록". Order: cover, why, app, arch, split, choice, case, code, screens, criteria, result, improve, fix, limits.
+- choice = the one design as problem → choice → reason; result = per-task table (criterion, 250 and new 100 before → now, still wrong); screens = the same 8.3km report in the reporter and developer screens. Dropped (in git history): expected questions, decisions table, all 7 fixes, ablation, requirements map, 9 detail screens. The two speech scripts (`발표_대본.md`, `발표_대본_3분.md`) were removed at the user's request (not needed); they are in git history.
+## 2026-11-26 Talk slide titles say the conclusion
+- Feedback "replace '이렇게' with the content": p.3, 6, 8, 10 titles were topics; now each states what happened (e.g. p.10 "버그 아닌 제보 5~7건을 버그로 보고, 사람이 검토한 정답은 34건뿐"). The script headings and opening lines match.
 ## 2026-11-26 Presentation checked item by item against the feedback
 - Completeness MAE had two unlabeled baselines (0.120 = before tuning, 0.128 = just before the code rule); every slide now names its baseline, and the E-131 slide uses 0.128 like the fix slide. Held-out "still wrong in all 3 runs" added (HO-Run-15: priority 1 = E-323, category 0, labels 0). Run counts added next to the link scores; "왜 이렇게 했나" renamed. Scripts follow.
 ## 2026-11-26 Presentation revised after the 11-25 feedback

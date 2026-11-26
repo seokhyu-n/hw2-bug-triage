@@ -1,13 +1,14 @@
 <section id="choice" class="pg dark" data-transition="fade">
-<div class="stack">
-<p class="eyebrow">부록 · 설계 원칙</p>
-<h2 style="font-size:88px">AI가 고르고,<br>코드가 확인한다</h2>
+<div class="stack tight">
+<p class="eyebrow">2 · 아키텍처: 주요 설계 1개</p>
+<h2 style="font-size:80px">AI가 고르고, 코드가 확인한다</h2>
 <div class="row">
-<div class="card col" style="background:#1D3750;border-color:#3A5670"><h3 style="color:#FFB27A">왜 이 원칙인가</h3><p>AI는 없는 이슈 번호를 그럴듯하게 만들 수 있고, 같은 글에도 점수가 흔들립니다</p></div>
-<div class="card col" style="background:#1D3750;border-color:#3A5670"><h3 style="color:#FFB27A">이슈 번호</h3><p>도구가 돌려준 번호만 연결합니다</p></div>
-<div class="card col" style="background:#1D3750;border-color:#3A5670"><h3 style="color:#FFB27A">완성도</h3><p>버전과 재현 순서가 다 있는지는 코드가 셉니다</p></div>
+<div class="card col" style="background:#1D3750;border-color:#3A5670"><p class="tag o">문제</p><p>AI는 도구에 없는 이슈 번호를 그럴듯하게 쓸 수 있다. 같은 제보에도 점수가 흔들린다 (정보가 다 있는 제보에 3번 모두 완성도 1점)</p></div>
+<div class="card col" style="background:#1D3750;border-color:#3A5670"><p class="tag">선택</p><p>이슈 번호는 도구가 돌려준 것만 연결한다. 완성도 1점·2점은 앱 버전·OS 버전·재현 순서가 있는지로 코드가 계산한다</p></div>
+<div class="card col" style="background:#1D3750;border-color:#3A5670"><p class="tag o">이유</p><p>틀린 연결은 새 버그를 “이미 아는 문제”로 닫아 버린다. 규칙으로 답이 정해지는 일은 코드가 정확하다: 완성도 오차 0.128 → 0.043</p></div>
 </div>
-<p class="lead" style="font-size:32px">규칙으로 답이 정해지는 일은 AI에게 맡기지 않는다는 원칙입니다</p>
+<p class="lead" style="font-size:32px">글을 이해하는 판단은 AI에게, 규칙으로 정해지는 일은 코드에게</p>
 </div>
-<aside>가장 중요한 설계입니다. AI의 판단은 쓰되, 규칙으로 정해지는 것은 코드가 확인합니다. 4번 결과에서 효과를 보여 줍니다.</aside>
+<p class="foot" style="color:#B8C6D3">완성도 오차: 250건, 코드 계산 전 → 후, 3회 평균</p>
+<aside>주요 설계 하나는 AI가 고르고 코드가 확인한다는 것입니다. 문제는 AI가 도구에 없는 이슈 번호를 그럴듯하게 쓸 수 있고, 같은 제보에도 점수가 흔들린다는 것입니다. 그래서 이슈 번호는 도구가 돌려준 것만 연결하고, 완성도 1점과 2점은 코드가 계산하게 했습니다. 틀린 연결은 새 버그를 이미 아는 문제로 닫아 버리고, 규칙으로 정해지는 일은 코드가 정확하기 때문입니다. 250건 완성도 오차가 0.128에서 0.043으로 줄었습니다.</aside>
 </section>
