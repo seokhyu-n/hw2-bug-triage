@@ -1,6 +1,8 @@
 # HISTORY
 
 Newest entry on top.
+## 2026-11-26 Full screens back at the end (16 pages)
+- The whole reporter screen and whole developer screen were restored from git as p.15-16 under "실제 화면" (no "부록"), after the 14 template pages, so the talk flow is unchanged.
 ## 2026-11-26 Presentation in the course template, 14 pages
 - User request: follow the template (1 reason, 2 architecture: diagram + LLM/code split + one design, 3 core logic: one real input + code, 4 results: task table + one wrong case, 5 limits), app intro early, no expected-question pages, no "부록". Order: cover, why, app, arch, split, choice, case, code, screens, criteria, result, improve, fix, limits.
 - choice = the one design as problem → choice → reason; result = per-task table (criterion, 250 and new 100 before → now, still wrong); screens = the same 8.3km report in the reporter and developer screens. Dropped (in git history): expected questions, decisions table, all 7 fixes, ablation, requirements map, 9 detail screens. The two speech scripts (`발표_대본.md`, `발표_대본_3분.md`) were removed at the user's request (not needed); they are in git history.

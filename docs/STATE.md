@@ -21,7 +21,7 @@ Branch: main (GitHub repo `seokhyu-n/hw2-bug-triage`, public since 11-25). Servi
 ## Done 11-25 / 11-26
 - Setting = V3-Run-15 (headless, completeness 1/2 in code, data-tag guard, extract rules). Numbers and limits: `docs/analysis/v3_experiments.md` 8-9.
 - Live analysis page = version 16 (published 11-25, V3-Run-15). Not done: screenshots/iPhone v3 sets not re-run headless (chatbot was: FE-CHAT-12/13); pre-warmed headless processes (speed) not built.
-- Presentation (11-26): 14 pages in the course template order (reason+app, architecture, core logic, results, limits), no appendix. Source = private Slides artifact
+- Presentation (11-26): 16 pages = 14 in the course template order (reason+app, architecture, core logic, results, limits) + 2 whole screens at the end. Source = private Slides artifact
   https://claude.ai/artifact/Pu2oAvFYpLiDiYygAeyL63 ; copy in `docs/presentation/deck/`, PDF via `deck/build_pdf.py` (Edge). Edit the artifact, copy files back, rebuild.
 ## Next (optional)
 - Human label review done (34, `eval/review/v3_review_log.md`); after a label fix run `eval.regrade V3- HO-`. Harder holdout; iPhone / new-policy holdout cases.
