@@ -1,6 +1,8 @@
 # HISTORY
 
 Newest entry on top.
+## 2026-11-26 Presentation checked item by item against the feedback
+- Completeness MAE had two unlabeled baselines (0.120 = before tuning, 0.128 = just before the code rule); every slide now names its baseline, and the E-131 slide uses 0.128 like the fix slide. Held-out "still wrong in all 3 runs" added (HO-Run-15: priority 1 = E-323, category 0, labels 0). Run counts added next to the link scores; "왜 이렇게 했나" renamed. Scripts follow.
 ## 2026-11-26 Presentation revised after the 11-25 feedback
 - Feedback (numbers, own reasons, one case end to end, no pointing words, confirmed vs guessed, talk on what matters) applied: talk cut to p.1-10. New: E-010 end to end with the real V3-Run-15 output (LLM judgement vs code checks), "problem → choice → reason" table (link guard, code completeness, save-first intake, Haiku over Sonnet), results split into the 250 tuning set and the 100 held-out set with counts and conditions, only the 2 largest fixes in the talk (full 7 in the appendix).
 - Appendix: answers to the 3 expected questions. Found while writing them: the code does not check an issue's affected OS range (the search tool only reorders by OS), so an out-of-range issue among the candidates is the model's call -> listed as a next step. App intro and all screens moved to the appendix.
