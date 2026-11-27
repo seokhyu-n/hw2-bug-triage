@@ -1,6 +1,8 @@
 # HISTORY
 
 Newest entry on top.
+## 2026-11-27 Presentation p.7 footnote on V3-Run-18
+- E-010 (8.3km report) checked in all three V3-Run-18 runs: ISSUE-04, P2, completeness 2 each time. Footnote now names V3-Run-18 (run 1) instead of V3-Run-15; PDF rebuilt, artifact v27.
 ## 2026-11-27 Analysis page brought up to V3-Run-18
 - Summary KPIs now show the current setting (250 cases, 3-run mean, vs re-graded V3-Run-02) instead of Run-07; chain tab lists the 12 normal behaviors and the 11-26 priority rules; evaluation tab gained section 12 (V3-Run-16..18 table, P1->P2 code rule, product policies, two boundaries, feature re-runs, what is left). Rebuilt with `build_combined.py`, published as version 17.
 ## 2026-11-26 Priority boundaries: battery drain and missing records (V3-Run-18)
